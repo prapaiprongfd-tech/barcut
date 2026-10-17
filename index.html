@@ -48,10 +48,14 @@
         
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 125px; }
         .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 28px; }
-        .btn-del { background: none; border: none; color: #ef4444; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; }
+        
+        .action-btns { display: flex; justify-content: center; gap: 4px; }
+        .btn-copy { background: #e0e7ff; border: 1px solid #818cf8; color: #3730a3; font-size: 12px; font-weight: bold; border-radius: 4px; padding: 3px 6px; cursor: pointer; }
+        .btn-copy:hover { background: #c7d2fe; }
+        .btn-del { background: none; border: none; color: #ef4444; font-weight: bold; font-size: 16px; cursor: pointer; padding: 0 4px; }
         .btn-del:hover { color: #b91c1c; }
+        
         .hidden { display: none !important; }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
         .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
         .card-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
         .grid-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
@@ -113,7 +117,7 @@
                                 <th style="min-width:95px; background:#d1fae5;">จำนวนท่อนหลัก</th>
                                 <th style="min-width:280px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
                                 <th style="min-width:90px; background:#fbcfe8;">น.น. เศษ (kg)</th>
-                                <th style="min-width:40px;" class="no-print">ลบ</th>
+                                <th style="min-width:70px;" class="no-print">จัดการ</th>
                             </tr>
                             <tr class="sub-header">
                                 <th class="no-print"></th><th></th><th></th><th></th>
@@ -138,31 +142,33 @@
 
             <!-- TAB 2: SUMMARY BOQ SHEET -->
             <div id="content-summary" class="hidden">
-                <div class="grid-2">
-                    <div class="card">
-                        <div class="card-title">🛒 ตารางสรุปการสั่งซื้อเหล็ก (Order Summary)</div>
-                        <div class="table-responsive">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>ขนาดเหล็ก</th>
-                                        <th style="text-align:center;">ความยาวท่อน</th>
-                                        <th style="text-align:center;">จำนวน (ท่อน)</th>
-                                        <th style="text-align:right;">น้ำหนักรวม (kg)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="boqTableBody">
-                                    <!-- Rendered via JS -->
-                                </tbody>
-                                <tfoot>
-                                    <tr style="background:#f1f5f9; font-weight:bold;">
-                                        <td colspan="2" style="text-align:right;">รวมทั้งหมด:</td>
-                                        <td id="totalBarCount" style="text-align:center; color:#2563eb;">0</td>
-                                        <td id="totalWeightKg" style="text-align:right; color:#059669;">0.00</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+                <div class="card">
+                    <div class="card-title">🛒 ตารางสรุปการสั่งซื้อเหล็กและวิเคราะห์เศษเหลือ (Order & Waste BOQ Summary)</div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="min-width:100px;">ขนาดเหล็ก</th>
+                                    <th style="text-align:center; min-width:100px;">ความยาวท่อน</th>
+                                    <th style="text-align:center; min-width:100px;">จำนวนสั่งซื้อ (ท่อน)</th>
+                                    <th style="text-align:right; min-width:130px;">น้ำหนักสั่งซื้อ (kg)</th>
+                                    <th style="text-align:right; min-width:130px; background:#fce7f3;">น้ำหนักเศษเหลือ (kg)</th>
+                                    <th style="text-align:center; min-width:120px; background:#fbcfe8;">สัดส่วนเศษเหลือ (% Scrap)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="boqTableBody">
+                                <!-- Rendered via JS -->
+                            </tbody>
+                            <tfoot>
+                                <tr style="background:#f1f5f9; font-weight:bold; font-size:14px;">
+                                    <td colspan="2" style="text-align:right;">รวมทั้งโครงการ:</td>
+                                    <td id="totalBarCount" style="text-align:center; color:#2563eb;">0</td>
+                                    <td id="totalWeightKg" style="text-align:right; color:#059669;">0.00</td>
+                                    <td id="totalScrapWeightKg" style="text-align:right; color:#9d174d;">0.00</td>
+                                    <td id="totalScrapPercent" style="text-align:center; color:#78350f; background:#fef3c7;">0.00%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -377,7 +383,12 @@
                     <td class="bg-total">${calc.totalBars}</td>
                     <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}">${calc.scrapDetails}</td>
                     <td class="bg-scrap-wt">${calc.totalScrapWeight.toFixed(2)}</td>
-                    <td class="no-print" style="text-align:center;"><button type="button" class="btn-del" onclick="deleteRow(${item.id})">❌</button></td>
+                    <td class="no-print" style="text-align:center;">
+                        <div class="action-btns">
+                            <button type="button" class="btn-copy" onclick="copyRow(${item.id})" title="คัดลอกรายการนี้">📋 คัดลอก</button>
+                            <button type="button" class="btn-del" onclick="deleteRow(${item.id})" title="ลบรายการนี้">❌</button>
+                        </div>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -397,6 +408,34 @@
             const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
             itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: newId, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 });
             renderTable();
+        }
+
+        function copyRow(id) {
+            const item = itemsData.find(i => i.id === id);
+            if (item) {
+                const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
+                const nextNo = itemsData.length ? Math.max(...itemsData.map(i => parseInt(i.no)||0)) + 1 : 1;
+                
+                // Duplicate item values
+                const newItem = {
+                    id: newId,
+                    comp: item.comp,
+                    no: nextNo,
+                    type: item.type,
+                    stockLen: item.stockLen,
+                    setQty: item.setQty,
+                    perSet: item.perSet,
+                    shape: item.shape,
+                    a: item.a,
+                    b: item.b,
+                    c: item.c,
+                    d: item.d,
+                    e: item.e,
+                    f: item.f
+                };
+                itemsData.push(newItem);
+                renderTable();
+            }
         }
 
         function deleteRow(id) {
@@ -424,10 +463,11 @@
                 const key = `${cleanType}_${calc.chosenStock}`;
 
                 if (!boqMap[key]) {
-                    boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0 };
+                    boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
                 }
                 boqMap[key].bars += calc.totalBars;
                 boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
+                boqMap[key].scrapWeight += calc.totalScrapWeight;
             });
 
             const tbody = document.getElementById('boqTableBody');
@@ -436,12 +476,16 @@
 
             let grandTotalBars = 0;
             let grandTotalWeight = 0;
+            let grandTotalScrapWeight = 0;
 
             Object.keys(boqMap).sort().forEach(key => {
                 const data = boqMap[key];
-                if (data.bars > 0) {
+                if (data.bars > 0 || data.weight > 0) {
                     grandTotalBars += data.bars;
                     grandTotalWeight += data.weight;
+                    grandTotalScrapWeight += data.scrapWeight;
+
+                    const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -449,13 +493,19 @@
                         <td style="text-align:center; font-weight:600; color:#b45309;">${data.length}.0 เมตร</td>
                         <td style="text-align:center; font-weight:bold; color:#047857;">${data.bars}</td>
                         <td style="text-align:right; font-weight:600;">${data.weight.toFixed(2)}</td>
+                        <td style="text-align:right; font-weight:600; color:#9d174d; background:#fcf2f6;">${data.scrapWeight.toFixed(2)}</td>
+                        <td style="text-align:center; font-weight:700; color:#92400e; background:#fffbeb;">${percent}%</td>
                     `;
                     tbody.appendChild(tr);
                 }
             });
 
+            const grandPercent = grandTotalWeight > 0 ? ((grandTotalScrapWeight / grandTotalWeight) * 100).toFixed(2) : '0.00';
+
             document.getElementById('totalBarCount').innerText = grandTotalBars;
             document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
+            document.getElementById('totalScrapWeightKg').innerText = grandTotalScrapWeight.toFixed(2);
+            document.getElementById('totalScrapPercent').innerText = `${grandPercent}%`;
         }
 
         function renderShapes() {
