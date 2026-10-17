@@ -219,8 +219,6 @@
         ];
 
         function calculateAllItems() {
-            // Global Best-Fit Bin Packing Algorithm
-            // Step 1: Analyze demand pieces for each row
             const rowDemands = [];
             itemsData.forEach((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim();
@@ -230,28 +228,23 @@
                 rowDemands.push({ id: item.id, no: item.no, type: cleanType, cutLenM, totalPieces, unitWeight, stockLen: item.stockLen, index });
             });
 
-            // Prepare results array
             const rowResults = itemsData.map(() => ({
-                usedReuses: [],
+                usedReusesMap: {}, // Compact map { fromNo: count }
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
-                scrapTextArr: [],
                 isReuse: false
             }));
 
-            // Group demands by rebar type (DB12, DB16, etc.)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
                 typeGroups[d.type].push(d);
             });
 
-            // Solve Global Best-Fit for each rebar type separately
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
-                // Flatten all pieces needed across all rows for this rebar type
                 let allPieces = [];
                 demands.forEach(d => {
                     if (d.cutLenM > 0 && d.totalPieces > 0) {
@@ -261,18 +254,14 @@
                     }
                 });
 
-                // Sort all pieces descending by length (Largest Cut Length First)
-                // This ensures large offcuts generated are assigned to exact matching large pieces!
                 allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
 
-                // Bin Packing: Pack pieces into stock bars (10m or 12m) using Best-Fit Decreasing
-                const bins = []; // Bins represent cut stock bars
+                const bins = [];
 
                 allPieces.forEach(piece => {
                     let bestBinIndex = -1;
                     let minResidual = 999999;
 
-                    // Try to find an existing bin that best fits this piece
                     for (let b = 0; b < bins.length; b++) {
                         const remSpace = bins[b].remainingSpace;
                         if (remSpace >= (piece.cutLenM - 0.001)) {
@@ -285,17 +274,14 @@
                     }
 
                     if (bestBinIndex >= 0 && minResidual >= 0) {
-                        // Fit into best existing bin
                         const bin = bins[bestBinIndex];
                         bin.pieces.push(piece);
                         bin.remainingSpace -= piece.cutLenM;
                     } else {
-                        // Open a new stock bar bin! Choose best stock length (10m vs 12m)
                         let chosenCapacity = 12;
                         if (piece.preferredStock === '10') chosenCapacity = 10;
                         else if (piece.preferredStock === '12') chosenCapacity = 12;
                         else {
-                            // Auto selection: choose capacity that leaves minimal scrap for this piece
                             const rem10 = (10 - piece.cutLenM);
                             const rem12 = (12 - piece.cutLenM);
                             if (rem10 >= 0 && rem12 >= 0) {
@@ -307,47 +293,53 @@
                         bins.push({
                             capacity: chosenCapacity,
                             remainingSpace: chosenCapacity - piece.cutLenM,
-                            pieces: [piece],
-                            primaryRowIndex: piece.rowIndex
+                            pieces: [piece]
                         });
                     }
                 });
 
-                // Process bins back into row Results
                 bins.forEach(bin => {
                     if (bin.pieces.length === 0) return;
 
-                    // First piece owner gets the new bar count
                     const primaryRowIdx = bin.pieces[0].rowIndex;
                     rowResults[primaryRowIdx].newBarsCount += 1;
                     rowResults[primaryRowIdx].chosenStock = bin.capacity;
 
-                    // Other pieces in the same bin are using offcuts!
+                    // Reuse tracking with compact grouping
                     for (let i = 1; i < bin.pieces.length; i++) {
                         const reusePiece = bin.pieces[i];
-                        rowResults[reusePiece.rowIndex].usedReuses.push(
-                            `♻️ ตัดร่วมกับ No.${bin.pieces[0].rowNo} (ใช้เศษ ${bin.capacity}m)`
-                        );
+                        const fromNo = bin.pieces[0].rowNo;
+                        const cutLen = reusePiece.cutLenM;
+                        const key = `${cutLen.toFixed(2)}_${fromNo}`;
+
+                        if (!rowResults[reusePiece.rowIndex].usedReusesMap[key]) {
+                            rowResults[reusePiece.rowIndex].usedReusesMap[key] = { len: cutLen, fromNo: fromNo, count: 0 };
+                        }
+                        rowResults[reusePiece.rowIndex].usedReusesMap[key].count += 1;
                         rowResults[reusePiece.rowIndex].isReuse = true;
                     }
 
-                    // Assign final scrap of this bin to primary row
                     if (bin.remainingSpace >= 0.01) {
                         rowResults[primaryRowIdx].totalScrapLen += bin.remainingSpace;
                     }
                 });
             });
 
-            // Format output results for rendering
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
                 const res = rowResults[index];
 
-                let scrapTextArr = [...res.usedReuses];
+                let scrapTextArr = [];
+
+                // Format compact reuse text: e.g. "♻️ ใช้เศษ 1.58m 4 ท่อน (จาก No.4)"
+                Object.values(res.usedReusesMap).forEach(reuse => {
+                    scrapTextArr.push(`♻️ ใช้เศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน (จาก No.${reuse.fromNo})`);
+                });
+
                 if (res.totalScrapLen > 0) {
-                    scrapTextArr.push(`${demand.type}: เศษ ${res.totalScrapLen.toFixed(2)}m`);
-                } else if (res.usedReuses.length > 0) {
+                    scrapTextArr.push(`เศษ ${res.totalScrapLen.toFixed(2)}m`);
+                } else if (Object.keys(res.usedReusesMap).length > 0) {
                     scrapTextArr.push(`✨ ใช้เศษตัดร่วมครบ (ไม่ต้องเบิกเหล็กใหม่)`);
                 } else if (demand.cutLenM <= 0) {
                     scrapTextArr.push(`ระบุระยะดัด`);
