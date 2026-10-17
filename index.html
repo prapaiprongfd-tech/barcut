@@ -75,7 +75,7 @@
                 <p>ถอดแบบรายการเหล็กฐานราก เสา คาน และคำนวณสรุปการสั่งซื้อวัสดุ (BOQ Optimization)</p>
             </div>
             <div class="btn-group no-print">
-                <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณจับคู่ความยาวสต็อก Best-Fit</button>
+                <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณจับคู่เหล็กขั้นสูง (Global Best-Fit)</button>
                 <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
                 <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
                 <button type="button" class="btn btn-indigo" onclick="window.print()">🖨️ พิมพ์รายงาน</button>
@@ -97,7 +97,7 @@
                     <div class="legend">
                         <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล</span>
                         <span><strong class="dot" style="background:#e0e7ff; border:1px solid #818cf8;"></strong> คำนวณอัตโนมัติ</span>
-                        <span><strong class="dot" style="background:#fef3c7; border:1px solid #d97706;"></strong> หมุนเวียนใช้เศษเหล็ก (Best-Fit Scrap Reuse)</span>
+                        <span><strong class="dot" style="background:#fef3c7; border:1px solid #d97706;"></strong> หมุนเวียนใช้เศษเหล็ก (Global Best-Fit)</span>
                     </div>
                     <button type="button" class="btn btn-blue" onclick="addRow()">➕ เพิ่มรายการ</button>
                 </div>
@@ -211,149 +211,171 @@
         }
 
         let itemsData = [
-            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: '12', setQty: 1, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
             { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 40, c: 0, d: 0, e: 0, f: 0 },
-            { id: 3, comp: 'C0', no: 3, type: 'DB20', stockLen: 'auto', setQty: 27, perSet: 12, shape: 1, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
-            { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
+            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 48, c: 0, d: 0, e: 0, f: 0 },
+            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 500, b: 0, c: 0, d: 0, e: 0, f: 0 },
+            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 760, b: 0, c: 0, d: 0, e: 0, f: 0 }
         ];
 
         function calculateAllItems() {
-            let offcutPool = []; // Global pool storing available offcuts
-            const results = [];
-
+            // Global Best-Fit Bin Packing Algorithm
+            // Step 1: Analyze demand pieces for each row
+            const rowDemands = [];
             itemsData.forEach((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim();
                 const cutLenM = (parseFloat(item.a||0) + parseFloat(item.b||0) + parseFloat(item.c||0) + parseFloat(item.d||0) + parseFloat(item.e||0) + parseFloat(item.f||0)) / 100;
-                let reqPieces = parseInt(item.setQty||0) * parseInt(item.perSet||0);
+                const totalPieces = parseInt(item.setQty||0) * parseInt(item.perSet||0);
                 const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
+                rowDemands.push({ id: item.id, no: item.no, type: cleanType, cutLenM, totalPieces, unitWeight, stockLen: item.stockLen, index });
+            });
 
-                if (cutLenM <= 0 || reqPieces <= 0) {
-                    results.push({ cutLenM: 0, totalPieces: reqPieces, chosenStock: 12, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ระบุระยะดัด', totalScrapWeight: 0, unitWeight, isReuse: false });
-                    return;
-                }
+            // Prepare results array
+            const rowResults = itemsData.map(() => ({
+                usedReuses: [],
+                newBarsCount: 0,
+                chosenStock: 12,
+                totalScrapLen: 0,
+                scrapTextArr: [],
+                isReuse: false
+            }));
 
-                let usedReuses = [];
-                let pcsRemaining = reqPieces;
-                let totalItemScrapLen = 0; // Cumulative scrap length generated or remaining in this row
+            // Group demands by rebar type (DB12, DB16, etc.)
+            const typeGroups = {};
+            rowDemands.forEach(d => {
+                if (!typeGroups[d.type]) typeGroups[d.type] = [];
+                typeGroups[d.type].push(d);
+            });
 
-                // Best-Fit Matching: Find the offcut closest to cutLenM to preserve long offcuts!
-                while (pcsRemaining > 0) {
-                    // Filter matching offcuts
-                    let candidates = offcutPool.filter(p => p.type === cleanType && p.length >= (cutLenM - 0.001) && p.count > 0);
-                    if (candidates.length === 0) break;
+            // Solve Global Best-Fit for each rebar type separately
+            Object.keys(typeGroups).forEach(type => {
+                const demands = typeGroups[type];
 
-                    // Sort candidates by length ascending (Best-Fit) so we use the tightest matching scrap!
-                    candidates.sort((a, b) => a.length - b.length);
-                    let bestOffcut = candidates[0];
-
-                    const canTake = 1; // Take 1 piece from offcut
-                    pcsRemaining -= canTake;
-                    bestOffcut.count -= 1;
-
-                    const residualScrap = bestOffcut.length - cutLenM;
-                    usedReuses.push(`♻️ ใช้เศษ ${bestOffcut.length.toFixed(2)}m (จาก No.${bestOffcut.fromNo})`);
-
-                    // Track residual scrap weight generated by cutting from an offcut
-                    if (residualScrap >= 0.01) {
-                        totalItemScrapLen += residualScrap;
-                        // Put residual scrap back to pool if >= 0.30m for further cutting
-                        if (residualScrap >= 0.30) {
-                            offcutPool.push({
-                                type: cleanType,
-                                length: residualScrap,
-                                count: 1,
-                                fromNo: item.no
-                            });
+                // Flatten all pieces needed across all rows for this rebar type
+                let allPieces = [];
+                demands.forEach(d => {
+                    if (d.cutLenM > 0 && d.totalPieces > 0) {
+                        for (let p = 0; p < d.totalPieces; p++) {
+                            allPieces.push({ rowIndex: d.index, rowNo: d.no, cutLenM: d.cutLenM, preferredStock: d.stockLen });
                         }
                     }
-                }
+                });
 
-                // Step 2: Calculate new standard bars needed for remaining pieces
-                let chosenStock = parseFloat(item.stockLen);
-                let isAuto = (item.stockLen === 'auto');
+                // Sort all pieces descending by length (Largest Cut Length First)
+                // This ensures large offcuts generated are assigned to exact matching large pieces!
+                allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
 
-                function evalStock(len) {
-                    const pcs = Math.floor(len / cutLenM);
-                    if (pcs <= 0) return { bars: 999999, scrapLen: 999999 };
-                    const fullBars = Math.floor(pcsRemaining / pcs);
-                    const remPcs = pcsRemaining % pcs;
-                    const totalBars = Math.ceil(pcsRemaining / pcs);
-                    const fullScrap = (len - (pcs * cutLenM)) * fullBars;
-                    const lastScrap = remPcs > 0 ? (len - (remPcs * cutLenM)) : 0;
-                    return { bars: totalBars, scrapLen: fullScrap + lastScrap };
-                }
+                // Bin Packing: Pack pieces into stock bars (10m or 12m) using Best-Fit Decreasing
+                const bins = []; // Bins represent cut stock bars
 
-                if (isAuto) {
-                    const res10 = evalStock(10);
-                    const res12 = evalStock(12);
-                    chosenStock = (res10.scrapLen <= res12.scrapLen) ? 10 : 12;
-                }
+                allPieces.forEach(piece => {
+                    let bestBinIndex = -1;
+                    let minResidual = 999999;
 
-                const pcsPerBar = Math.floor(chosenStock / cutLenM);
-                let totalBars = 0;
-                let scrapTextArr = [...usedReuses];
-
-                if (pcsRemaining > 0 && pcsPerBar > 0) {
-                    const fullBars = Math.floor(pcsRemaining / pcsPerBar);
-                    const remPcs = pcsRemaining % pcsPerBar;
-                    totalBars = Math.ceil(pcsRemaining / pcsPerBar);
-
-                    const fullBarScrap = chosenStock - (pcsPerBar * cutLenM);
-                    const lastBarScrap = remPcs > 0 ? (chosenStock - (remPcs * cutLenM)) : 0;
-
-                    if (remPcs === 0) {
-                        totalItemScrapLen += (fullBarScrap * totalBars);
-                        scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${totalBars} ท่อน)`);
-
-                        if (fullBarScrap >= 0.30) {
-                            offcutPool.push({ type: cleanType, length: fullBarScrap, count: totalBars, fromNo: item.no });
-                        }
-                    } else {
-                        totalItemScrapLen += (fullBarScrap * fullBars) + lastBarScrap;
-                        if (fullBars > 0) {
-                            scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${fullBars} ท่อน)`);
-                            if (fullBarScrap >= 0.30) {
-                                offcutPool.push({ type: cleanType, length: fullBarScrap, count: fullBars, fromNo: item.no });
+                    // Try to find an existing bin that best fits this piece
+                    for (let b = 0; b < bins.length; b++) {
+                        const remSpace = bins[b].remainingSpace;
+                        if (remSpace >= (piece.cutLenM - 0.001)) {
+                            const residual = remSpace - piece.cutLenM;
+                            if (residual < minResidual) {
+                                minResidual = residual;
+                                bestBinIndex = b;
                             }
                         }
-                        scrapTextArr.push(`เศษ ${lastBarScrap.toFixed(2)}m (1 ท่อน)`);
-                        if (lastBarScrap >= 0.30) {
-                            offcutPool.push({ type: cleanType, length: lastBarScrap, count: 1, fromNo: item.no });
-                        }
                     }
-                } else if (pcsRemaining === 0) {
-                    scrapTextArr.push(`✨ ใช้เศษเหล็กซ้ำได้ครบ (ไม่ต้องเบิกเหล็กใหม่)`);
-                } else if (pcsPerBar <= 0) {
-                    scrapTextArr.push(`ยาวเกินท่อนสต็อก`);
-                }
 
-                const scrapDetails = scrapTextArr.join(' | ');
-                const totalScrapWeight = totalItemScrapLen * unitWeight;
+                    if (bestBinIndex >= 0 && minResidual >= 0) {
+                        // Fit into best existing bin
+                        const bin = bins[bestBinIndex];
+                        bin.pieces.push(piece);
+                        bin.remainingSpace -= piece.cutLenM;
+                    } else {
+                        // Open a new stock bar bin! Choose best stock length (10m vs 12m)
+                        let chosenCapacity = 12;
+                        if (piece.preferredStock === '10') chosenCapacity = 10;
+                        else if (piece.preferredStock === '12') chosenCapacity = 12;
+                        else {
+                            // Auto selection: choose capacity that leaves minimal scrap for this piece
+                            const rem10 = (10 - piece.cutLenM);
+                            const rem12 = (12 - piece.cutLenM);
+                            if (rem10 >= 0 && rem12 >= 0) {
+                                chosenCapacity = (rem10 <= rem12) ? 10 : 12;
+                            } else if (rem10 >= 0) chosenCapacity = 10;
+                            else chosenCapacity = 12;
+                        }
 
-                results.push({
-                    cutLenM,
-                    totalPieces: reqPieces,
-                    chosenStock,
-                    pcsPerBar,
-                    totalBars,
-                    scrapDetails,
-                    totalScrapWeight,
-                    unitWeight,
-                    isReuse: usedReuses.length > 0
+                        bins.push({
+                            capacity: chosenCapacity,
+                            remainingSpace: chosenCapacity - piece.cutLenM,
+                            pieces: [piece],
+                            primaryRowIndex: piece.rowIndex
+                        });
+                    }
+                });
+
+                // Process bins back into row Results
+                bins.forEach(bin => {
+                    if (bin.pieces.length === 0) return;
+
+                    // First piece owner gets the new bar count
+                    const primaryRowIdx = bin.pieces[0].rowIndex;
+                    rowResults[primaryRowIdx].newBarsCount += 1;
+                    rowResults[primaryRowIdx].chosenStock = bin.capacity;
+
+                    // Other pieces in the same bin are using offcuts!
+                    for (let i = 1; i < bin.pieces.length; i++) {
+                        const reusePiece = bin.pieces[i];
+                        rowResults[reusePiece.rowIndex].usedReuses.push(
+                            `♻️ ตัดร่วมกับ No.${bin.pieces[0].rowNo} (ใช้เศษ ${bin.capacity}m)`
+                        );
+                        rowResults[reusePiece.rowIndex].isReuse = true;
+                    }
+
+                    // Assign final scrap of this bin to primary row
+                    if (bin.remainingSpace >= 0.01) {
+                        rowResults[primaryRowIdx].totalScrapLen += bin.remainingSpace;
+                    }
                 });
             });
 
-            return results;
+            // Format output results for rendering
+            const finalResults = [];
+            itemsData.forEach((item, index) => {
+                const demand = rowDemands[index];
+                const res = rowResults[index];
+
+                let scrapTextArr = [...res.usedReuses];
+                if (res.totalScrapLen > 0) {
+                    scrapTextArr.push(`${demand.type}: เศษ ${res.totalScrapLen.toFixed(2)}m`);
+                } else if (res.usedReuses.length > 0) {
+                    scrapTextArr.push(`✨ ใช้เศษตัดร่วมครบ (ไม่ต้องเบิกเหล็กใหม่)`);
+                } else if (demand.cutLenM <= 0) {
+                    scrapTextArr.push(`ระบุระยะดัด`);
+                } else {
+                    scrapTextArr.push(`เศษ 0.00m (พอดีท่อน)`);
+                }
+
+                const scrapDetails = scrapTextArr.join(' | ');
+                const totalScrapWeight = res.totalScrapLen * demand.unitWeight;
+
+                finalResults.push({
+                    cutLenM: demand.cutLenM,
+                    totalPieces: demand.totalPieces,
+                    chosenStock: res.chosenStock,
+                    totalBars: res.newBarsCount,
+                    scrapDetails,
+                    totalScrapWeight,
+                    unitWeight: demand.unitWeight,
+                    isReuse: res.isReuse
+                });
+            });
+
+            return finalResults;
         }
 
         function optimizeFullProject() {
-            itemsData.forEach(item => {
-                if (item.stockLen === 'auto' || item.stockLen === '10' || item.stockLen === '12') {
-                    item.stockLen = 'auto';
-                }
-            });
             renderTable();
-            alert('⚡ คำนวณจับคู่ความยาวสต็อก Best-Fit และหมุนเวียนเศษเหล็กทั้งโครงการเรียบร้อยแล้ว!');
+            alert('⚡ คำนวณจับคู่ความยาวสต็อก Global Best-Fit ทั้งโครงการเรียบร้อยแล้ว!');
         }
 
         function renderTable() {
@@ -465,10 +487,11 @@
 
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: '12', setQty: 1, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
                 { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 40, c: 0, d: 0, e: 0, f: 0 },
-                { id: 3, comp: 'C0', no: 3, type: 'DB20', stockLen: 'auto', setQty: 27, perSet: 12, shape: 1, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
-                { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
+                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 48, c: 0, d: 0, e: 0, f: 0 },
+                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 500, b: 0, c: 0, d: 0, e: 0, f: 0 },
+                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 760, b: 0, c: 0, d: 0, e: 0, f: 0 }
             ];
             renderTable();
         }
