@@ -27,18 +27,13 @@
         .dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
         .table-responsive { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
         
-        /* Layout & Input Overlap Fixes */
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; white-space: nowrap; }
         th, td { border: 1px solid #cbd5e1; padding: 6px 3px; vertical-align: middle; }
         thead th { background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; }
         thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
         
-        /* Disable browser spin buttons that hide numbers */
         input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
         
         input, select { width: 100%; padding: 4px 2px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-family: inherit; height: 32px; outline: none; background-color: #fff; }
@@ -48,6 +43,7 @@
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
         .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; }
+        .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
         
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 125px; }
@@ -94,6 +90,7 @@
                     <div class="legend">
                         <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล</span>
                         <span><strong class="dot" style="background:#e0e7ff; border:1px solid #818cf8;"></strong> คำนวณอัตโนมัติ</span>
+                        <span><strong class="dot" style="background:#fef3c7; border:1px solid #d97706;"></strong> หมุนเวียนเศษเหล็ก (Scrap Reuse)</span>
                     </div>
                     <button type="button" class="btn btn-blue" onclick="addRow()">➕ เพิ่มรายการ</button>
                 </div>
@@ -114,7 +111,7 @@
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ซม.)</th>
                                 <th style="min-width:95px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
                                 <th style="min-width:95px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="min-width:240px; background:#fce7f3;">รายละเอียดเศษเหลือ</th>
+                                <th style="min-width:260px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
                                 <th style="min-width:90px; background:#fbcfe8;">น.น. เศษ (kg)</th>
                                 <th style="min-width:40px;" class="no-print">ลบ</th>
                             </tr>
@@ -128,7 +125,7 @@
                                 <th style="min-width:58px;">D</th>
                                 <th style="min-width:58px;">E</th>
                                 <th style="min-width:58px;">F</th>
-                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT SUMMARY</th><th>SCRAP WT.</th>
+                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT & REUSE SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
                         </thead>
@@ -205,73 +202,135 @@
         }
 
         let itemsData = [
-            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 6, perSet: 24, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
-            { id: 2, comp: 'CY.รัดรอบ', no: 2, type: 'RB09', stockLen: 'auto', setQty: 6, perSet: 96, shape: 1, a: 20, b: 20, c: 20, d: 20, e: 0, f: 0 },
+            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: '12', setQty: 1, perSet: 5, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+            { id: 2, comp: 'CY.ดัดตรง', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 2, a: 10, b: 0, c: 0, d: 0, e: 0, f: 0 },
             { id: 3, comp: 'C0', no: 3, type: 'DB20', stockLen: 'auto', setQty: 27, perSet: 12, shape: 1, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
             { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
         ];
 
-        function calculateItem(item) {
-            const cleanType = String(item.type || 'DB16').trim();
-            const cutLenM = (parseFloat(item.a||0) + parseFloat(item.b||0) + parseFloat(item.c||0) + parseFloat(item.d||0) + parseFloat(item.e||0) + parseFloat(item.f||0)) / 100;
-            const totalPieces = parseInt(item.setQty||0) * parseInt(item.perSet||0);
-            const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
+        // Global Offcut Pool for cross-item recycling
+        let offcutPool = [];
 
-            if (cutLenM <= 0 || totalPieces <= 0) {
-                return { cutLenM: 0, totalPieces, chosenStock: 12, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ระบุระยะดัด', totalScrapWeight: 0, unitWeight };
-            }
+        function calculateAllItems() {
+            offcutPool = []; // Reset offcut pool
+            const results = [];
 
-            let chosenStock = parseFloat(item.stockLen);
-            let isAuto = (item.stockLen === 'auto');
+            itemsData.forEach((item, index) => {
+                const cleanType = String(item.type || 'DB16').trim();
+                const cutLenM = (parseFloat(item.a||0) + parseFloat(item.b||0) + parseFloat(item.c||0) + parseFloat(item.d||0) + parseFloat(item.e||0) + parseFloat(item.f||0)) / 100;
+                let reqPieces = parseInt(item.setQty||0) * parseInt(item.perSet||0);
+                const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
 
-            function evalStock(len) {
-                const pcs = Math.floor(len / cutLenM);
-                if (pcs <= 0) return { bars: 999999, scrapLen: 999999 };
-                const fullBars = Math.floor(totalPieces / pcs);
-                const remPcs = totalPieces % pcs;
-                const totalBars = Math.ceil(totalPieces / pcs);
-                const fullScrap = (len - (pcs * cutLenM)) * fullBars;
-                const lastScrap = remPcs > 0 ? (len - (remPcs * cutLenM)) : 0;
-                return { bars: totalBars, scrapLen: fullScrap + lastScrap };
-            }
-
-            if (isAuto) {
-                const res10 = evalStock(10);
-                const res12 = evalStock(12);
-                chosenStock = (res10.scrapLen <= res12.scrapLen) ? 10 : 12;
-            }
-
-            const pcsPerBar = Math.floor(chosenStock / cutLenM);
-
-            if (pcsPerBar <= 0) {
-                return { cutLenM, totalPieces, chosenStock, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ยาวเกินท่อนสต็อก', totalScrapWeight: 0, unitWeight };
-            }
-
-            const fullBars = Math.floor(totalPieces / pcsPerBar);
-            const remPcs = totalPieces % pcsPerBar;
-            const totalBars = Math.ceil(totalPieces / pcsPerBar);
-
-            const fullBarScrap = chosenStock - (pcsPerBar * cutLenM);
-            const lastBarScrap = remPcs > 0 ? (chosenStock - (remPcs * cutLenM)) : 0;
-
-            let totalScrapLen = 0;
-            let scrapTextArr = [];
-
-            if (remPcs === 0) {
-                totalScrapLen = fullBarScrap * totalBars;
-                scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${totalBars} ท่อน)`);
-            } else {
-                totalScrapLen = (fullBarScrap * fullBars) + lastBarScrap;
-                if (fullBars > 0) {
-                    scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${fullBars} ท่อน)`);
+                if (cutLenM <= 0 || reqPieces <= 0) {
+                    results.push({ cutLenM: 0, totalPieces: reqPieces, chosenStock: 12, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ระบุระยะดัด', totalScrapWeight: 0, unitWeight, isReuse: false });
+                    return;
                 }
-                scrapTextArr.push(`เศษ ${lastBarScrap.toFixed(2)}m (1 ท่อน)`);
-            }
 
-            const scrapDetails = scrapTextArr.join(', ');
-            const totalScrapWeight = totalScrapLen * unitWeight;
+                let usedReuses = [];
+                let pcsRemaining = reqPieces;
 
-            return { cutLenM, totalPieces, chosenStock, pcsPerBar, totalBars, scrapDetails, totalScrapWeight, unitWeight };
+                // Step 1: Check if offcutPool can satisfy any pieces
+                for (let i = 0; i < offcutPool.length; i++) {
+                    let poolItem = offcutPool[i];
+                    if (pcsRemaining <= 0) break;
+
+                    if (poolItem.type === cleanType && poolItem.length >= cutLenM && poolItem.count > 0) {
+                        const canTake = Math.min(pcsRemaining, poolItem.count);
+                        pcsRemaining -= canTake;
+                        poolItem.count -= canTake;
+
+                        const leftOver = poolItem.length - cutLenM;
+                        usedReuses.push(`♻️ ใช้เศษ ${poolItem.length.toFixed(2)}m (${canTake} ท่อน จาก No.${poolItem.fromNo})`);
+
+                        // If leftover > 0.3m, put back to pool
+                        if (leftOver >= 0.30) {
+                            offcutPool.push({
+                                type: cleanType,
+                                length: leftOver,
+                                count: canTake,
+                                fromNo: item.no
+                            });
+                        }
+                    }
+                }
+
+                // Step 2: Calculate new standard bars for remaining pieces
+                let chosenStock = parseFloat(item.stockLen);
+                let isAuto = (item.stockLen === 'auto');
+
+                function evalStock(len) {
+                    const pcs = Math.floor(len / cutLenM);
+                    if (pcs <= 0) return { bars: 999999, scrapLen: 999999 };
+                    const fullBars = Math.floor(pcsRemaining / pcs);
+                    const remPcs = pcsRemaining % pcs;
+                    const totalBars = Math.ceil(pcsRemaining / pcs);
+                    const fullScrap = (len - (pcs * cutLenM)) * fullBars;
+                    const lastScrap = remPcs > 0 ? (len - (remPcs * cutLenM)) : 0;
+                    return { bars: totalBars, scrapLen: fullScrap + lastScrap };
+                }
+
+                if (isAuto) {
+                    const res10 = evalStock(10);
+                    const res12 = evalStock(12);
+                    chosenStock = (res10.scrapLen <= res12.scrapLen) ? 10 : 12;
+                }
+
+                const pcsPerBar = Math.floor(chosenStock / cutLenM);
+                let totalBars = 0;
+                let scrapTextArr = [...usedReuses];
+                let totalScrapLen = 0;
+
+                if (pcsRemaining > 0 && pcsPerBar > 0) {
+                    const fullBars = Math.floor(pcsRemaining / pcsPerBar);
+                    const remPcs = pcsRemaining % pcsPerBar;
+                    totalBars = Math.ceil(pcsRemaining / pcsPerBar);
+
+                    const fullBarScrap = chosenStock - (pcsPerBar * cutLenM);
+                    const lastBarScrap = remPcs > 0 ? (chosenStock - (remPcs * cutLenM)) : 0;
+
+                    if (remPcs === 0) {
+                        totalScrapLen = fullBarScrap * totalBars;
+                        scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${totalBars} ท่อน)`);
+
+                        if (fullBarScrap >= 0.30) {
+                            offcutPool.push({ type: cleanType, length: fullBarScrap, count: totalBars, fromNo: item.no });
+                        }
+                    } else {
+                        totalScrapLen = (fullBarScrap * fullBars) + lastBarScrap;
+                        if (fullBars > 0) {
+                            scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${fullBars} ท่อน)`);
+                            if (fullBarScrap >= 0.30) {
+                                offcutPool.push({ type: cleanType, length: fullBarScrap, count: fullBars, fromNo: item.no });
+                            }
+                        }
+                        scrapTextArr.push(`เศษ ${lastBarScrap.toFixed(2)}m (1 ท่อน)`);
+                        if (lastBarScrap >= 0.30) {
+                            offcutPool.push({ type: cleanType, length: lastBarScrap, count: 1, fromNo: item.no });
+                        }
+                    }
+                } else if (pcsRemaining === 0) {
+                    scrapTextArr.push(`✨ ครบจำนวนจากการใช้เศษเหล็ก`);
+                } else if (pcsPerBar <= 0) {
+                    scrapTextArr.push(`ยาวเกินท่อนสต็อก`);
+                }
+
+                const scrapDetails = scrapTextArr.join('<br>');
+                const totalScrapWeight = totalScrapLen * unitWeight;
+
+                results.push({
+                    cutLenM,
+                    totalPieces: reqPieces,
+                    chosenStock,
+                    pcsPerBar,
+                    totalBars,
+                    scrapDetails,
+                    totalScrapWeight,
+                    unitWeight,
+                    isReuse: usedReuses.length > 0
+                });
+            });
+
+            return results;
         }
 
         function renderTable() {
@@ -279,8 +338,10 @@
             if (!tbody) return;
             tbody.innerHTML = '';
 
+            const calcResults = calculateAllItems();
+
             itemsData.forEach((item, index) => {
-                const calc = calculateItem(item);
+                const calc = calcResults[index];
                 const tr = document.createElement('tr');
 
                 tr.innerHTML = `
@@ -318,7 +379,7 @@
                     <td><input type="number" value="${item.f}" onchange="updateItem(${item.id}, 'f', this.value)"></td>
                     <td class="bg-calc">${calc.cutLenM.toFixed(3)}</td>
                     <td class="bg-total">${calc.totalBars}</td>
-                    <td class="bg-scrap">${calc.scrapDetails}</td>
+                    <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}">${calc.scrapDetails}</td>
                     <td class="bg-scrap-wt">${calc.totalScrapWeight.toFixed(2)}</td>
                     <td class="no-print" style="text-align:center;"><button type="button" class="btn-del" onclick="deleteRow(${item.id})">❌</button></td>
                 `;
@@ -349,8 +410,8 @@
 
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 6, perSet: 24, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
-                { id: 2, comp: 'CY.รัดรอบ', no: 2, type: 'RB09', stockLen: 'auto', setQty: 6, perSet: 96, shape: 1, a: 20, b: 20, c: 20, d: 20, e: 0, f: 0 },
+                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: '12', setQty: 1, perSet: 5, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+                { id: 2, comp: 'CY.ดัดตรง', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 2, a: 10, b: 0, c: 0, d: 0, e: 0, f: 0 },
                 { id: 3, comp: 'C0', no: 3, type: 'DB20', stockLen: 'auto', setQty: 27, perSet: 12, shape: 1, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
                 { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
             ];
@@ -359,8 +420,10 @@
 
         function renderSummaryBOQ() {
             const boqMap = {};
-            itemsData.forEach(item => {
-                const calc = calculateItem(item);
+            const calcResults = calculateAllItems();
+
+            itemsData.forEach((item, index) => {
+                const calc = calcResults[index];
                 const cleanType = String(item.type || 'DB16').trim();
                 const key = `${cleanType}_${calc.chosenStock}`;
 
@@ -434,10 +497,12 @@
 
         function exportToExcel() {
             let csv = "Component,No.,Type,Stock Length,Set,Per Set,Total Pcs,Cut Length (m),Total Bars,Scrap Summary,Scrap Wt (kg)\n";
-            itemsData.forEach(item => {
-                const calc = calculateItem(item);
+            const calcResults = calculateAllItems();
+            itemsData.forEach((item, index) => {
+                const calc = calcResults[index];
                 const cleanType = String(item.type || 'DB16').trim();
-                csv += `"${item.comp}",${item.no},"${cleanType}",${calc.chosenStock},${item.setQty},${item.perSet},${calc.totalPieces},${calc.cutLenM},${calc.totalBars},"${calc.scrapDetails}",${calc.totalScrapWeight.toFixed(2)}\n`;
+                const cleanScrap = String(calc.scrapDetails).replace(/<br>/g, ' ');
+                csv += `"${item.comp}",${item.no},"${cleanType}",${calc.chosenStock},${item.setQty},${item.perSet},${calc.totalPieces},${calc.cutLenM},${calc.totalBars},"${cleanScrap}",${calc.totalScrapWeight.toFixed(2)}\n`;
             });
             const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
