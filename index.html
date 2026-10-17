@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barcut - ตารางคำนวณสั่งตัดเหล็กเสริม (Rebar Cutting Calculator)</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
         * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; }
@@ -63,7 +64,22 @@
         .grid-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
-        @media print { .no-print { display: none !important; } body { padding: 0; background: white; } .container { border: none; box-shadow: none; } }
+        
+        /* Print Report CSS Optimizations */
+        @media print { 
+            .no-print, .tabs, .toolbar { display: none !important; } 
+            body { padding: 0; background: white; font-size: 10pt; } 
+            .container { border: none; box-shadow: none; max-width: 100%; } 
+            .content { padding: 0; }
+            #content-barcut, #content-summary { display: block !important; margin-bottom: 30px; page-break-inside: avoid; }
+            #content-shapes { display: none !important; }
+            input, select { border: none !important; background: transparent !important; appearance: none !important; font-weight: bold !important; padding: 0 !important; }
+            .shape-preview { border: none !important; }
+            .table-responsive { border: none; overflow: visible; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #000 !important; padding: 4px !important; }
+            thead th { background-color: #f1f5f9 !important; color: #000 !important; }
+        }
     </style>
 </head>
 <body>
@@ -77,8 +93,8 @@
             <div class="btn-group no-print">
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณจับคู่เหล็กขั้นสูง (Global Best-Fit)</button>
                 <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
-                <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
-                <button type="button" class="btn btn-indigo" onclick="window.print()">🖨️ พิมพ์รายงาน</button>
+                <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel (รวมทุกชีท)</button>
+                <button type="button" class="btn btn-indigo" onclick="printCompleteReport()">🖨️ พิมพ์รายงานสมบูรณ์</button>
             </div>
         </div>
 
@@ -229,8 +245,8 @@
             });
 
             const rowResults = itemsData.map(() => ({
-                usedReusesMap: {}, // Map for target row: { fromNo: count }
-                sentToRowsMap: {}, // Map for source row: { toNo: { len, count } }
+                usedReusesMap: {},
+                sentToRowsMap: {},
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
@@ -307,12 +323,10 @@
                     rowResults[primaryRowIdx].newBarsCount += 1;
                     rowResults[primaryRowIdx].chosenStock = bin.capacity;
 
-                    // Reuse tracking with source and target row matching
                     for (let i = 1; i < bin.pieces.length; i++) {
                         const reusePiece = bin.pieces[i];
                         const cutLen = reusePiece.cutLenM;
                         
-                        // Record in Target Row
                         const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
                         if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
                             rowResults[reusePiece.rowIndex].usedReusesMap[targetKey] = { len: cutLen, fromNo: primaryRowNo, count: 0 };
@@ -320,7 +334,6 @@
                         rowResults[reusePiece.rowIndex].usedReusesMap[targetKey].count += 1;
                         rowResults[reusePiece.rowIndex].isReuse = true;
 
-                        // Record in Source Row (for "นำไปใช้ใน NO...")
                         const sourceKey = `${cutLen.toFixed(2)}_${reusePiece.rowNo}`;
                         if (!rowResults[primaryRowIdx].sentToRowsMap[sourceKey]) {
                             rowResults[primaryRowIdx].sentToRowsMap[sourceKey] = { len: cutLen, toNo: reusePiece.rowNo, count: 0 };
@@ -341,17 +354,14 @@
 
                 let scrapTextArr = [];
 
-                // 1. Target Row Notice: "นำเศษ 1.80m 8 ท่อน จาก No.4"
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
 
-                // 2. Source Row Notice: "เศษ [ความยาว]m (นำไปใช้ใน No.X)"
                 Object.values(res.sentToRowsMap).forEach(sent => {
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. True Remaining Scrap
                 if (res.totalScrapLen > 0) {
                     scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
                 } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
@@ -591,20 +601,101 @@
             if (tab === 'summary') renderSummaryBOQ();
         }
 
+        // Export Multi-Sheet Excel (Includes Barcut Table + Summary BOQ)
         function exportToExcel() {
-            let csv = "Component,No.,Type,Stock Length,Set,Per Set,Total Pcs,Cut Length (m),Total Bars,Scrap Summary,Scrap Wt (kg)\n";
+            if (typeof XLSX === 'undefined') {
+                alert('กำลังโหลดไลบรารี Excel กรุณารอครู่หนึ่งแล้วกดใหม่อีกครั้ง');
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
             const calcResults = calculateAllItems();
+
+            // Sheet 1: Barcut Detail Sheet
+            const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (cm)", "B (cm)", "C (cm)", "D (cm)", "E (cm)", "F (cm)", "Cut Length (m)", "Total Bars", "Offcut & Reuse Summary", "Scrap Weight (kg)"];
+            const barcutRows = [barcutHeader];
+
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
                 const cleanType = String(item.type || 'DB16').trim();
                 const cleanScrap = String(calc.scrapDetails).replace(/<br>|\|/g, ' ');
-                csv += `"${item.comp}",${item.no},"${cleanType}",${calc.chosenStock},${item.setQty},${item.perSet},${calc.totalPieces},${calc.cutLenM},${calc.totalBars},"${cleanScrap}",${calc.totalScrapWeight.toFixed(2)}\n`;
+                barcutRows.push([
+                    index + 1,
+                    item.comp,
+                    item.no,
+                    cleanType,
+                    calc.chosenStock,
+                    item.setQty,
+                    item.perSet,
+                    calc.totalPieces,
+                    `แบบที่ ${item.shape}`,
+                    item.a, item.b, item.c, item.d, item.e, item.f,
+                    calc.cutLenM.toFixed(3),
+                    calc.totalBars,
+                    cleanScrap,
+                    calc.totalScrapWeight.toFixed(2)
+                ]);
             });
-            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "Barcut_Summary.csv";
-            link.click();
+
+            const wsBarcut = XLSX.utils.aoa_to_sheet(barcutRows);
+            XLSX.utils.book_append_sheet(wb, wsBarcut, "ตาราง Barcut คำนวณตัดเหล็ก");
+
+            // Sheet 2: BOQ Procurement Sheet
+            const boqHeader = ["ขนาดเหล็ก", "ความยาวท่อน (ม.)", "จำนวนสั่งซื้อ (ท่อน)", "น้ำหนักสั่งซื้อ (kg)", "น้ำหนักเศษเหลือ (kg)", "สัดส่วนเศษเหลือ (% Scrap)"];
+            const boqRows = [boqHeader];
+
+            const boqMap = {};
+            itemsData.forEach((item, index) => {
+                const calc = calcResults[index];
+                const cleanType = String(item.type || 'DB16').trim();
+                const key = `${cleanType}_${calc.chosenStock}`;
+
+                if (!boqMap[key]) {
+                    boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
+                }
+                boqMap[key].bars += calc.totalBars;
+                boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
+                boqMap[key].scrapWeight += calc.totalScrapWeight;
+            });
+
+            let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
+
+            Object.keys(boqMap).sort().forEach(key => {
+                const data = boqMap[key];
+                if (data.bars > 0 || data.weight > 0) {
+                    grandTotalBars += data.bars;
+                    grandTotalWeight += data.weight;
+                    grandTotalScrapWeight += data.scrapWeight;
+                    const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
+                    boqRows.push([data.type, `${data.length}.0`, data.bars, data.weight.toFixed(2), data.scrapWeight.toFixed(2), `${percent}%`]);
+                }
+            });
+
+            const grandPercent = grandTotalWeight > 0 ? ((grandTotalScrapWeight / grandTotalWeight) * 100).toFixed(2) : '0.00';
+            boqRows.push(["รวมทั้งโครงการ", "-", grandTotalBars, grandTotalWeight.toFixed(2), grandTotalScrapWeight.toFixed(2), `${grandPercent}%`]);
+
+            const wsBOQ = XLSX.utils.aoa_to_sheet(boqRows);
+            XLSX.utils.book_append_sheet(wb, wsBOQ, "สรุปรายการสั่งซื้อ BOQ");
+
+            XLSX.writeFile(wb, "Barcut_Full_Report.xlsx");
+        }
+
+        // Print Complete Report (Includes both Barcut Table + Summary BOQ Sheet)
+        function printCompleteReport() {
+            // Unhide summary sheet temporarily for printing
+            const summaryDiv = document.getElementById('content-summary');
+            const wasHidden = summaryDiv.classList.contains('hidden');
+            summaryDiv.classList.remove('hidden');
+
+            renderSummaryBOQ();
+
+            // Trigger window print
+            window.print();
+
+            // Restore tab state if it was hidden
+            if (wasHidden && !document.getElementById('tab-summary').classList.contains('active')) {
+                summaryDiv.classList.add('hidden');
+            }
         }
 
         // Auto Render on Load
