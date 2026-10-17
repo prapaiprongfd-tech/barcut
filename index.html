@@ -281,6 +281,11 @@
             'DB28': 4.834, 'DB32': 6.313
         };
 
+        // Focus State Tracking to prevent cursor jump during typing
+        let activeFocusId = null;
+        let activeFocusField = null;
+        let activeCursorPos = null;
+
         function getShapeSVG(shapeNum, width = 60, height = 30) {
             const stroke = "#2563eb";
             const sw = 2.5;
@@ -312,7 +317,6 @@
             });
         }
 
-        // Exact-Fit Priority & Zero-Waste Optimizer Algorithm
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -332,18 +336,17 @@
                 isReuse: false
             }));
 
-            // Step 1: Pre-process Exact Zero-Waste Full Bars (e.g. 4 pcs x 2.50m = 10.00m)
+            // Step 1: Pre-process Exact Zero-Waste Full Bars
             rowDemands.forEach((d) => {
                 if (d.cutLenM > 0 && d.totalPieces > 0) {
                     [10, 12].forEach((cap) => {
                         const pcsPerFullBar = Math.floor(cap / d.cutLenM);
                         if (pcsPerFullBar > 0 && Math.abs((pcsPerFullBar * d.cutLenM) - cap) < 0.001) {
-                            // Exact 100% full bar match with 0 scrap!
                             const fullBarsCount = Math.floor(d.totalPieces / pcsPerFullBar);
                             if (fullBarsCount > 0) {
                                 rowResults[d.index].newBarsCount += fullBarsCount;
                                 rowResults[d.index].chosenStock = cap;
-                                d.totalPieces -= (fullBarsCount * pcsPerFullBar); // Deduct satisfied pieces
+                                d.totalPieces -= (fullBarsCount * pcsPerFullBar);
                             }
                         }
                     });
@@ -516,7 +519,7 @@
 
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
-                    <td><input type="text" value="${item.comp}" oninput="updateItem(${item.id}, 'comp', this.value)" style="text-align:left; padding-left:6px;"></td>
+                    <td><input type="text" id="input_${item.id}_comp" value="${item.comp}" onfocus="saveFocus(${item.id}, 'comp', this)" oninput="updateItemLive(${item.id}, 'comp', this.value)" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="number" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td>
                         <select onchange="updateItem(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
@@ -530,8 +533,8 @@
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
                         </select>
                     </td>
-                    <td><input type="number" value="${item.setQty}" class="excel-in" oninput="updateItem(${item.id}, 'setQty', +this.value)"></td>
-                    <td><input type="number" value="${item.perSet}" class="excel-in" oninput="updateItem(${item.id}, 'perSet', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_setQty" value="${item.setQty}" class="excel-in" onfocus="saveFocus(${item.id}, 'setQty', this)" oninput="updateItemLive(${item.id}, 'setQty', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_perSet" value="${item.perSet}" class="excel-in" onfocus="saveFocus(${item.id}, 'perSet', this)" oninput="updateItemLive(${item.id}, 'perSet', +this.value)"></td>
                     <td class="bg-calc">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
@@ -541,12 +544,12 @@
                             <div class="shape-preview">${getShapeSVG(item.shape, 28, 18)}</div>
                         </div>
                     </td>
-                    <td><input type="number" value="${item.a}" oninput="updateItem(${item.id}, 'a', +this.value)"></td>
-                    <td><input type="number" value="${item.b}" oninput="updateItem(${item.id}, 'b', +this.value)"></td>
-                    <td><input type="number" value="${item.c}" oninput="updateItem(${item.id}, 'c', +this.value)"></td>
-                    <td><input type="number" value="${item.d}" oninput="updateItem(${item.id}, 'd', +this.value)"></td>
-                    <td><input type="number" value="${item.e}" oninput="updateItem(${item.id}, 'e', +this.value)"></td>
-                    <td><input type="number" value="${item.f}" oninput="updateItem(${item.id}, 'f', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_a" value="${item.a}" onfocus="saveFocus(${item.id}, 'a', this)" oninput="updateItemLive(${item.id}, 'a', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_b" value="${item.b}" onfocus="saveFocus(${item.id}, 'b', this)" oninput="updateItemLive(${item.id}, 'b', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_c" value="${item.c}" onfocus="saveFocus(${item.id}, 'c', this)" oninput="updateItemLive(${item.id}, 'c', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_d" value="${item.d}" onfocus="saveFocus(${item.id}, 'd', this)" oninput="updateItemLive(${item.id}, 'd', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_e" value="${item.e}" onfocus="saveFocus(${item.id}, 'e', this)" oninput="updateItemLive(${item.id}, 'e', +this.value)"></td>
+                    <td><input type="number" id="input_${item.id}_f" value="${item.f}" onfocus="saveFocus(${item.id}, 'f', this)" oninput="updateItemLive(${item.id}, 'f', +this.value)"></td>
                     <td class="bg-calc">${calc.cutLenM.toFixed(3)}</td>
                     <td class="bg-total">${calc.totalBars}</td>
                     <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}">${calc.scrapDetails}</td>
@@ -563,7 +566,38 @@
                 tbody.appendChild(tr);
             });
 
+            restoreFocus();
             renderSummaryBOQ();
+        }
+
+        function saveFocus(id, field, elem) {
+            activeFocusId = id;
+            activeFocusField = field;
+            try {
+                activeCursorPos = elem.selectionStart;
+            } catch(e) {
+                activeCursorPos = null;
+            }
+        }
+
+        function restoreFocus() {
+            if (activeFocusId !== null && activeFocusField !== null) {
+                const inputElem = document.getElementById(`input_${activeFocusId}_${activeFocusField}`);
+                if (inputElem) {
+                    inputElem.focus();
+                    if (activeCursorPos !== null && inputElem.type === 'text') {
+                        try { inputElem.setSelectionRange(activeCursorPos, activeCursorPos); } catch(e){}
+                    }
+                }
+            }
+        }
+
+        function updateItemLive(id, field, value) {
+            const item = itemsData.find(i => i.id === id);
+            if (item) {
+                item[field] = value;
+                renderTable();
+            }
         }
 
         function moveRowUp(index) {
@@ -756,7 +790,7 @@
                 keys.forEach(key => {
                     const proj = projects[key];
                     const div = document.createElement('div');
-                    div.style.cssText = "display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:8px; background:#f8fafc;";
+                    div.style.cssText = "display:flex; justify-space-between; align-items:center; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:8px; background:#f8fafc;";
                     div.innerHTML = `
                         <div>
                             <div style="font-weight:bold; color:#1e293b; font-size:14px;">${proj.categoryName}</div>
