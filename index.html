@@ -229,7 +229,8 @@
             });
 
             const rowResults = itemsData.map(() => ({
-                usedReusesMap: {}, // Compact map { fromNo: count }
+                usedReusesMap: {}, // Map for target row: { fromNo: count }
+                sentToRowsMap: {}, // Map for source row: { toNo: { len, count } }
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
@@ -302,21 +303,29 @@
                     if (bin.pieces.length === 0) return;
 
                     const primaryRowIdx = bin.pieces[0].rowIndex;
+                    const primaryRowNo = bin.pieces[0].rowNo;
                     rowResults[primaryRowIdx].newBarsCount += 1;
                     rowResults[primaryRowIdx].chosenStock = bin.capacity;
 
-                    // Reuse tracking with compact grouping
+                    // Reuse tracking with source and target row matching
                     for (let i = 1; i < bin.pieces.length; i++) {
                         const reusePiece = bin.pieces[i];
-                        const fromNo = bin.pieces[0].rowNo;
                         const cutLen = reusePiece.cutLenM;
-                        const key = `${cutLen.toFixed(2)}_${fromNo}`;
-
-                        if (!rowResults[reusePiece.rowIndex].usedReusesMap[key]) {
-                            rowResults[reusePiece.rowIndex].usedReusesMap[key] = { len: cutLen, fromNo: fromNo, count: 0 };
+                        
+                        // Record in Target Row
+                        const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
+                        if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
+                            rowResults[reusePiece.rowIndex].usedReusesMap[targetKey] = { len: cutLen, fromNo: primaryRowNo, count: 0 };
                         }
-                        rowResults[reusePiece.rowIndex].usedReusesMap[key].count += 1;
+                        rowResults[reusePiece.rowIndex].usedReusesMap[targetKey].count += 1;
                         rowResults[reusePiece.rowIndex].isReuse = true;
+
+                        // Record in Source Row (for "นำไปใช้ใน NO...")
+                        const sourceKey = `${cutLen.toFixed(2)}_${reusePiece.rowNo}`;
+                        if (!rowResults[primaryRowIdx].sentToRowsMap[sourceKey]) {
+                            rowResults[primaryRowIdx].sentToRowsMap[sourceKey] = { len: cutLen, toNo: reusePiece.rowNo, count: 0 };
+                        }
+                        rowResults[primaryRowIdx].sentToRowsMap[sourceKey].count += 1;
                     }
 
                     if (bin.remainingSpace >= 0.01) {
@@ -332,18 +341,24 @@
 
                 let scrapTextArr = [];
 
-                // Format compact reuse text: e.g. "♻️ ใช้เศษ 1.58m 4 ท่อน (จาก No.4)"
+                // 1. Target Row Notice: "นำเศษ 1.80m 8 ท่อน จาก No.4"
                 Object.values(res.usedReusesMap).forEach(reuse => {
-                    scrapTextArr.push(`♻️ ใช้เศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน (จาก No.${reuse.fromNo})`);
+                    scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
 
+                // 2. Source Row Notice: "เศษ [ความยาว]m (นำไปใช้ใน No.X)"
+                Object.values(res.sentToRowsMap).forEach(sent => {
+                    scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
+                });
+
+                // 3. True Remaining Scrap
                 if (res.totalScrapLen > 0) {
-                    scrapTextArr.push(`เศษ ${res.totalScrapLen.toFixed(2)}m`);
-                } else if (Object.keys(res.usedReusesMap).length > 0) {
+                    scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
+                } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
                     scrapTextArr.push(`✨ ใช้เศษตัดร่วมครบ (ไม่ต้องเบิกเหล็กใหม่)`);
                 } else if (demand.cutLenM <= 0) {
                     scrapTextArr.push(`ระบุระยะดัด`);
-                } else {
+                } else if (scrapTextArr.length === 0) {
                     scrapTextArr.push(`เศษ 0.00m (พอดีท่อน)`);
                 }
 
