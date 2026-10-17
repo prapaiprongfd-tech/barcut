@@ -1,0 +1,461 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcut - ตารางคำนวณสั่งตัดเหล็กเสริม (Rebar Cutting Calculator)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
+        .excel-input { background-color: #fef08a; border: 1px solid #d97706; text-align: center; font-weight: 500; }
+        .excel-calc { background-color: #e0e7ff; text-align: center; font-weight: 600; color: #1e3a8a; }
+        .excel-scrap { background-color: #fce7f3; text-align: center; font-weight: 600; color: #831843; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; font-size: 11pt; }
+            .shadow-lg, .shadow-md { box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="p-2 md:p-6 text-gray-800">
+    <div class="max-w-[1600px] mx-auto bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <!-- Header -->
+        <div class="bg-slate-800 text-white p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-700">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="fa-solid fa-ruler-combined text-amber-400"></i>
+                    ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System)
+                </h1>
+                <p class="text-sm text-slate-300 mt-1">ถอดแบบรายการเหล็กฐานราก เสา คาน และคำนวณสรุปการสั่งซื้อวัสดุ (BOQ Optimization)</p>
+            </div>
+            <div class="flex flex-wrap gap-2 no-print">
+                <button onclick="loadDefaultData()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> โหลดตัวอย่าง F1-F4
+                </button>
+                <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> Export Excel
+                </button>
+                <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> พิมพ์รายงาน
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-slate-100 border-b border-gray-200 flex overflow-x-auto no-print">
+            <button onclick="switchTab('barcut')" id="tab-barcut" class="px-6 py-3 font-semibold text-sm border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-table"></i> ตาราง Barcut คำนวณตัดเหล็ก
+            </button>
+            <button onclick="switchTab('summary')" id="tab-summary" class="px-6 py-3 font-semibold text-sm text-gray-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-boxes-packing"></i> สรุปรายการเหล็ก (BOQ Sheet)
+            </button>
+            <button onclick="switchTab('shapes')" id="tab-shapes" class="px-6 py-3 font-semibold text-sm text-gray-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-shapes"></i> รูปทรงเหล็กดัด (Shape Guide)
+            </button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-4 md:p-6">
+            <!-- TAB 1: BARCUT TABLE -->
+            <div id="content-barcut" class="space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-2 no-print">
+                    <div class="text-xs text-gray-500">
+                        <span class="inline-block w-3 h-3 bg-yellow-200 border border-amber-600 rounded-sm mr-1"></span> ช่องคีย์ข้อมูล
+                        <span class="inline-block w-3 h-3 bg-indigo-100 border border-indigo-400 rounded-sm ml-3 mr-1"></span> คำนวณอัตโนมัติ
+                    </div>
+                    <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
+                    <table class="w-full text-xs text-left text-gray-700 border-collapse" id="barcutTable">
+                        <thead class="text-xs uppercase bg-slate-200 text-slate-700 sticky top-0">
+                            <tr>
+                                <th class="p-2 border border-gray-300 text-center w-8 no-print">#</th>
+                                <th class="p-2 border border-gray-300 min-w-[120px]">Component</th>
+                                <th class="p-2 border border-gray-300 w-12 text-center">No.</th>
+                                <th class="p-2 border border-gray-300 w-20 text-center">Type</th>
+                                <th class="p-2 border border-gray-300 w-32 text-center bg-amber-100">ความยาวสต็อก</th>
+                                <th class="p-2 border border-gray-300 w-16 text-center">ชุด</th>
+                                <th class="p-2 border border-gray-300 w-16 text-center">ต่อชุด</th>
+                                <th class="p-2 border border-gray-300 w-16 text-center bg-indigo-50">รวมชิ้น</th>
+                                <th class="p-2 border border-gray-300 w-16 text-center">รูปทรง</th>
+                                <th class="p-2 border border-gray-300 text-center bg-amber-50" colspan="6">ระยะดัดงอแต่ละช่วง (ซม.)</th>
+                                <th class="p-2 border border-gray-300 w-20 text-center bg-indigo-100">ยาวตัด/เส้น (ม.)</th>
+                                <th class="p-2 border border-gray-300 w-20 text-center bg-indigo-100">จำนวนท่อนหลัก</th>
+                                <th class="p-2 border border-gray-300 min-w-[180px] bg-pink-50">รายละเอียดเศษเหลือ</th>
+                                <th class="p-2 border border-gray-300 w-20 text-center bg-pink-100">น.น. เศษ (kg)</th>
+                                <th class="p-2 border border-gray-300 w-8 text-center no-print">ลบ</th>
+                            </tr>
+                            <tr class="bg-slate-100 text-[10px] text-gray-500">
+                                <th class="p-1 border border-gray-300 no-print"></th>
+                                <th class="p-1 border border-gray-300"></th>
+                                <th class="p-1 border border-gray-300"></th>
+                                <th class="p-1 border border-gray-300"></th>
+                                <th class="p-1 border border-gray-300 text-center">10m / 12m</th>
+                                <th class="p-1 border border-gray-300"></th>
+                                <th class="p-1 border border-gray-300"></th>
+                                <th class="p-1 border border-gray-300 text-center">Total</th>
+                                <th class="p-1 border border-gray-300 text-center">(1-10)</th>
+                                <th class="p-1 border border-gray-300 text-center w-12">A</th>
+                                <th class="p-1 border border-gray-300 text-center w-12">B</th>
+                                <th class="p-1 border border-gray-300 text-center w-12">C</th>
+                                <th class="p-1 border border-gray-300 text-center w-12">D</th>
+                                <th class="p-1 border border-gray-300 text-center w-12">E</th>
+                                <th class="p-1 border border-gray-300 text-center w-12">F</th>
+                                <th class="p-1 border border-gray-300 text-center">Cut Length</th>
+                                <th class="p-1 border border-gray-300 text-center">∑Total Bar</th>
+                                <th class="p-1 border border-gray-300">Offcut Summary</th>
+                                <th class="p-1 border border-gray-300 text-center">Scrap Wt.</th>
+                                <th class="p-1 border border-gray-300 no-print"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Rows rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: SUMMARY BOQ SHEET -->
+            <div id="content-summary" class="hidden space-y-6">
+                <div class="bg-indigo-900 text-white p-4 rounded-lg shadow-md flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold"><i class="fa-solid fa-list-check text-amber-400"></i> สรุปรายการสั่งซื้อเหล็ก (Rebar Procurement BOQ)</h2>
+                        <p class="text-xs text-indigo-200 mt-1">สรุปจำนวนท่อนเหล็กเส้นมาตรฐานที่ต้องสั่งซื้อ แยกตามขนาดเหล็กและความยาวท่อน</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                        <h3 class="font-bold text-gray-800 mb-3 border-b pb-2 flex items-center justify-between">
+                            <span><i class="fa-solid fa-cart-flatbed text-blue-600"></i> ตารางสรุปการสั่งซื้อ (Order Summary)</span>
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left text-gray-700 border">
+                                <thead class="bg-slate-100 uppercase text-gray-600">
+                                    <tr>
+                                        <th class="p-2 border">ขนาดเหล็ก</th>
+                                        <th class="p-2 border text-center">ความยาวท่อน</th>
+                                        <th class="p-2 border text-center">จำนวน (ท่อน)</th>
+                                        <th class="p-2 border text-right">น้ำหนักรวม (kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="boqTableBody">
+                                    <!-- Rendered via JS -->
+                                </tbody>
+                                <tfoot class="bg-slate-200 font-bold">
+                                    <tr>
+                                        <td colspan="2" class="p-2 border text-right">รวมน้ำหนักเหล็กทั้งหมด:</td>
+                                        <td id="totalBarCount" class="p-2 border text-center text-blue-700">0</td>
+                                        <td id="totalWeightKg" class="p-2 border text-right text-emerald-700">0.00</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800 mb-3 border-b pb-2">
+                                <i class="fa-solid fa-chart-pie text-indigo-600"></i> สัดส่วนน้ำหนักเหล็กตามขนาด
+                            </h3>
+                            <div class="h-64 flex items-center justify-center">
+                                <canvas id="weightChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 mt-4 text-xs text-amber-800">
+                            <i class="fa-solid fa-circle-info mr-1 text-amber-600"></i>
+                            <strong>หมายเหตุการคำนวณ:</strong> ค่าน้ำหนักเหล็กอ้างอิงตามมาตรฐาน มอก. โดยใช้สูตร $W = \frac{d^2}{162.2} \text{ kg/m}$ 
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: SHAPE GUIDE -->
+            <div id="content-shapes" class="hidden space-y-4">
+                <div class="bg-slate-800 text-white p-4 rounded-lg">
+                    <h2 class="text-lg font-bold"><i class="fa-solid fa-shapes text-amber-400"></i> ตารางรูปทรงเหล็กดัดมาตรฐาน (Rebar Bending Shapes 1-10)</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="shapesContainer">
+                    <!-- Shape Cards rendered via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const REBAR_WEIGHTS = {
+            'RB06': 0.222, 'RB09': 0.499, 'DB12': 0.888,
+            'DB16': 1.578, 'DB20': 2.466, 'DB25': 3.853,
+            'DB28': 4.834, 'DB32': 6.313
+        };
+
+        let itemsData = [
+            { id: 1, comp: 'F1.ด้านสั้น', no: 1, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 },
+            { id: 2, comp: 'F1.ด้านยาว', no: 2, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 },
+            { id: 3, comp: 'F1.รัดรอบ', no: 3, type: 'DB12', stockLen: 'auto', setQty: 3, perSet: 1, shape: 1, a: 110, b: 110, c: 110, d: 110, e: 0, f: 0 },
+            { id: 4, comp: 'F2.ด้านสั้น', no: 4, type: 'DB20', stockLen: 'auto', setQty: 4, perSet: 15, shape: 3, a: 24, b: 35, c: 170, d: 35, e: 24, f: 0 },
+            { id: 5, comp: 'F2.ด้านยาว', no: 5, type: 'DB20', stockLen: 'auto', setQty: 4, perSet: 15, shape: 4, a: 24, b: 35, c: 170, d: 35, e: 24, f: 0 },
+            { id: 6, comp: 'F3.ด้านสั้น', no: 6, type: 'DB20', stockLen: 'auto', setQty: 13, perSet: 22, shape: 4, a: 24, b: 40, c: 260, d: 40, e: 24, f: 0 },
+            { id: 7, comp: 'F4.ด้านสั้น', no: 7, type: 'DB25', stockLen: 'auto', setQty: 7, perSet: 26, shape: 4, a: 30, b: 40, c: 310, d: 40, e: 30, f: 0 }
+        ];
+
+        let weightChart = null;
+
+        function initApp() {
+            renderTable();
+            renderShapes();
+        }
+
+        function calculateItem(item) {
+            const cutLenM = (item.a + item.b + item.c + item.d + item.e + item.f) / 100;
+            const totalPieces = item.setQty * item.perSet;
+
+            let chosenStock = parseFloat(item.stockLen);
+            let isAuto = (item.stockLen === 'auto');
+
+            if (isAuto) {
+                const pcs10 = Math.floor(10 / cutLenM);
+                const bars10 = pcs10 > 0 ? Math.ceil(totalPieces / pcs10) : 999999;
+                const scrap10 = pcs10 > 0 ? (10 - (pcs10 * cutLenM)) * bars10 : 999999;
+
+                const pcs12 = Math.floor(12 / cutLenM);
+                const bars12 = pcs12 > 0 ? Math.ceil(totalPieces / pcs12) : 999999;
+                const scrap12 = pcs12 > 0 ? (12 - (pcs12 * cutLenM)) * bars12 : 999999;
+
+                chosenStock = (scrap10 <= scrap12) ? 10 : 12;
+            }
+
+            const pcsPerBar = Math.floor(chosenStock / cutLenM);
+            const totalBars = pcsPerBar > 0 ? Math.ceil(totalPieces / pcsPerBar) : 0;
+            const scrapPerBar = pcsPerBar > 0 ? (chosenStock - (pcsPerBar * cutLenM)) : 0;
+            const unitWeight = REBAR_WEIGHTS[item.type] || 1.578;
+            const totalScrapWeight = scrapPerBar * totalBars * unitWeight;
+
+            return { cutLenM, totalPieces, chosenStock, isAuto, pcsPerBar, totalBars, scrapPerBar, totalScrapWeight, unitWeight };
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            itemsData.forEach((item, index) => {
+                const calc = calculateItem(item);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-amber-50 transition border-b border-gray-200";
+
+                tr.innerHTML = `
+                    <td class="p-2 border text-center font-bold text-gray-500 no-print">${index + 1}</td>
+                    <td class="p-1 border"><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)" class="w-full px-1 py-0.5 border rounded"></td>
+                    <td class="p-1 border text-center"><input type="number" value="${item.no}" onchange="updateItem(${item.id}, 'no', +this.value)" class="w-10 text-center border rounded"></td>
+                    <td class="p-1 border text-center">
+                        <select onchange="updateItem(${item.id}, 'type', this.value)" class="w-full p-0.5 border rounded font-semibold text-blue-800">
+                            ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td class="p-1 border text-center bg-amber-50">
+                        <select onchange="updateItem(${item.id}, 'stockLen', this.value)" class="w-full p-0.5 border rounded text-xs font-bold text-amber-900 bg-amber-100">
+                            <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
+                            <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
+                            <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
+                        </select>
+                    </td>
+                    <td class="p-1 border text-center"><input type="number" value="${item.setQty}" onchange="updateItem(${item.id}, 'setQty', +this.value)" class="w-12 text-center excel-input rounded"></td>
+                    <td class="p-1 border text-center"><input type="number" value="${item.perSet}" onchange="updateItem(${item.id}, 'perSet', +this.value)" class="w-12 text-center excel-input rounded"></td>
+                    <td class="p-1 border text-center font-bold text-blue-800 bg-indigo-50">${calc.totalPieces}</td>
+                    <td class="p-1 border text-center">
+                        <input type="number" min="1" max="10" value="${item.shape}" onchange="updateItem(${item.id}, 'shape', +this.value)" class="w-10 text-center border rounded font-bold">
+                    </td>
+                    <td class="p-1 border"><input type="number" value="${item.a}" onchange="updateItem(${item.id}, 'a', +this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="p-1 border"><input type="number" value="${item.b}" onchange="updateItem(${item.id}, 'b', +this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="p-1 border"><input type="number" value="${item.c}" onchange="updateItem(${item.id}, 'c', +this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="p-1 border"><input type="number" value="${item.d}" onchange="updateItem(${item.id}, 'd', +this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="p-1 border"><input type="number" value="${item.e}" onchange="updateItem(${item.id}, 'e', +this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="p-1 border"><input type="number" value="${item.f}" onchange="updateItem(${item.id}, 'f', +this.value)" class="w-12 text-center border rounded"></td>
+                    <td class="p-1 border text-center font-bold text-indigo-900 bg-indigo-100">${calc.cutLenM.toFixed(3)}</td>
+                    <td class="p-1 border text-center font-bold text-emerald-800 bg-emerald-100">${calc.totalBars}</td>
+                    <td class="p-1 border text-xs bg-pink-50 text-pink-900">
+                        ${item.type} = ${calc.scrapPerBar.toFixed(2)}m (${calc.totalBars} ท่อน)
+                    </td>
+                    <td class="p-1 border text-center font-semibold text-pink-700 bg-pink-100">${calc.totalScrapWeight.toFixed(2)}</td>
+                    <td class="p-1 border text-center no-print">
+                        <button onclick="deleteRow(${item.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderSummaryBOQ();
+        }
+
+        function updateItem(id, field, value) {
+            const item = itemsData.find(i => i.id === id);
+            if (item) {
+                item[field] = value;
+                renderTable();
+            }
+        }
+
+        function addRow() {
+            const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
+            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: newId, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 0, b: 0, c: 100, d: 0, e: 0, f: 0 });
+            renderTable();
+        }
+
+        function deleteRow(id) {
+            itemsData = itemsData.filter(i => i.id !== id);
+            renderTable();
+        }
+
+        function loadDefaultData() {
+            itemsData = [
+                { id: 1, comp: 'F1.ด้านสั้น', no: 1, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 },
+                { id: 2, comp: 'F1.ด้านยาว', no: 2, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 },
+                { id: 3, comp: 'F1.รัดรอบ', no: 3, type: 'DB12', stockLen: 'auto', setQty: 3, perSet: 1, shape: 1, a: 110, b: 110, c: 110, d: 110, e: 0, f: 0 },
+                { id: 4, comp: 'F2.ด้านสั้น', no: 4, type: 'DB20', stockLen: 'auto', setQty: 4, perSet: 15, shape: 3, a: 24, b: 35, c: 170, d: 35, e: 24, f: 0 },
+                { id: 5, comp: 'F2.ด้านยาว', no: 5, type: 'DB20', stockLen: 'auto', setQty: 4, perSet: 15, shape: 4, a: 24, b: 35, c: 170, d: 35, e: 24, f: 0 },
+                { id: 6, comp: 'F3.ด้านสั้น', no: 6, type: 'DB20', stockLen: 'auto', setQty: 13, perSet: 22, shape: 4, a: 24, b: 40, c: 260, d: 40, e: 24, f: 0 },
+                { id: 7, comp: 'F4.ด้านสั้น', no: 7, type: 'DB25', stockLen: 'auto', setQty: 7, perSet: 26, shape: 4, a: 30, b: 40, c: 310, d: 40, e: 30, f: 0 }
+            ];
+            renderTable();
+        }
+
+        function renderSummaryBOQ() {
+            const boqMap = {};
+
+            itemsData.forEach(item => {
+                const calc = calculateItem(item);
+                const key = `${item.type}_${calc.chosenStock}`;
+
+                if (!boqMap[key]) {
+                    boqMap[key] = { type: item.type, length: calc.chosenStock, bars: 0, weight: 0 };
+                }
+                boqMap[key].bars += calc.totalBars;
+                boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
+            });
+
+            const tbody = document.getElementById('boqTableBody');
+            tbody.innerHTML = '';
+
+            let grandTotalBars = 0;
+            let grandTotalWeight = 0;
+
+            const sortedKeys = Object.keys(boqMap).sort();
+
+            sortedKeys.forEach(key => {
+                const data = boqMap[key];
+                if (data.bars > 0) {
+                    grandTotalBars += data.bars;
+                    grandTotalWeight += data.weight;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="p-2 border font-bold text-blue-900">${data.type}</td>
+                        <td class="p-2 border text-center font-semibold text-amber-800">${data.length}.0 เมตร</td>
+                        <td class="p-2 border text-center font-bold text-emerald-700">${data.bars}</td>
+                        <td class="p-2 border text-right font-semibold">${data.weight.toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            document.getElementById('totalBarCount').innerText = grandTotalBars;
+            document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
+
+            updateChart(boqMap);
+        }
+
+        function updateChart(boqMap) {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const labels = [];
+            const dataWeights = [];
+
+            Object.values(boqMap).forEach(d => {
+                if (d.weight > 0) {
+                    labels.push(`${d.type} (${d.length}m)`);
+                    dataWeights.push(d.weight.toFixed(2));
+                }
+            });
+
+            if (weightChart) weightChart.destroy();
+
+            weightChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataWeights,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderShapes() {
+            const container = document.getElementById('shapesContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const card = document.createElement('div');
+                card.className = "bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-center";
+                card.innerHTML = `
+                    <div class="font-bold text-sm text-slate-700 mb-2">Shape ${i}</div>
+                    <div class="h-24 bg-slate-50 rounded flex items-center justify-center border text-slate-400 font-bold">
+                        <i class="fa-solid fa-draw-polygon text-2xl text-indigo-400"></i>
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function switchTab(tab) {
+            ['barcut', 'summary', 'shapes'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('border-indigo-600', 'text-indigo-600');
+                document.getElementById(`tab-${t}`).classList.add('border-transparent', 'text-gray-600');
+            });
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('border-indigo-600', 'text-indigo-600');
+            document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-600');
+        }
+
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const wsData = [["Component", "No.", "Type", "Stock Length", "Set", "Per Set", "Total Pcs", "Cut Length (m)", "Total Bars", "Scrap Wt (kg)"]];
+            itemsData.forEach(item => {
+                const calc = calculateItem(item);
+                wsData.push([item.comp, item.no, item.type, calc.chosenStock, item.setQty, item.perSet, calc.totalPieces, calc.cutLenM, calc.totalBars, calc.totalScrapWeight]);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, "Barcut");
+            XLSX.writeFile(wb, "Barcut_Rebar_Calculation.xlsx");
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>;;;--------------------------------------------------------------------
+(defun Length1(e) (vlax-curve-getDistAtParam e (vlax-curve-getEndParam e)))
+;;;--------------------------------------------------------------------
+(defun C:TL( / ss L e)
+(setq
+    ss (ssget  (list (cons 0 "LINE,ARC,CIRCLE,POLYLINE,LWPOLYLINE,ELLIPSE,SPLINE")))
+    L 0.0
+)
+(vl-load-com)
+(while (setq e (ssname ss 0))
+    (setq L (+ L (length1 e)))
+    (ssdel e ss)
+)
+(alert (strcat "Total length = " (rtos L)))
+)
+;;;--------------------------------------------------------------------
