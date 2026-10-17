@@ -186,16 +186,17 @@
         }
 
         let itemsData = [
-            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 6, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 6, perSet: 24, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
             { id: 2, comp: 'CY.รัดรอบ', no: 2, type: 'RB09', stockLen: 'auto', setQty: 6, perSet: 96, shape: 1, a: 20, b: 20, c: 20, d: 20, e: 0, f: 0 },
             { id: 3, comp: 'C0', no: 3, type: 'DB20', stockLen: 'auto', setQty: 27, perSet: 12, shape: 1, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
             { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
         ];
 
         function calculateItem(item) {
+            const cleanType = String(item.type || 'DB16').trim();
             const cutLenM = (parseFloat(item.a||0) + parseFloat(item.b||0) + parseFloat(item.c||0) + parseFloat(item.d||0) + parseFloat(item.e||0) + parseFloat(item.f||0)) / 100;
             const totalPieces = parseInt(item.setQty||0) * parseInt(item.perSet||0);
-            const unitWeight = REBAR_WEIGHTS[item.type] || 1.578;
+            const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
 
             if (cutLenM <= 0 || totalPieces <= 0) {
                 return { cutLenM: 0, totalPieces, chosenStock: 12, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ระบุระยะดัด', totalScrapWeight: 0, unitWeight };
@@ -239,11 +240,11 @@
 
             if (remPcs === 0) {
                 totalScrapLen = fullBarScrap * totalBars;
-                scrapTextArr.push(`${item.type} = ${fullBarScrap.toFixed(2)}m (${totalBars} ท่อน)`);
+                scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${totalBars} ท่อน)`);
             } else {
                 totalScrapLen = (fullBarScrap * fullBars) + lastBarScrap;
                 if (fullBars > 0) {
-                    scrapTextArr.push(`เศษ ${fullBarScrap.toFixed(2)}m (${fullBars} ท่อน)`);
+                    scrapTextArr.push(`${cleanType}: เศษ ${fullBarScrap.toFixed(2)}m (${fullBars} ท่อน)`);
                 }
                 scrapTextArr.push(`เศษ ${lastBarScrap.toFixed(2)}m (1 ท่อน)`);
             }
@@ -269,7 +270,7 @@
                     <td style="text-align:center;"><input type="number" value="${item.no}" onchange="updateItem(${item.id}, 'no', this.value)"></td>
                     <td>
                         <select onchange="updateItem(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
-                            ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                            ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type.trim() === t ? 'selected' : ''}>${t}</option>`).join('')}
                         </select>
                     </td>
                     <td style="background:#fef3c7;">
@@ -329,7 +330,7 @@
 
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 6, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 6, perSet: 24, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
                 { id: 2, comp: 'CY.รัดรอบ', no: 2, type: 'RB09', stockLen: 'auto', setQty: 6, perSet: 96, shape: 1, a: 20, b: 20, c: 20, d: 20, e: 0, f: 0 },
                 { id: 3, comp: 'C0', no: 3, type: 'DB20', stockLen: 'auto', setQty: 27, perSet: 12, shape: 1, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
                 { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
@@ -341,10 +342,11 @@
             const boqMap = {};
             itemsData.forEach(item => {
                 const calc = calculateItem(item);
-                const key = `${item.type}_${calc.chosenStock}`;
+                const cleanType = String(item.type || 'DB16').trim();
+                const key = `${cleanType}_${calc.chosenStock}`;
 
                 if (!boqMap[key]) {
-                    boqMap[key] = { type: item.type, length: calc.chosenStock, bars: 0, weight: 0 };
+                    boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0 };
                 }
                 boqMap[key].bars += calc.totalBars;
                 boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
@@ -415,7 +417,8 @@
             let csv = "Component,No.,Type,Stock Length,Set,Per Set,Total Pcs,Cut Length (m),Total Bars,Scrap Summary,Scrap Wt (kg)\n";
             itemsData.forEach(item => {
                 const calc = calculateItem(item);
-                csv += `"${item.comp}",${item.no},"${item.type}",${calc.chosenStock},${item.setQty},${item.perSet},${calc.totalPieces},${calc.cutLenM},${calc.totalBars},"${calc.scrapDetails}",${calc.totalScrapWeight.toFixed(2)}\n`;
+                const cleanType = String(item.type || 'DB16').trim();
+                csv += `"${item.comp}",${item.no},"${cleanType}",${calc.chosenStock},${item.setQty},${item.perSet},${calc.totalPieces},${calc.cutLenM},${calc.totalBars},"${calc.scrapDetails}",${calc.totalScrapWeight.toFixed(2)}\n`;
             });
             const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
