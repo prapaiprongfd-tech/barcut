@@ -60,10 +60,12 @@
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 125px; }
         .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 28px; }
         
-        .action-btns { display: flex; justify-content: center; gap: 4px; }
-        .btn-copy { background: #e0e7ff; border: 1px solid #818cf8; color: #3730a3; font-size: 12px; font-weight: bold; border-radius: 4px; padding: 3px 6px; cursor: pointer; }
+        .action-btns { display: flex; justify-content: center; align-items: center; gap: 2px; }
+        .btn-move { background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; font-size: 11px; font-weight: bold; border-radius: 3px; padding: 2px 4px; cursor: pointer; }
+        .btn-move:hover { background: #e2e8f0; color: #0f172a; }
+        .btn-copy { background: #e0e7ff; border: 1px solid #818cf8; color: #3730a3; font-size: 11px; font-weight: bold; border-radius: 3px; padding: 2px 5px; cursor: pointer; }
         .btn-copy:hover { background: #c7d2fe; }
-        .btn-del { background: none; border: none; color: #ef4444; font-weight: bold; font-size: 16px; cursor: pointer; padding: 0 4px; }
+        .btn-del { background: none; border: none; color: #ef4444; font-weight: bold; font-size: 15px; cursor: pointer; padding: 0 3px; }
         .btn-del:hover { color: #b91c1c; }
         
         .hidden { display: none !important; }
@@ -77,24 +79,27 @@
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: white; border-radius: 12px; max-width: 600px; width: 90%; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
 
-        /* Print Header Repeating Strategy */
         .print-only-title { display: none; }
         
+        /* Auto-Fit Page Scale For Printing - Fixed Shape SVG Overlay */
         @media print { 
             @page { size: A4 landscape; margin: 5mm; }
             .no-print, .tabs, .toolbar, .header { display: none !important; } 
-            body { padding: 0; background: white; font-size: 7.5pt !important; color: #000; zoom: 82%; } 
+            body { padding: 0; background: white; font-size: 7pt !important; color: #000; zoom: 82%; } 
             .container { border: none; box-shadow: none; max-width: 100% !important; width: 100% !important; } 
             .content { padding: 0; }
             #content-barcut, #content-summary { display: block !important; margin-bottom: 15px; }
             #content-shapes { display: none !important; }
             
-            /* Repeat Header Tr in Print */
             thead { display: table-header-group !important; }
             tr { page-break-inside: avoid !important; }
             
             .print-only-title { display: table-row !important; }
             .print-only-title th { background: #cbd5e1 !important; color: #000 !important; font-size: 9pt !important; text-align: left !important; padding: 6px !important; }
+
+            .project-input-box { font-size: 9pt !important; margin-top: 2px; }
+            .project-input-box label { color: #000 !important; font-weight: bold; }
+            .project-input { border: none !important; background: transparent !important; color: #000 !important; font-weight: bold !important; padding: 0 !important; width: auto !important; }
 
             input, select { 
                 border: none !important; 
@@ -166,7 +171,6 @@
                 <div class="table-responsive">
                     <table id="barcutTable">
                         <thead>
-                            <!-- Print-Only Header Row repeating on every printed page -->
                             <tr class="print-only-title">
                                 <th colspan="19" id="printProjectHeaderTitle">
                                     📌 รายงานรายการสั่งตัดเหล็กเสริม | หมวดหมู่งาน/โครงการ: เหล็กงานฐานราก
@@ -187,7 +191,7 @@
                                 <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
                                 <th style="width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
                                 <th style="width:70px; background:#fbcfe8;">น.น. เศษ (kg)</th>
-                                <th style="width:60px;" class="no-print">จัดการ</th>
+                                <th style="width:100px;" class="no-print">จัดการ</th>
                             </tr>
                             <tr class="sub-header">
                                 <th class="no-print"></th><th></th><th></th><th></th>
@@ -303,6 +307,12 @@
             { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 500, b: 0, c: 0, d: 0, e: 0, f: 0 },
             { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 760, b: 0, c: 0, d: 0, e: 0, f: 0 }
         ];
+
+        function resequenceNumbers() {
+            itemsData.forEach((item, idx) => {
+                item.no = idx + 1;
+            });
+        }
 
         function calculateAllItems() {
             const rowDemands = [];
@@ -469,13 +479,13 @@
         }
 
         function renderTable() {
+            resequenceNumbers(); // Automatically re-sequence No. 1, 2, 3...
             const tbody = document.getElementById('tableBody');
             if (!tbody) return;
             tbody.innerHTML = '';
 
             const calcResults = calculateAllItems();
 
-            // Update print header title dynamically
             const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
             const printTitleElem = document.getElementById('printProjectHeaderTitle');
             if (printTitleElem) {
@@ -489,7 +499,7 @@
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
                     <td><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)" style="text-align:left; padding-left:6px;"></td>
-                    <td style="text-align:center;"><input type="number" value="${item.no}" onchange="updateItem(${item.id}, 'no', this.value)"></td>
+                    <td style="text-align:center;"><input type="number" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td>
                         <select onchange="updateItem(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
                             ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type.trim() === t ? 'selected' : ''}>${t}</option>`).join('')}
@@ -525,8 +535,10 @@
                     <td class="bg-scrap-wt">${calc.totalScrapWeight.toFixed(2)}</td>
                     <td class="no-print" style="text-align:center;">
                         <div class="action-btns">
-                            <button type="button" class="btn-copy" onclick="copyRow(${item.id})" title="คัดลอกรายการนี้">📋 คัดลอก</button>
-                            <button type="button" class="btn-del" onclick="deleteRow(${item.id})" title="ลบรายการนี้">❌</button>
+                            <button type="button" class="btn-move" onclick="moveRowUp(${index})" title="เลื่อนขึ้น">⬆️</button>
+                            <button type="button" class="btn-move" onclick="moveRowDown(${index})" title="เลื่อนลง">⬇️</button>
+                            <button type="button" class="btn-copy" onclick="copyRow(${item.id})" title="คัดลอก">📋</button>
+                            <button type="button" class="btn-del" onclick="deleteRow(${item.id})" title="ลบ">❌</button>
                         </div>
                     </td>
                 `;
@@ -534,6 +546,24 @@
             });
 
             renderSummaryBOQ();
+        }
+
+        function moveRowUp(index) {
+            if (index > 0) {
+                const temp = itemsData[index];
+                itemsData[index] = itemsData[index - 1];
+                itemsData[index - 1] = temp;
+                renderTable();
+            }
+        }
+
+        function moveRowDown(index) {
+            if (index < itemsData.length - 1) {
+                const temp = itemsData[index];
+                itemsData[index] = itemsData[index + 1];
+                itemsData[index + 1] = temp;
+                renderTable();
+            }
         }
 
         function updateItem(id, field, value) {
@@ -546,7 +576,7 @@
 
         function addRow() {
             const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: newId, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 });
+            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 });
             renderTable();
         }
 
@@ -554,12 +584,11 @@
             const item = itemsData.find(i => i.id === id);
             if (item) {
                 const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-                const nextNo = itemsData.length ? Math.max(...itemsData.map(i => parseInt(i.no)||0)) + 1 : 1;
                 
                 const newItem = {
                     id: newId,
                     comp: item.comp,
-                    no: nextNo,
+                    no: itemsData.length + 1,
                     type: item.type,
                     stockLen: item.stockLen,
                     setQty: item.setQty,
@@ -681,7 +710,6 @@
             if (tab === 'summary') renderSummaryBOQ();
         }
 
-        // Project Storage Library Functions
         function saveProjectToLibrary() {
             const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
             const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
@@ -710,7 +738,7 @@
                 keys.forEach(key => {
                     const proj = projects[key];
                     const div = document.createElement('div');
-                    div.style.cssText = "display:flex; justify-space-between; align-items:center; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:8px; background:#f8fafc;";
+                    div.style.cssText = "display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:8px; background:#f8fafc;";
                     div.innerHTML = `
                         <div>
                             <div style="font-weight:bold; color:#1e293b; font-size:14px;">${proj.categoryName}</div>
@@ -752,7 +780,6 @@
             }
         }
 
-        // Import Excel Data Function with Automatic AUTO Reset
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -792,7 +819,7 @@
                             const comp = String(row[1] || 'ชิ้นงาน');
                             const no = parseInt(row[2]) || (parsedItems.length + 1);
                             const type = String(row[3] || 'DB16').trim();
-                            const stockLen = 'auto'; // Force reset to auto for zero-waste re-optimization
+                            const stockLen = 'auto';
 
                             const setQty = parseInt(row[5]) || 1;
                             const perSet = parseInt(row[6]) || 1;
