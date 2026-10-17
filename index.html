@@ -25,6 +25,7 @@
         .btn-indigo { background: #6366f1; color: white; } .btn-indigo:hover { background: #4f46e5; }
         .btn-blue { background: #2563eb; color: white; } .btn-blue:hover { background: #1d4ed8; }
         .btn-purple { background: #8b5cf6; color: white; } .btn-purple:hover { background: #7c3aed; }
+        .btn-orange { background: #ea580c; color: white; } .btn-orange:hover { background: #c2410c; }
         
         .tabs { background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; overflow-x: auto; }
         .tab-btn { padding: 12px 24px; font-size: 14px; font-weight: 600; background: none; border: none; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; whitespace-nowrap; }
@@ -50,8 +51,8 @@
         
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
-        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 250px; }
-        .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; white-space: normal; min-width: 250px; }
+        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 220px; }
+        .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; white-space: normal; min-width: 220px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
         
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 125px; }
@@ -70,11 +71,11 @@
         .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
-        /* Fixed Print CSS - Full Fit A4 Landscape */
+        /* Auto-Fit Page Scale For Printing - Fixed Shape SVG Overlay */
         @media print { 
             @page { size: A4 landscape; margin: 5mm; }
             .no-print, .tabs, .toolbar { display: none !important; } 
-            body { padding: 0; background: white; font-size: 7.5pt !important; color: #000; } 
+            body { padding: 0; background: white; font-size: 7pt !important; color: #000; zoom: 82%; } 
             .container { border: none; box-shadow: none; max-width: 100% !important; width: 100% !important; } 
             .content { padding: 0; }
             #content-barcut, #content-summary { display: block !important; margin-bottom: 15px; page-break-inside: avoid; }
@@ -95,10 +96,12 @@
                 height: auto !important;
                 text-align: center !important;
             }
-            .shape-preview { border: none !important; padding: 0 !important; }
-            .shape-preview svg { width: 22px !important; height: 14px !important; }
+            .shape-box select { display: none !important; } /* Hide dropdown select in print */
+            .shape-preview { border: none !important; padding: 0 !important; background: transparent !important; width: 100% !important; }
+            .shape-preview svg { width: 22px !important; height: 14px !important; display: block; margin: 0 auto; }
+            
             .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
-            table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; font-size: 7.5pt !important; }
+            table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; font-size: 7.5pt !important; }
             th, td { border: 1px solid #000 !important; padding: 2px 1px !important; white-space: normal !important; word-break: break-word !important; }
             thead th { background-color: #f1f5f9 !important; color: #000 !important; font-size: 7pt !important; }
             .card { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px; }
@@ -119,6 +122,8 @@
             </div>
             <div class="btn-group no-print">
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณจับคู่เหล็กขั้นสูง (Global Best-Fit)</button>
+                <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้าไฟล์ Excel</button>
+                <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)">
                 <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
                 <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel (รวมทุกชีท)</button>
                 <button type="button" class="btn btn-indigo" onclick="printCompleteReport()">🖨️ พิมพ์รายงานสมบูรณ์</button>
@@ -161,7 +166,7 @@
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ซม.)</th>
                                 <th style="width:75px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
                                 <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="width:240px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
+                                <th style="width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
                                 <th style="width:70px; background:#fbcfe8;">น.น. เศษ (kg)</th>
                                 <th style="width:60px;" class="no-print">จัดการ</th>
                             </tr>
@@ -354,18 +359,21 @@
                         const reusePiece = bin.pieces[i];
                         const cutLen = reusePiece.cutLenM;
                         
-                        const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
-                        if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
-                            rowResults[reusePiece.rowIndex].usedReusesMap[targetKey] = { len: cutLen, fromNo: primaryRowNo, count: 0 };
-                        }
-                        rowResults[reusePiece.rowIndex].usedReusesMap[targetKey].count += 1;
-                        rowResults[reusePiece.rowIndex].isReuse = true;
+                        // Exclude self-referencing No. in cross-row matching
+                        if (primaryRowNo !== reusePiece.rowNo) {
+                            const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
+                            if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
+                                rowResults[reusePiece.rowIndex].usedReusesMap[targetKey] = { len: cutLen, fromNo: primaryRowNo, count: 0 };
+                            }
+                            rowResults[reusePiece.rowIndex].usedReusesMap[targetKey].count += 1;
+                            rowResults[reusePiece.rowIndex].isReuse = true;
 
-                        const sourceKey = `${cutLen.toFixed(2)}_${reusePiece.rowNo}`;
-                        if (!rowResults[primaryRowIdx].sentToRowsMap[sourceKey]) {
-                            rowResults[primaryRowIdx].sentToRowsMap[sourceKey] = { len: cutLen, toNo: reusePiece.rowNo, count: 0 };
+                            const sourceKey = `${cutLen.toFixed(2)}_${reusePiece.rowNo}`;
+                            if (!rowResults[primaryRowIdx].sentToRowsMap[sourceKey]) {
+                                rowResults[primaryRowIdx].sentToRowsMap[sourceKey] = { len: cutLen, toNo: reusePiece.rowNo, count: 0 };
+                            }
+                            rowResults[primaryRowIdx].sentToRowsMap[sourceKey].count += 1;
                         }
-                        rowResults[primaryRowIdx].sentToRowsMap[sourceKey].count += 1;
                     }
 
                     if (bin.remainingSpace >= 0.01) {
@@ -381,14 +389,17 @@
 
                 let scrapTextArr = [];
 
+                // 1. Target Row Notice (From DIFFERENT No. only)
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
 
+                // 2. Source Row Notice (Sent to DIFFERENT No. only)
                 Object.values(res.sentToRowsMap).forEach(sent => {
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
+                // 3. True Residual Scrap
                 if (res.totalScrapLen > 0) {
                     scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
                 } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
@@ -626,6 +637,89 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
             
             if (tab === 'summary') renderSummaryBOQ();
+        }
+
+        // Import Excel Data Function
+        function importFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    if (!jsonRows || jsonRows.length === 0) {
+                        alert('ไม่พบข้อมูลในไฟล์ Excel ที่เลือก');
+                        return;
+                    }
+
+                    let parsedItems = [];
+                    let startReading = false;
+
+                    for (let r = 0; r < jsonRows.length; r++) {
+                        const row = jsonRows[r];
+                        if (!row || row.length === 0) continue;
+
+                        // Check for project title header
+                        if (row[0] && String(row[0]).includes('หมวดหมู่งาน / โครงการ:')) {
+                            const categoryVal = String(row[0]).replace('หมวดหมู่งาน / โครงการ:', '').trim();
+                            if (categoryVal) document.getElementById('workCategory').value = categoryVal;
+                        }
+
+                        // Detect start of table
+                        if (row[1] === 'Component' || row[0] === '#') {
+                            startReading = true;
+                            continue;
+                        }
+
+                        if (startReading && row[1] && row[2]) {
+                            const comp = String(row[1] || 'ชิ้นงาน');
+                            const no = parseInt(row[2]) || (parsedItems.length + 1);
+                            const type = String(row[3] || 'DB16').trim();
+                            const stockLenVal = String(row[4] || 'auto').trim();
+                            const stockLen = (stockLenVal === '10' || stockLenVal === '12') ? stockLenVal : 'auto';
+                            const setQty = parseInt(row[5]) || 1;
+                            const perSet = parseInt(row[6]) || 1;
+                            
+                            // Parse Shape
+                            let shape = 1;
+                            if (row[8]) {
+                                const shapeMatch = String(row[8]).match(/\d+/);
+                                if (shapeMatch) shape = parseInt(shapeMatch[0]);
+                            }
+
+                            const a = parseFloat(row[9]) || 0;
+                            const b = parseFloat(row[10]) || 0;
+                            const c = parseFloat(row[11]) || 0;
+                            const d = parseFloat(row[12]) || 0;
+                            const e = parseFloat(row[13]) || 0;
+                            const f = parseFloat(row[14]) || 0;
+
+                            parsedItems.push({
+                                id: parsedItems.length + 1,
+                                comp, no, type, stockLen, setQty, perSet, shape, a, b, c, d, e, f
+                            });
+                        }
+                    }
+
+                    if (parsedItems.length > 0) {
+                        itemsData = parsedItems;
+                        renderTable();
+                        alert(`📥 นำเข้าข้อมูลสำเร็จทั้งหมด ${parsedItems.length} รายการ!`);
+                    } else {
+                        alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel กรุณาตรวจสอบรูปแบบไฟล์');
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         function exportToExcel() {
