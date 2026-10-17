@@ -4,112 +4,113 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barcut - ตารางคำนวณสั่งตัดเหล็กเสริม (Rebar Cutting Calculator)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
-        .excel-input { background-color: #fef08a; border: 1px solid #d97706; text-align: center; font-weight: 500; }
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white; font-size: 10pt; }
-        }
+        * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f3f4f6; color: #1f2937; padding: 15px; }
+        .container { max-width: 1600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
+        .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; }
+        .header p { font-size: 13px; color: #cbd5e1; margin-top: 4px; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 8px 14px; font-size: 13px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-amber { background: #f59e0b; color: #0f172a; } .btn-amber:hover { background: #d97706; }
+        .btn-green { background: #10b981; color: white; } .btn-green:hover { background: #059669; }
+        .btn-indigo { background: #6366f1; color: white; } .btn-indigo:hover { background: #4f46e5; }
+        .btn-blue { background: #2563eb; color: white; } .btn-blue:hover { background: #1d4ed8; }
+        .tabs { background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; overflow-x: auto; }
+        .tab-btn { padding: 12px 24px; font-size: 14px; font-weight: 600; background: none; border: none; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; whitespace-nowrap; }
+        .tab-btn.active { border-bottom-color: #4f46e5; color: #4f46e5; }
+        .content { padding: 20px; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .legend { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 12px; }
+        .dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+        .table-responsive { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px; }
+        thead th { background: #e2e8f0; color: #334155; font-size: 11px; text-transform: uppercase; text-align: center; }
+        thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
+        input, select { width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-family: inherit; }
+        input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 600; }
+        .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
+        .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
+        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 11px; font-weight: 500; }
+        .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
+        .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; }
+        .btn-del { background: none; border: none; color: #ef4444; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; }
+        .btn-del:hover { color: #b91c1c; }
+        .hidden { display: none !important; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+        .card-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+        .grid-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
+        .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
+        @media print { .no-print { display: none !important; } body { padding: 0; background: white; } .container { border: none; box-shadow: none; } }
     </style>
 </head>
-<body class="p-2 md:p-6 text-gray-800">
-    <div class="max-w-[1600px] mx-auto bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+<body>
+    <div class="container">
         <!-- Header -->
-        <div class="bg-slate-800 text-white p-4 md:p-6 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-700">
+        <div class="header">
             <div>
-                <h1 class="text-2xl font-bold flex items-center gap-3">
-                    <i class="fa-solid fa-ruler-combined text-amber-400"></i>
-                    ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System)
-                </h1>
-                <p class="text-sm text-slate-300 mt-1">ถอดแบบรายการเหล็กฐานราก เสา คาน และคำนวณสรุปการสั่งซื้อวัสดุ (BOQ Optimization)</p>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System)</h1>
+                <p>ถอดแบบรายการเหล็กฐานราก เสา คาน และคำนวณสรุปการสั่งซื้อวัสดุ (BOQ Optimization)</p>
             </div>
-            <div class="flex flex-wrap gap-2 no-print">
-                <button onclick="loadDefaultData()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 py-2 rounded-lg text-sm transition flex items-center gap-2">
-                    <i class="fa-solid fa-rotate-left"></i> โหลดตัวอย่าง F1-F4
-                </button>
-                <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-lg text-sm transition flex items-center gap-2">
-                    <i class="fa-solid fa-file-excel"></i> Export Excel
-                </button>
-                <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-2 rounded-lg text-sm transition flex items-center gap-2">
-                    <i class="fa-solid fa-print"></i> พิมพ์รายงาน
-                </button>
+            <div class="btn-group no-print">
+                <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
+                <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
+                <button type="button" class="btn btn-indigo" onclick="window.print()">🖨️ พิมพ์รายงาน</button>
             </div>
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="bg-slate-100 border-b border-gray-200 flex overflow-x-auto no-print">
-            <button onclick="switchTab('barcut')" id="tab-barcut" class="px-6 py-3 font-semibold text-sm border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-table"></i> ตาราง Barcut คำนวณตัดเหล็ก
-            </button>
-            <button onclick="switchTab('summary')" id="tab-summary" class="px-6 py-3 font-semibold text-sm text-gray-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-boxes-packing"></i> สรุปรายการเหล็ก (BOQ Sheet)
-            </button>
-            <button onclick="switchTab('shapes')" id="tab-shapes" class="px-6 py-3 font-semibold text-sm text-gray-600 border-b-2 border-transparent hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-shapes"></i> รูปทรงเหล็กดัด (Shape Guide 1-10)
-            </button>
+        <div class="tabs no-print">
+            <button type="button" class="tab-btn active" id="tab-barcut" onclick="switchTab('barcut')">📋 ตาราง Barcut คำนวณตัดเหล็ก</button>
+            <button type="button" class="tab-btn" id="tab-summary" onclick="switchTab('summary')">📦 สรุปรายการเหล็ก (BOQ Sheet)</button>
+            <button type="button" class="tab-btn" id="tab-shapes" onclick="switchTab('shapes')">📐 รูปทรงเหล็กดัด (Shape Guide 1-10)</button>
         </div>
 
         <!-- Content Area -->
-        <div class="p-4 md:p-6">
+        <div class="content">
             <!-- TAB 1: BARCUT TABLE -->
-            <div id="content-barcut" class="space-y-4">
-                <div class="flex justify-between items-center flex-wrap gap-2 no-print">
-                    <div class="text-xs text-gray-500">
-                        <span class="inline-block w-3 h-3 bg-yellow-200 border border-amber-600 rounded-sm mr-1"></span> ช่องคีย์ข้อมูล
-                        <span class="inline-block w-3 h-3 bg-indigo-100 border border-indigo-400 rounded-sm ml-3 mr-1"></span> คำนวณอัตโนมัติ
+            <div id="content-barcut">
+                <div class="toolbar no-print">
+                    <div class="legend">
+                        <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล</span>
+                        <span><strong class="dot" style="background:#e0e7ff; border:1px solid #818cf8;"></strong> คำนวณอัตโนมัติ</span>
                     </div>
-                    <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1">
-                        <i class="fa-solid fa-plus"></i> เพิ่มรายการ
-                    </button>
+                    <button type="button" class="btn btn-blue" onclick="addRow()">➕ เพิ่มรายการ</button>
                 </div>
 
-                <div class="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
-                    <table class="w-full text-xs text-left text-gray-700 border-collapse" id="barcutTable">
-                        <thead class="text-xs uppercase bg-slate-200 text-slate-700 sticky top-0">
+                <div class="table-responsive">
+                    <table id="barcutTable">
+                        <thead>
                             <tr>
-                                <th class="p-2 border border-gray-300 text-center w-8 no-print">#</th>
-                                <th class="p-2 border border-gray-300 min-w-[120px]">Component</th>
-                                <th class="p-2 border border-gray-300 w-12 text-center">No.</th>
-                                <th class="p-2 border border-gray-300 w-20 text-center">Type</th>
-                                <th class="p-2 border border-gray-300 w-32 text-center bg-amber-100">ความยาวสต็อก</th>
-                                <th class="p-2 border border-gray-300 w-16 text-center">ชุด</th>
-                                <th class="p-2 border border-gray-300 w-16 text-center">ต่อชุด</th>
-                                <th class="p-2 border border-gray-300 w-16 text-center bg-indigo-50">รวมชิ้น</th>
-                                <th class="p-2 border border-gray-300 w-28 text-center">รูปทรง (Shape)</th>
-                                <th class="p-2 border border-gray-300 text-center bg-amber-50" colspan="6">ระยะดัดงอแต่ละช่วง (ซม.)</th>
-                                <th class="p-2 border border-gray-300 w-20 text-center bg-indigo-100">ยาวตัด/เส้น (ม.)</th>
-                                <th class="p-2 border border-gray-300 w-20 text-center bg-indigo-100">จำนวนท่อนหลัก</th>
-                                <th class="p-2 border border-gray-300 min-w-[220px] bg-pink-50">รายละเอียดเศษเหลือ</th>
-                                <th class="p-2 border border-gray-300 w-20 text-center bg-pink-100">น.น. เศษ (kg)</th>
-                                <th class="p-2 border border-gray-300 w-8 text-center no-print">ลบ</th>
+                                <th style="width:30px;" class="no-print">#</th>
+                                <th style="min-width:130px;">Component</th>
+                                <th style="width:45px;">No.</th>
+                                <th style="width:80px;">Type</th>
+                                <th style="width:130px; background:#fef3c7;">ความยาวสต็อก</th>
+                                <th style="width:55px;">ชุด</th>
+                                <th style="width:55px;">ต่อชุด</th>
+                                <th style="width:65px; background:#e0e7ff;">รวมชิ้น</th>
+                                <th style="width:110px;">รูปทรง (Shape)</th>
+                                <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ซม.)</th>
+                                <th style="width:85px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
+                                <th style="width:85px; background:#d1fae5;">จำนวนท่อนหลัก</th>
+                                <th style="min-width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ</th>
+                                <th style="width:80px; background:#fbcfe8;">น.น. เศษ (kg)</th>
+                                <th style="width:35px;" class="no-print">ลบ</th>
                             </tr>
-                            <tr class="bg-slate-100 text-[10px] text-gray-500">
-                                <th class="p-1 border border-gray-300 no-print"></th>
-                                <th class="p-1 border border-gray-300"></th>
-                                <th class="p-1 border border-gray-300"></th>
-                                <th class="p-1 border border-gray-300"></th>
-                                <th class="p-1 border border-gray-300 text-center">10m / 12m</th>
-                                <th class="p-1 border border-gray-300"></th>
-                                <th class="p-1 border border-gray-300"></th>
-                                <th class="p-1 border border-gray-300 text-center">Total</th>
-                                <th class="p-1 border border-gray-300 text-center">(แบบที่ 1-10)</th>
-                                <th class="p-1 border border-gray-300 text-center w-12">A</th>
-                                <th class="p-1 border border-gray-300 text-center w-12">B</th>
-                                <th class="p-1 border border-gray-300 text-center w-12">C</th>
-                                <th class="p-1 border border-gray-300 text-center w-12">D</th>
-                                <th class="p-1 border border-gray-300 text-center w-12">E</th>
-                                <th class="p-1 border border-gray-300 text-center w-12">F</th>
-                                <th class="p-1 border border-gray-300 text-center">Cut Length</th>
-                                <th class="p-1 border border-gray-300 text-center">∑Total Bar</th>
-                                <th class="p-1 border border-gray-300">Offcut Summary</th>
-                                <th class="p-1 border border-gray-300 text-center">Scrap Wt.</th>
-                                <th class="p-1 border border-gray-300 no-print"></th>
+                            <tr class="sub-header">
+                                <th class="no-print"></th><th></th><th></th><th></th>
+                                <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
+                                <th>(แบบที่ 1-10)</th>
+                                <th style="width:45px;">A</th><th style="width:45px;">B</th><th style="width:45px;">C</th><th style="width:45px;">D</th><th style="width:45px;">E</th><th style="width:45px;">F</th>
+                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT SUMMARY</th><th>SCRAP WT.</th>
+                                <th class="no-print"></th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -120,67 +121,40 @@
             </div>
 
             <!-- TAB 2: SUMMARY BOQ SHEET -->
-            <div id="content-summary" class="hidden space-y-6">
-                <div class="bg-indigo-900 text-white p-4 rounded-lg shadow-md flex justify-between items-center">
-                    <div>
-                        <h2 class="text-xl font-bold"><i class="fa-solid fa-list-check text-amber-400"></i> สรุปรายการสั่งซื้อเหล็ก (Rebar Procurement BOQ)</h2>
-                        <p class="text-xs text-indigo-200 mt-1">สรุปจำนวนท่อนเหล็กเส้นมาตรฐานที่ต้องสั่งซื้อ แยกตามขนาดเหล็กและความยาวท่อน</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                        <h3 class="font-bold text-gray-800 mb-3 border-b pb-2 flex items-center justify-between">
-                            <span><i class="fa-solid fa-cart-flatbed text-blue-600"></i> ตารางสรุปการสั่งซื้อ (Order Summary)</span>
-                        </h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-xs text-left text-gray-700 border">
-                                <thead class="bg-slate-100 uppercase text-gray-600">
+            <div id="content-summary" class="hidden">
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">🛒 ตารางสรุปการสั่งซื้อเหล็ก (Order Summary)</div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
                                     <tr>
-                                        <th class="p-2 border">ขนาดเหล็ก</th>
-                                        <th class="p-2 border text-center">ความยาวท่อน</th>
-                                        <th class="p-2 border text-center">จำนวน (ท่อน)</th>
-                                        <th class="p-2 border text-right">น้ำหนักรวม (kg)</th>
+                                        <th>ขนาดเหล็ก</th>
+                                        <th style="text-align:center;">ความยาวท่อน</th>
+                                        <th style="text-align:center;">จำนวน (ท่อน)</th>
+                                        <th style="text-align:right;">น้ำหนักรวม (kg)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="boqTableBody">
                                     <!-- Rendered via JS -->
                                 </tbody>
-                                <tfoot class="bg-slate-200 font-bold">
-                                    <tr>
-                                        <td colspan="2" class="p-2 border text-right">รวมน้ำหนักเหล็กทั้งหมด:</td>
-                                        <td id="totalBarCount" class="p-2 border text-center text-blue-700">0</td>
-                                        <td id="totalWeightKg" class="p-2 border text-right text-emerald-700">0.00</td>
+                                <tfoot>
+                                    <tr style="background:#f1f5f9; font-weight:bold;">
+                                        <td colspan="2" style="text-align:right;">รวมทั้งหมด:</td>
+                                        <td id="totalBarCount" style="text-align:center; color:#2563eb;">0</td>
+                                        <td id="totalWeightKg" style="text-align:right; color:#059669;">0.00</td>
                                     </tr>
                                 </tfoot>
                             </table>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <h3 class="font-bold text-gray-800 mb-3 border-b pb-2">
-                                <i class="fa-solid fa-chart-pie text-indigo-600"></i> สัดส่วนน้ำหนักเหล็กตามขนาด
-                            </h3>
-                            <div class="h-64 flex items-center justify-center">
-                                <canvas id="weightChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 mt-4 text-xs text-amber-800">
-                            <i class="fa-solid fa-circle-info mr-1 text-amber-600"></i>
-                            <strong>หมายเหตุการคำนวณ:</strong> ค่าน้ำหนักเหล็กอ้างอิงตามมาตรฐาน มอก.
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- TAB 3: SHAPE GUIDE -->
-            <div id="content-shapes" class="hidden space-y-4">
-                <div class="bg-slate-800 text-white p-4 rounded-lg">
-                    <h2 class="text-lg font-bold"><i class="fa-solid fa-shapes text-amber-400"></i> รูปทรงเหล็กดัดมาตรฐาน 10 แบบ (Rebar Bending Shapes)</h2>
-                    <p class="text-xs text-slate-300 mt-1">แสดงไดอะแกรมเส้นดัดงอและระยะ A, B, C, D, E, F สำหรับป้อนในตาราง Barcut</p>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="shapesContainer">
+            <div id="content-shapes" class="hidden">
+                <div class="card-title">📐 รูปทรงเหล็กดัดมาตรฐาน 10 แบบ (Rebar Bending Shapes)</div>
+                <div class="grid-shapes" id="shapesContainer">
                     <!-- Shape Cards rendered via JS -->
                 </div>
             </div>
@@ -194,31 +168,20 @@
             'DB28': 4.834, 'DB32': 6.313
         };
 
-        function getShapeSVG(shapeNum, width = 80, height = 40) {
+        function getShapeSVG(shapeNum, width = 60, height = 30) {
             const stroke = "#2563eb";
-            const strokeW = 3;
-            switch(shapeNum) {
-                case 1:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 15,15 L 15,35 L 85,35 L 85,15" fill="none" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-                case 2:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><line x1="10" y1="25" x2="90" y2="25" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round"/></svg>`;
-                case 3:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 20,10 L 20,40 L 85,40" fill="none" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-                case 4:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 20,10 L 20,38 L 80,38 L 80,10" fill="none" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-                case 5:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><rect x="20" y="10" width="60" height="30" fill="none" stroke="${stroke}" stroke-width="${strokeW}" rx="3"/><path d="M 20,15 L 30,22 M 20,10 L 28,18" stroke="${stroke}" stroke-width="2"/></svg>`;
-                case 6:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 10,35 L 35,35 L 50,15 L 90,15" fill="none" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-                case 7:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><circle cx="50" cy="25" r="18" fill="none" stroke="${stroke}" stroke-width="${strokeW}"/></svg>`;
-                case 8:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 15,12 L 85,12 L 15,38 L 85,38" fill="none" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-                case 9:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 10,40 L 30,40 L 30,15 L 70,15 L 70,40 L 90,40" fill="none" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-                case 10:
-                default:
-                    return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 15,25 Q 35,5 50,25 T 85,25" fill="none" stroke="${stroke}" stroke-width="${strokeW}" stroke-linecap="round"/></svg>`;
+            const sw = 2.5;
+            switch(parseInt(shapeNum)) {
+                case 1: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 15,15 L 15,35 L 85,35 L 85,15" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                case 2: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><line x1="10" y1="25" x2="90" y2="25" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/></svg>`;
+                case 3: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 20,10 L 20,40 L 85,40" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                case 4: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 20,10 L 20,38 L 80,38 L 80,10" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                case 5: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><rect x="20" y="10" width="60" height="30" fill="none" stroke="${stroke}" stroke-width="${sw}" rx="2"/><path d="M 20,15 L 30,22 M 20,10 L 28,18" stroke="${stroke}" stroke-width="2"/></svg>`;
+                case 6: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 10,35 L 35,35 L 50,15 L 90,15" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                case 7: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><circle cx="50" cy="25" r="18" fill="none" stroke="${stroke}" stroke-width="${sw}"/></svg>`;
+                case 8: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 15,12 L 85,12 L 15,38 L 85,38" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                case 9: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 10,40 L 30,40 L 30,15 L 70,15 L 70,40 L 90,40" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                case 10: default: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 15,25 Q 35,5 50,25 T 85,25" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/></svg>`;
             }
         }
 
@@ -229,14 +192,13 @@
             { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
         ];
 
-        let weightChart = null;
-
         function calculateItem(item) {
-            const cutLenM = (item.a + item.b + item.c + item.d + item.e + item.f) / 100;
-            const totalPieces = item.setQty * item.perSet;
+            const cutLenM = (parseFloat(item.a||0) + parseFloat(item.b||0) + parseFloat(item.c||0) + parseFloat(item.d||0) + parseFloat(item.e||0) + parseFloat(item.f||0)) / 100;
+            const totalPieces = parseInt(item.setQty||0) * parseInt(item.perSet||0);
+            const unitWeight = REBAR_WEIGHTS[item.type] || 1.578;
 
             if (cutLenM <= 0 || totalPieces <= 0) {
-                return { cutLenM: 0, totalPieces: 0, chosenStock: 12, isAuto: false, pcsPerBar: 0, totalBars: 0, scrapDetails: '-', totalScrapWeight: 0, unitWeight: REBAR_WEIGHTS[item.type] || 0 };
+                return { cutLenM: 0, totalPieces, chosenStock: 12, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ระบุระยะดัด', totalScrapWeight: 0, unitWeight };
             }
 
             let chosenStock = parseFloat(item.stockLen);
@@ -260,10 +222,9 @@
             }
 
             const pcsPerBar = Math.floor(chosenStock / cutLenM);
-            const unitWeight = REBAR_WEIGHTS[item.type] || 1.578;
 
             if (pcsPerBar <= 0) {
-                return { cutLenM, totalPieces, chosenStock, isAuto, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ยาวเกินท่อนสต็อก', totalScrapWeight: 0, unitWeight };
+                return { cutLenM, totalPieces, chosenStock, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ยาวเกินท่อนสต็อก', totalScrapWeight: 0, unitWeight };
             }
 
             const fullBars = Math.floor(totalPieces / pcsPerBar);
@@ -290,72 +251,61 @@
             const scrapDetails = scrapTextArr.join(', ');
             const totalScrapWeight = totalScrapLen * unitWeight;
 
-            return { cutLenM, totalPieces, chosenStock, isAuto, pcsPerBar, totalBars, scrapDetails, totalScrapWeight, unitWeight };
+            return { cutLenM, totalPieces, chosenStock, pcsPerBar, totalBars, scrapDetails, totalScrapWeight, unitWeight };
         }
 
         function renderTable() {
-            try {
-                const tbody = document.getElementById('tableBody');
-                if (!tbody) return;
-                tbody.innerHTML = '';
+            const tbody = document.getElementById('tableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
 
-                itemsData.forEach((item, index) => {
-                    const calc = calculateItem(item);
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-amber-50 transition border-b border-gray-200";
+            itemsData.forEach((item, index) => {
+                const calc = calculateItem(item);
+                const tr = document.createElement('tr');
 
-                    tr.innerHTML = `
-                        <td class="p-2 border text-center font-bold text-gray-500 no-print">${index + 1}</td>
-                        <td class="p-1 border"><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)" class="w-full px-1 py-0.5 border rounded"></td>
-                        <td class="p-1 border text-center"><input type="number" value="${item.no}" onchange="updateItem(${item.id}, 'no', +this.value)" class="w-10 text-center border rounded"></td>
-                        <td class="p-1 border text-center">
-                            <select onchange="updateItem(${item.id}, 'type', this.value)" class="w-full p-0.5 border rounded font-semibold text-blue-800">
-                                ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                tr.innerHTML = `
+                    <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
+                    <td><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)"></td>
+                    <td style="text-align:center;"><input type="number" value="${item.no}" onchange="updateItem(${item.id}, 'no', this.value)"></td>
+                    <td>
+                        <select onchange="updateItem(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
+                            ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td style="background:#fef3c7;">
+                        <select onchange="updateItem(${item.id}, 'stockLen', this.value)" style="font-weight:bold; color:#78350f; background:#fef3c7;">
+                            <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
+                            <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
+                            <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
+                        </select>
+                    </td>
+                    <td><input type="number" value="${item.setQty}" class="excel-in" onchange="updateItem(${item.id}, 'setQty', this.value)"></td>
+                    <td><input type="number" value="${item.perSet}" class="excel-in" onchange="updateItem(${item.id}, 'perSet', this.value)"></td>
+                    <td class="bg-calc">${calc.totalPieces}</td>
+                    <td>
+                        <div class="shape-box">
+                            <select onchange="updateItem(${item.id}, 'shape', parseInt(this.value))" style="font-weight:bold;">
+                                ${[1,2,3,4,5,6,7,8,9,10].map(s => `<option value="${s}" ${item.shape === s ? 'selected' : ''}>แบบที่ ${s}</option>`).join('')}
                             </select>
-                        </td>
-                        <td class="p-1 border text-center bg-amber-50">
-                            <select onchange="updateItem(${item.id}, 'stockLen', this.value)" class="w-full p-0.5 border rounded text-xs font-bold text-amber-900 bg-amber-100">
-                                <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
-                                <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
-                                <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
-                            </select>
-                        </td>
-                        <td class="p-1 border text-center"><input type="number" value="${item.setQty}" onchange="updateItem(${item.id}, 'setQty', +this.value)" class="w-12 text-center excel-input rounded"></td>
-                        <td class="p-1 border text-center"><input type="number" value="${item.perSet}" onchange="updateItem(${item.id}, 'perSet', +this.value)" class="w-12 text-center excel-input rounded"></td>
-                        <td class="p-1 border text-center font-bold text-blue-800 bg-indigo-50">${calc.totalPieces}</td>
-                        <td class="p-1 border text-center">
-                            <div class="flex items-center justify-center gap-1">
-                                <select onchange="updateItem(${item.id}, 'shape', +this.value)" class="p-0.5 border rounded font-bold text-xs">
-                                    ${[1,2,3,4,5,6,7,8,9,10].map(s => `<option value="${s}" ${item.shape === s ? 'selected' : ''}>แบบที่ ${s}</option>`).join('')}
-                                </select>
-                                <div class="inline-block border bg-white rounded p-0.5">
-                                    ${getShapeSVG(item.shape, 32, 20)}
-                                </div>
-                            </div>
-                        </td>
-                        <td class="p-1 border"><input type="number" value="${item.a}" onchange="updateItem(${item.id}, 'a', +this.value)" class="w-12 text-center border rounded"></td>
-                        <td class="p-1 border"><input type="number" value="${item.b}" onchange="updateItem(${item.id}, 'b', +this.value)" class="w-12 text-center border rounded"></td>
-                        <td class="p-1 border"><input type="number" value="${item.c}" onchange="updateItem(${item.id}, 'c', +this.value)" class="w-12 text-center border rounded"></td>
-                        <td class="p-1 border"><input type="number" value="${item.d}" onchange="updateItem(${item.id}, 'd', +this.value)" class="w-12 text-center border rounded"></td>
-                        <td class="p-1 border"><input type="number" value="${item.e}" onchange="updateItem(${item.id}, 'e', +this.value)" class="w-12 text-center border rounded"></td>
-                        <td class="p-1 border"><input type="number" value="${item.f}" onchange="updateItem(${item.id}, 'f', +this.value)" class="w-12 text-center border rounded"></td>
-                        <td class="p-1 border text-center font-bold text-indigo-900 bg-indigo-100">${calc.cutLenM.toFixed(3)}</td>
-                        <td class="p-1 border text-center font-bold text-emerald-800 bg-emerald-100">${calc.totalBars}</td>
-                        <td class="p-1 border text-xs bg-pink-50 text-pink-900 font-medium">
-                            ${calc.scrapDetails}
-                        </td>
-                        <td class="p-1 border text-center font-semibold text-pink-700 bg-pink-100">${calc.totalScrapWeight.toFixed(2)}</td>
-                        <td class="p-1 border text-center no-print">
-                            <button onclick="deleteRow(${item.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                            <div class="shape-preview">${getShapeSVG(item.shape, 28, 18)}</div>
+                        </div>
+                    </td>
+                    <td><input type="number" value="${item.a}" onchange="updateItem(${item.id}, 'a', this.value)"></td>
+                    <td><input type="number" value="${item.b}" onchange="updateItem(${item.id}, 'b', this.value)"></td>
+                    <td><input type="number" value="${item.c}" onchange="updateItem(${item.id}, 'c', this.value)"></td>
+                    <td><input type="number" value="${item.d}" onchange="updateItem(${item.id}, 'd', this.value)"></td>
+                    <td><input type="number" value="${item.e}" onchange="updateItem(${item.id}, 'e', this.value)"></td>
+                    <td><input type="number" value="${item.f}" onchange="updateItem(${item.id}, 'f', this.value)"></td>
+                    <td class="bg-calc">${calc.cutLenM.toFixed(3)}</td>
+                    <td class="bg-total">${calc.totalBars}</td>
+                    <td class="bg-scrap">${calc.scrapDetails}</td>
+                    <td class="bg-scrap-wt">${calc.totalScrapWeight.toFixed(2)}</td>
+                    <td class="no-print" style="text-align:center;"><button type="button" class="btn-del" onclick="deleteRow(${item.id})">❌</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
 
-                renderSummaryBOQ();
-            } catch (err) {
-                console.error("renderTable error:", err);
-            }
+            renderSummaryBOQ();
         }
 
         function updateItem(id, field, value) {
@@ -388,155 +338,95 @@
         }
 
         function renderSummaryBOQ() {
-            try {
-                const boqMap = {};
+            const boqMap = {};
+            itemsData.forEach(item => {
+                const calc = calculateItem(item);
+                const key = `${item.type}_${calc.chosenStock}`;
 
-                itemsData.forEach(item => {
-                    const calc = calculateItem(item);
-                    const key = `${item.type}_${calc.chosenStock}`;
+                if (!boqMap[key]) {
+                    boqMap[key] = { type: item.type, length: calc.chosenStock, bars: 0, weight: 0 };
+                }
+                boqMap[key].bars += calc.totalBars;
+                boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
+            });
 
-                    if (!boqMap[key]) {
-                        boqMap[key] = { type: item.type, length: calc.chosenStock, bars: 0, weight: 0 };
-                    }
-                    boqMap[key].bars += calc.totalBars;
-                    boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
-                });
+            const tbody = document.getElementById('boqTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
 
-                const tbody = document.getElementById('boqTableBody');
-                if (!tbody) return;
-                tbody.innerHTML = '';
+            let grandTotalBars = 0;
+            let grandTotalWeight = 0;
 
-                let grandTotalBars = 0;
-                let grandTotalWeight = 0;
+            Object.keys(boqMap).sort().forEach(key => {
+                const data = boqMap[key];
+                if (data.bars > 0) {
+                    grandTotalBars += data.bars;
+                    grandTotalWeight += data.weight;
 
-                const sortedKeys = Object.keys(boqMap).sort();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color:#1e40af;">${data.type}</td>
+                        <td style="text-align:center; font-weight:600; color:#b45309;">${data.length}.0 เมตร</td>
+                        <td style="text-align:center; font-weight:bold; color:#047857;">${data.bars}</td>
+                        <td style="text-align:right; font-weight:600;">${data.weight.toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
 
-                sortedKeys.forEach(key => {
-                    const data = boqMap[key];
-                    if (data.bars > 0) {
-                        grandTotalBars += data.bars;
-                        grandTotalWeight += data.weight;
-
-                        const tr = document.createElement('tr');
-                        tr.className = "border-b hover:bg-slate-50";
-                        tr.innerHTML = `
-                            <td class="p-2 border font-bold text-blue-900">${data.type}</td>
-                            <td class="p-2 border text-center font-semibold text-amber-800">${data.length}.0 เมตร</td>
-                            <td class="p-2 border text-center font-bold text-emerald-700">${data.bars}</td>
-                            <td class="p-2 border text-right font-semibold">${data.weight.toFixed(2)}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    }
-                });
-
-                document.getElementById('totalBarCount').innerText = grandTotalBars;
-                document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
-
-                updateChart(boqMap);
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-        function updateChart(boqMap) {
-            try {
-                if (typeof Chart === 'undefined') return;
-                const canvas = document.getElementById('weightChart');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-                const labels = [];
-                const dataWeights = [];
-
-                Object.values(boqMap).forEach(d => {
-                    if (d.weight > 0) {
-                        labels.push(`${d.type} (${d.length}m)`);
-                        dataWeights.push(d.weight.toFixed(2));
-                    }
-                });
-
-                if (weightChart) weightChart.destroy();
-
-                weightChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: dataWeights,
-                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            } catch(e) {
-                console.warn("Chart warning:", e);
-            }
+            document.getElementById('totalBarCount').innerText = grandTotalBars;
+            document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
         }
 
         function renderShapes() {
-            try {
-                const container = document.getElementById('shapesContainer');
-                if (!container) return;
-                container.innerHTML = '';
-                const shapeNames = [
-                    "แบบที่ 1: งอขอ 2 ด้าน",
-                    "แบบที่ 2: เส้นตรง",
-                    "แบบที่ 3: ฉาก L-Shape",
-                    "แบบที่ 4: U-Shape / ด้าน 3 ช่วง",
-                    "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม",
-                    "แบบที่ 6: เหล็กคอม้า / ดัดเยื้อง",
-                    "แบบที่ 7: เหล็กปลอกกลม",
-                    "แบบที่ 8: Z-Shape",
-                    "แบบที่ 9: เหล็กขาโต๊ะ / ขาสเก้า",
-                    "แบบที่ 10: ดัดรูปทรงพิเศษ"
-                ];
+            const container = document.getElementById('shapesContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const shapeNames = [
+                "แบบที่ 1: งอขอ 2 ด้าน", "แบบที่ 2: เส้นตรง", "แบบที่ 3: ฉาก L-Shape",
+                "แบบที่ 4: U-Shape / ด้าน 3 ช่วง", "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม", "แบบที่ 6: เหล็กคอม้า",
+                "แบบที่ 7: เหล็กปลอกกลม", "แบบที่ 8: Z-Shape", "แบบที่ 9: เหล็กขาโต๊ะ", "แบบที่ 10: รูปทรงพิเศษ"
+            ];
 
-                for (let i = 1; i <= 10; i++) {
-                    const card = document.createElement('div');
-                    card.className = "bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-center flex flex-col justify-between";
-                    card.innerHTML = `
-                        <div class="font-bold text-xs text-slate-800 mb-2">${shapeNames[i-1]}</div>
-                        <div class="h-28 bg-slate-50 rounded flex items-center justify-center border text-slate-400 p-2 my-1">
-                            ${getShapeSVG(i, 120, 60)}
-                        </div>
-                        <div class="text-[11px] text-slate-500 mt-1">สูตร: A + B + C + D + E + F</div>
-                    `;
-                    container.appendChild(card);
-                }
-            } catch(e) {
-                console.error(e);
+            for (let i = 1; i <= 10; i++) {
+                const card = document.createElement('div');
+                card.className = "shape-card";
+                card.innerHTML = `
+                    <div style="font-weight:bold; font-size:13px; color:#1e293b;">${shapeNames[i-1]}</div>
+                    <div class="shape-card-img">${getShapeSVG(i, 110, 50)}</div>
+                    <div style="font-size:11px; color:#64748b;">สูตร: A + B + C + D + E + F</div>
+                `;
+                container.appendChild(card);
             }
         }
 
         function switchTab(tab) {
             ['barcut', 'summary', 'shapes'].forEach(t => {
                 document.getElementById(`content-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('border-indigo-600', 'text-indigo-600');
-                document.getElementById(`tab-${t}`).classList.add('border-transparent', 'text-gray-600');
+                document.getElementById(`tab-${t}`).classList.remove('active');
             });
             document.getElementById(`content-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('border-indigo-600', 'text-indigo-600');
-            document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-600');
+            document.getElementById(`tab-${tab}`).classList.add('active');
             
             if (tab === 'summary') renderSummaryBOQ();
         }
 
         function exportToExcel() {
-            if (typeof XLSX === 'undefined') return alert('กำลังโหลดไลบรารี Excel กรุณารอครู่นึงแล้วลองใหม่');
-            const wb = XLSX.utils.book_new();
-            const wsData = [["Component", "No.", "Type", "Stock Length", "Set", "Per Set", "Total Pcs", "Cut Length (m)", "Total Bars", "Scrap Summary", "Scrap Wt (kg)"]];
+            let csv = "Component,No.,Type,Stock Length,Set,Per Set,Total Pcs,Cut Length (m),Total Bars,Scrap Summary,Scrap Wt (kg)\n";
             itemsData.forEach(item => {
                 const calc = calculateItem(item);
-                wsData.push([item.comp, item.no, item.type, calc.chosenStock, item.setQty, item.perSet, calc.totalPieces, calc.cutLenM, calc.totalBars, calc.scrapDetails, calc.totalScrapWeight]);
+                csv += `"${item.comp}",${item.no},"${item.type}",${calc.chosenStock},${item.setQty},${item.perSet},${calc.totalPieces},${calc.cutLenM},${calc.totalBars},"${calc.scrapDetails}",${calc.totalScrapWeight.toFixed(2)}\n`;
             });
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, "Barcut");
-            XLSX.writeFile(wb, "Barcut_Rebar_Calculation.xlsx");
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "Barcut_Summary.csv";
+            link.click();
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            renderTable();
-            renderShapes();
-        });
+        // Auto Render on Load
+        renderTable();
+        renderShapes();
     </script>
 </body>
 </html>
