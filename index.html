@@ -26,6 +26,8 @@
         .btn-blue { background: #2563eb; color: white; } .btn-blue:hover { background: #1d4ed8; }
         .btn-purple { background: #8b5cf6; color: white; } .btn-purple:hover { background: #7c3aed; }
         .btn-orange { background: #ea580c; color: white; } .btn-orange:hover { background: #c2410c; }
+        .btn-teal { background: #0d9488; color: white; } .btn-teal:hover { background: #0f766e; }
+        .btn-slate { background: #475569; color: white; } .btn-slate:hover { background: #334155; }
         
         .tabs { background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; overflow-x: auto; }
         .tab-btn { padding: 12px 24px; font-size: 14px; font-weight: 600; background: none; border: none; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; whitespace-nowrap; }
@@ -66,24 +68,33 @@
         
         .hidden { display: none !important; }
         .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
-        .card-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+        .card-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         .grid-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
-        /* Auto-Fit Page Scale For Printing - Fixed Shape SVG Overlay */
+        /* Modal for Project Library */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-card { background: white; border-radius: 12px; max-width: 600px; width: 90%; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+
+        /* Print Header Repeating Strategy */
+        .print-only-title { display: none; }
+        
         @media print { 
             @page { size: A4 landscape; margin: 5mm; }
-            .no-print, .tabs, .toolbar { display: none !important; } 
-            body { padding: 0; background: white; font-size: 7pt !important; color: #000; zoom: 82%; } 
+            .no-print, .tabs, .toolbar, .header { display: none !important; } 
+            body { padding: 0; background: white; font-size: 7.5pt !important; color: #000; zoom: 82%; } 
             .container { border: none; box-shadow: none; max-width: 100% !important; width: 100% !important; } 
             .content { padding: 0; }
-            #content-barcut, #content-summary { display: block !important; margin-bottom: 15px; page-break-inside: avoid; }
+            #content-barcut, #content-summary { display: block !important; margin-bottom: 15px; }
             #content-shapes { display: none !important; }
             
-            .project-input-box { font-size: 9pt !important; margin-top: 2px; }
-            .project-input-box label { color: #000 !important; font-weight: bold; }
-            .project-input { border: none !important; background: transparent !important; color: #000 !important; font-weight: bold !important; padding: 0 !important; width: auto !important; }
+            /* Repeat Header Tr in Print */
+            thead { display: table-header-group !important; }
+            tr { page-break-inside: avoid !important; }
+            
+            .print-only-title { display: table-row !important; }
+            .print-only-title th { background: #cbd5e1 !important; color: #000 !important; font-size: 9pt !important; text-align: left !important; padding: 6px !important; }
 
             input, select { 
                 border: none !important; 
@@ -98,13 +109,13 @@
             }
             .shape-box select { display: none !important; }
             .shape-preview { border: none !important; padding: 0 !important; background: transparent !important; width: 100% !important; }
-            .shape-preview svg { width: 22px !important; height: 14px !important; display: block; margin: 0 auto; }
+            .shape-preview svg { width: 20px !important; height: 12px !important; display: block; margin: 0 auto; }
             
             .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
             table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; font-size: 7.5pt !important; }
             th, td { border: 1px solid #000 !important; padding: 2px 1px !important; white-space: normal !important; word-break: break-word !important; }
             thead th { background-color: #f1f5f9 !important; color: #000 !important; font-size: 7pt !important; }
-            .card { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px; }
+            .card { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px; page-break-inside: avoid; }
             .card-title { border-bottom: 1px solid #000 !important; font-size: 9pt !important; margin-bottom: 6px; }
         }
     </style>
@@ -121,11 +132,13 @@
                 </div>
             </div>
             <div class="btn-group no-print">
-                <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ วิเคราะห์ความยาวสต็อก Auto ขั้นสูง (Zero-Waste)</button>
+                <button type="button" class="btn btn-teal" onclick="saveProjectToLibrary()">💾 บันทึกโครงการลงคลัง</button>
+                <button type="button" class="btn btn-slate" onclick="openLibraryModal()">📂 คลังโครงการที่บันทึกไว้</button>
+                <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณความยาวสต็อก Auto ขั้นสูง</button>
                 <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้าไฟล์ Excel</button>
                 <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)">
                 <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
-                <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel (รวมทุกชีท)</button>
+                <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
                 <button type="button" class="btn btn-indigo" onclick="printCompleteReport()">🖨️ พิมพ์รายงานสมบูรณ์</button>
             </div>
         </div>
@@ -153,6 +166,12 @@
                 <div class="table-responsive">
                     <table id="barcutTable">
                         <thead>
+                            <!-- Print-Only Header Row repeating on every printed page -->
+                            <tr class="print-only-title">
+                                <th colspan="19" id="printProjectHeaderTitle">
+                                    📌 รายงานรายการสั่งตัดเหล็กเสริม | หมวดหมู่งาน/โครงการ: เหล็กงานฐานราก
+                                </th>
+                            </tr>
                             <tr>
                                 <th style="width:25px;" class="no-print">#</th>
                                 <th style="width:110px;">Component</th>
@@ -194,7 +213,10 @@
             <!-- TAB 2: SUMMARY BOQ SHEET -->
             <div id="content-summary" class="hidden">
                 <div class="card">
-                    <div class="card-title">🛒 ตารางสรุปการสั่งซื้อเหล็กและวิเคราะห์เศษเหลือ (Order & Waste BOQ Summary)</div>
+                    <div class="card-title">
+                        <span>🛒 ตารางสรุปการสั่งซื้อเหล็กและวิเคราะห์เศษเหลือ (Order & Waste BOQ Summary)</span>
+                        <button type="button" class="btn btn-slate no-print" onclick="switchTab('barcut')">⬅️ กลับไปแก้ไขตาราง Barcut</button>
+                    </div>
                     <div class="table-responsive">
                         <table>
                             <thead>
@@ -234,6 +256,22 @@
         </div>
     </div>
 
+    <!-- Modal Project Library -->
+    <div id="libraryModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการที่บันทึกไว้</h3>
+                <button type="button" onclick="closeLibraryModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
+            </div>
+            <div id="libraryListContainer" style="max-height:300px; overflow-y:auto; margin-bottom:15px;">
+                <!-- Saved Projects List -->
+            </div>
+            <div style="text-align:right;">
+                <button type="button" class="btn btn-slate" onclick="closeLibraryModal()">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const REBAR_WEIGHTS = {
             'RB06': 0.222, 'RB09': 0.499, 'DB12': 0.888,
@@ -266,7 +304,6 @@
             { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 760, b: 0, c: 0, d: 0, e: 0, f: 0 }
         ];
 
-        // Global Best-Fit Optimizer Solver
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -292,7 +329,6 @@
                 typeGroups[d.type].push(d);
             });
 
-            // Analyze Best-Fit Cutting Bin Packing per rebar type
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
@@ -305,7 +341,6 @@
                     }
                 });
 
-                // Sort pieces descending for Best-Fit Decreasing Strategy
                 allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
 
                 const bins = [];
@@ -330,12 +365,10 @@
                         bin.pieces.push(piece);
                         bin.remainingSpace -= piece.cutLenM;
                     } else {
-                        // AUTO Optimization Evaluation (Minimum Scrap Strategy)
                         let chosenCapacity = 12;
                         if (piece.preferredStock === '10') chosenCapacity = 10;
                         else if (piece.preferredStock === '12') chosenCapacity = 12;
                         else {
-                            // Compare 10m vs 12m stock waste for minimal scrap
                             const rem10 = (10 - piece.cutLenM);
                             const rem12 = (12 - piece.cutLenM);
                             if (rem10 >= 0 && rem12 >= 0) {
@@ -364,7 +397,6 @@
                         const reusePiece = bin.pieces[i];
                         const cutLen = reusePiece.cutLenM;
                         
-                        // Exclude self-referencing No. in cross-row matching
                         if (primaryRowNo !== reusePiece.rowNo) {
                             const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
                             if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
@@ -394,17 +426,14 @@
 
                 let scrapTextArr = [];
 
-                // 1. Target Row Notice (From DIFFERENT No. only)
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
 
-                // 2. Source Row Notice (Sent to DIFFERENT No. only)
                 Object.values(res.sentToRowsMap).forEach(sent => {
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. True Remaining Scrap
                 if (res.totalScrapLen > 0) {
                     scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
                 } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
@@ -434,7 +463,6 @@
         }
 
         function optimizeFullProject() {
-            // Force reset all stock choices to Auto to perform Global Zero-Waste Optimization
             itemsData.forEach(item => { item.stockLen = 'auto'; });
             renderTable();
             alert('⚡ คำนวณจับคู่ความยาวสต็อก AUTO แบบ Zero-Waste ทั้งโครงการเรียบร้อยแล้ว!');
@@ -446,6 +474,13 @@
             tbody.innerHTML = '';
 
             const calcResults = calculateAllItems();
+
+            // Update print header title dynamically
+            const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
+            const printTitleElem = document.getElementById('printProjectHeaderTitle');
+            if (printTitleElem) {
+                printTitleElem.innerHTML = `📌 รายงานรายการสั่งตัดเหล็กเสริม | หมวดหมู่งาน/โครงการ: ${categoryName}`;
+            }
 
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
@@ -646,7 +681,78 @@
             if (tab === 'summary') renderSummaryBOQ();
         }
 
-        // Import Excel Data Function with Automatic AUTO Reset for Zero-Waste Re-Optimization
+        // Project Storage Library Functions
+        function saveProjectToLibrary() {
+            const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
+            const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+            
+            projects[categoryName] = {
+                categoryName: categoryName,
+                savedAt: new Date().toLocaleString('th-TH'),
+                itemsData: itemsData
+            };
+
+            localStorage.setItem('barcut_projects_library', JSON.stringify(projects));
+            alert(`💾 บันทึกโครงการ "${categoryName}" ลงคลังเรียบร้อยแล้ว!`);
+        }
+
+        function openLibraryModal() {
+            const modal = document.getElementById('libraryModal');
+            const container = document.getElementById('libraryListContainer');
+            const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+            
+            container.innerHTML = '';
+            const keys = Object.keys(projects);
+
+            if (keys.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#64748b; padding:20px;">ยังไม่มีโครงการที่บันทึกไว้ในคลัง</p>`;
+            } else {
+                keys.forEach(key => {
+                    const proj = projects[key];
+                    const div = document.createElement('div');
+                    div.style.cssText = "display:flex; justify-space-between; align-items:center; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:8px; background:#f8fafc;";
+                    div.innerHTML = `
+                        <div>
+                            <div style="font-weight:bold; color:#1e293b; font-size:14px;">${proj.categoryName}</div>
+                            <div style="font-size:11px; color:#64748b;">บันทึกเมื่อ: ${proj.savedAt} (${proj.itemsData.length} รายการ)</div>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn btn-indigo" style="padding:4px 8px; font-size:12px;" onclick="loadProjectFromLibrary('${proj.categoryName}')">📂 เปิดทำต่อ</button>
+                            <button type="button" class="btn btn-del" style="font-size:14px;" onclick="deleteProjectFromLibrary('${proj.categoryName}')">❌</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeLibraryModal() {
+            document.getElementById('libraryModal').classList.add('hidden');
+        }
+
+        function loadProjectFromLibrary(categoryName) {
+            const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+            if (projects[categoryName]) {
+                itemsData = projects[categoryName].itemsData;
+                document.getElementById('workCategory').value = projects[categoryName].categoryName;
+                renderTable();
+                closeLibraryModal();
+                alert(`📂 เปิดโครงการ "${categoryName}" ขึ้นมาทำต่อเรียบร้อยแล้ว!`);
+            }
+        }
+
+        function deleteProjectFromLibrary(categoryName) {
+            if (confirm(`คุณต้องการลบโครงการ "${categoryName}" ออกจากคลังใช่หรือไม่?`)) {
+                const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+                delete projects[categoryName];
+                localStorage.setItem('barcut_projects_library', JSON.stringify(projects));
+                openLibraryModal();
+            }
+        }
+
+        // Import Excel Data Function with Automatic AUTO Reset
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -686,9 +792,7 @@
                             const comp = String(row[1] || 'ชิ้นงาน');
                             const no = parseInt(row[2]) || (parsedItems.length + 1);
                             const type = String(row[3] || 'DB16').trim();
-                            
-                            // Force set to AUTO upon importing to recalculate optimal zero-waste stock length
-                            const stockLen = 'auto'; 
+                            const stockLen = 'auto'; // Force reset to auto for zero-waste re-optimization
 
                             const setQty = parseInt(row[5]) || 1;
                             const perSet = parseInt(row[6]) || 1;
