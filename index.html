@@ -75,13 +75,11 @@
         .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
-        /* Modal for Project Library */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: white; border-radius: 12px; max-width: 600px; width: 90%; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
 
         .print-only-title { display: none; }
         
-        /* Auto-Fit Page Scale For Printing - Fixed Shape SVG Overlay */
         @media print { 
             @page { size: A4 landscape; margin: 5mm; }
             .no-print, .tabs, .toolbar, .header { display: none !important; } 
@@ -314,6 +312,7 @@
             });
         }
 
+        // Exact-Fit Priority & Zero-Waste Optimizer Algorithm
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -333,6 +332,25 @@
                 isReuse: false
             }));
 
+            // Step 1: Pre-process Exact Zero-Waste Full Bars (e.g. 4 pcs x 2.50m = 10.00m)
+            rowDemands.forEach((d) => {
+                if (d.cutLenM > 0 && d.totalPieces > 0) {
+                    [10, 12].forEach((cap) => {
+                        const pcsPerFullBar = Math.floor(cap / d.cutLenM);
+                        if (pcsPerFullBar > 0 && Math.abs((pcsPerFullBar * d.cutLenM) - cap) < 0.001) {
+                            // Exact 100% full bar match with 0 scrap!
+                            const fullBarsCount = Math.floor(d.totalPieces / pcsPerFullBar);
+                            if (fullBarsCount > 0) {
+                                rowResults[d.index].newBarsCount += fullBarsCount;
+                                rowResults[d.index].chosenStock = cap;
+                                d.totalPieces -= (fullBarsCount * pcsPerFullBar); // Deduct satisfied pieces
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Step 2: Global Best-Fit Bin Packing for remaining pieces
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -459,7 +477,7 @@
 
                 finalResults.push({
                     cutLenM: demand.cutLenM,
-                    totalPieces: demand.totalPieces,
+                    totalPieces: (item.setQty * item.perSet),
                     chosenStock: res.chosenStock,
                     totalBars: res.newBarsCount,
                     scrapDetails,
@@ -479,7 +497,7 @@
         }
 
         function renderTable() {
-            resequenceNumbers(); // Automatically re-sequence No. 1, 2, 3...
+            resequenceNumbers();
             const tbody = document.getElementById('tableBody');
             if (!tbody) return;
             tbody.innerHTML = '';
@@ -498,7 +516,7 @@
 
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
-                    <td><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)" style="text-align:left; padding-left:6px;"></td>
+                    <td><input type="text" value="${item.comp}" oninput="updateItem(${item.id}, 'comp', this.value)" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="number" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td>
                         <select onchange="updateItem(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
@@ -512,8 +530,8 @@
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
                         </select>
                     </td>
-                    <td><input type="number" value="${item.setQty}" class="excel-in" onchange="updateItem(${item.id}, 'setQty', this.value)"></td>
-                    <td><input type="number" value="${item.perSet}" class="excel-in" onchange="updateItem(${item.id}, 'perSet', this.value)"></td>
+                    <td><input type="number" value="${item.setQty}" class="excel-in" oninput="updateItem(${item.id}, 'setQty', +this.value)"></td>
+                    <td><input type="number" value="${item.perSet}" class="excel-in" oninput="updateItem(${item.id}, 'perSet', +this.value)"></td>
                     <td class="bg-calc">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
@@ -523,12 +541,12 @@
                             <div class="shape-preview">${getShapeSVG(item.shape, 28, 18)}</div>
                         </div>
                     </td>
-                    <td><input type="number" value="${item.a}" onchange="updateItem(${item.id}, 'a', this.value)"></td>
-                    <td><input type="number" value="${item.b}" onchange="updateItem(${item.id}, 'b', this.value)"></td>
-                    <td><input type="number" value="${item.c}" onchange="updateItem(${item.id}, 'c', this.value)"></td>
-                    <td><input type="number" value="${item.d}" onchange="updateItem(${item.id}, 'd', this.value)"></td>
-                    <td><input type="number" value="${item.e}" onchange="updateItem(${item.id}, 'e', this.value)"></td>
-                    <td><input type="number" value="${item.f}" onchange="updateItem(${item.id}, 'f', this.value)"></td>
+                    <td><input type="number" value="${item.a}" oninput="updateItem(${item.id}, 'a', +this.value)"></td>
+                    <td><input type="number" value="${item.b}" oninput="updateItem(${item.id}, 'b', +this.value)"></td>
+                    <td><input type="number" value="${item.c}" oninput="updateItem(${item.id}, 'c', +this.value)"></td>
+                    <td><input type="number" value="${item.d}" oninput="updateItem(${item.id}, 'd', +this.value)"></td>
+                    <td><input type="number" value="${item.e}" oninput="updateItem(${item.id}, 'e', +this.value)"></td>
+                    <td><input type="number" value="${item.f}" oninput="updateItem(${item.id}, 'f', +this.value)"></td>
                     <td class="bg-calc">${calc.cutLenM.toFixed(3)}</td>
                     <td class="bg-total">${calc.totalBars}</td>
                     <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}">${calc.scrapDetails}</td>
