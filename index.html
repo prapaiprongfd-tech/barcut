@@ -70,17 +70,17 @@
         .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
-        /* Complete Print Page Setup - Prevents Right Side Clipping */
+        /* Fixed Print CSS - Full Fit A4 Landscape */
         @media print { 
-            @page { size: A4 landscape; margin: 8mm; }
+            @page { size: A4 landscape; margin: 5mm; }
             .no-print, .tabs, .toolbar { display: none !important; } 
-            body { padding: 0; background: white; font-size: 8.5pt; color: #000; } 
-            .container { border: none; box-shadow: none; max-width: 100%; width: 100%; } 
+            body { padding: 0; background: white; font-size: 7.5pt !important; color: #000; } 
+            .container { border: none; box-shadow: none; max-width: 100% !important; width: 100% !important; } 
             .content { padding: 0; }
-            #content-barcut, #content-summary { display: block !important; margin-bottom: 20px; page-break-inside: avoid; }
+            #content-barcut, #content-summary { display: block !important; margin-bottom: 15px; page-break-inside: avoid; }
             #content-shapes { display: none !important; }
             
-            .project-input-box { font-size: 10pt !important; margin-top: 4px; }
+            .project-input-box { font-size: 9pt !important; margin-top: 2px; }
             .project-input-box label { color: #000 !important; font-weight: bold; }
             .project-input { border: none !important; background: transparent !important; color: #000 !important; font-weight: bold !important; padding: 0 !important; width: auto !important; }
 
@@ -91,17 +91,18 @@
                 -webkit-appearance: none !important;
                 font-weight: bold !important; 
                 padding: 0 !important; 
-                font-size: 8.5pt !important;
+                font-size: 7.5pt !important;
                 height: auto !important;
                 text-align: center !important;
             }
             .shape-preview { border: none !important; padding: 0 !important; }
+            .shape-preview svg { width: 22px !important; height: 14px !important; }
             .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
-            table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; font-size: 8.5pt !important; }
-            th, td { border: 1px solid #000 !important; padding: 3px 2px !important; white-space: normal !important; word-break: break-word !important; }
-            thead th { background-color: #f1f5f9 !important; color: #000 !important; font-size: 8pt !important; }
-            .card { border: 1px solid #000 !important; padding: 10px !important; margin-top: 15px; }
-            .card-title { border-bottom: 1px solid #000 !important; font-size: 10pt !important; margin-bottom: 8px; }
+            table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; font-size: 7.5pt !important; }
+            th, td { border: 1px solid #000 !important; padding: 2px 1px !important; white-space: normal !important; word-break: break-word !important; }
+            thead th { background-color: #f1f5f9 !important; color: #000 !important; font-size: 7pt !important; }
+            .card { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px; }
+            .card-title { border-bottom: 1px solid #000 !important; font-size: 9pt !important; margin-bottom: 6px; }
         }
     </style>
 </head>
@@ -148,32 +149,32 @@
                     <table id="barcutTable">
                         <thead>
                             <tr>
-                                <th style="min-width:30px;" class="no-print">#</th>
-                                <th style="min-width:120px;">Component</th>
-                                <th style="min-width:45px;">No.</th>
-                                <th style="min-width:75px;">Type</th>
-                                <th style="min-width:115px; background:#fef3c7;">ความยาวสต็อก</th>
-                                <th style="min-width:50px;">ชุด</th>
-                                <th style="min-width:50px;">ต่อชุด</th>
-                                <th style="min-width:60px; background:#e0e7ff;">รวมชิ้น</th>
-                                <th style="min-width:120px;">รูปทรง (Shape)</th>
+                                <th style="width:25px;" class="no-print">#</th>
+                                <th style="width:110px;">Component</th>
+                                <th style="width:35px;">No.</th>
+                                <th style="width:60px;">Type</th>
+                                <th style="width:95px; background:#fef3c7;">ความยาวสต็อก</th>
+                                <th style="width:40px;">ชุด</th>
+                                <th style="width:40px;">ต่อชุด</th>
+                                <th style="width:45px; background:#e0e7ff;">รวมชิ้น</th>
+                                <th style="width:105px;">รูปทรง (Shape)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ซม.)</th>
-                                <th style="min-width:85px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
-                                <th style="min-width:85px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="min-width:250px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
-                                <th style="min-width:80px; background:#fbcfe8;">น.น. เศษ (kg)</th>
-                                <th style="min-width:65px;" class="no-print">จัดการ</th>
+                                <th style="width:75px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
+                                <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
+                                <th style="width:240px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
+                                <th style="width:70px; background:#fbcfe8;">น.น. เศษ (kg)</th>
+                                <th style="width:60px;" class="no-print">จัดการ</th>
                             </tr>
                             <tr class="sub-header">
                                 <th class="no-print"></th><th></th><th></th><th></th>
                                 <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
                                 <th>(แบบที่ 1-10)</th>
-                                <th style="min-width:48px;">A</th>
-                                <th style="min-width:48px;">B</th>
-                                <th style="min-width:48px;">C</th>
-                                <th style="min-width:48px;">D</th>
-                                <th style="min-width:48px;">E</th>
-                                <th style="min-width:48px;">F</th>
+                                <th style="width:38px;">A</th>
+                                <th style="width:38px;">B</th>
+                                <th style="width:38px;">C</th>
+                                <th style="width:38px;">D</th>
+                                <th style="width:38px;">E</th>
+                                <th style="width:38px;">F</th>
                                 <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT & REUSE SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
@@ -637,7 +638,6 @@
             const wb = XLSX.utils.book_new();
             const calcResults = calculateAllItems();
 
-            // Sheet 1: Barcut Table Sheet
             const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (cm)", "B (cm)", "C (cm)", "D (cm)", "E (cm)", "F (cm)", "Cut Length (m)", "Total Bars", "Offcut & Reuse Summary", "Scrap Weight (kg)"];
             const barcutRows = [
                 [`หมวดหมู่งาน / โครงการ: ${categoryName}`],
@@ -670,7 +670,6 @@
             const wsBarcut = XLSX.utils.aoa_to_sheet(barcutRows);
             XLSX.utils.book_append_sheet(wb, wsBarcut, "ตาราง Barcut คำนวณตัดเหล็ก");
 
-            // Sheet 2: BOQ Sheet
             const boqHeader = ["ขนาดเหล็ก", "ความยาวท่อน (ม.)", "จำนวนสั่งซื้อ (ท่อน)", "น้ำหนักสั่งซื้อ (kg)", "น้ำหนักเศษเหลือ (kg)", "สัดส่วนเศษเหลือ (% Scrap)"];
             const boqRows = [
                 [`หมวดหมู่งาน / โครงการ: ${categoryName}`],
