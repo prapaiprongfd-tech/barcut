@@ -12,7 +12,12 @@
         .container { max-width: 1600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
         .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; }
-        .header p { font-size: 13px; color: #cbd5e1; margin-top: 4px; }
+        
+        .project-input-box { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+        .project-input-box label { font-size: 13px; color: #fcd34d; font-weight: 600; }
+        .project-input { background: #ffffff; border: 1px solid #f59e0b; border-radius: 6px; padding: 4px 10px; font-size: 13px; font-weight: 600; color: #0f172a; width: 320px; outline: none; }
+        .project-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+
         .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
         .btn { padding: 8px 14px; font-size: 13px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
         .btn-amber { background: #f59e0b; color: #0f172a; } .btn-amber:hover { background: #d97706; }
@@ -30,8 +35,8 @@
         .dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
         .table-responsive { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; white-space: nowrap; }
-        th, td { border: 1px solid #cbd5e1; padding: 6px 3px; vertical-align: middle; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 3px; vertical-align: middle; white-space: nowrap; }
         thead th { background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; }
         thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
         
@@ -45,8 +50,8 @@
         
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
-        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; }
-        .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; }
+        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 250px; }
+        .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; white-space: normal; min-width: 250px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
         
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 125px; }
@@ -65,20 +70,38 @@
         .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
-        /* Print Report CSS Optimizations */
+        /* Complete Print Page Setup - Prevents Right Side Clipping */
         @media print { 
+            @page { size: A4 landscape; margin: 8mm; }
             .no-print, .tabs, .toolbar { display: none !important; } 
-            body { padding: 0; background: white; font-size: 10pt; } 
-            .container { border: none; box-shadow: none; max-width: 100%; } 
+            body { padding: 0; background: white; font-size: 8.5pt; color: #000; } 
+            .container { border: none; box-shadow: none; max-width: 100%; width: 100%; } 
             .content { padding: 0; }
-            #content-barcut, #content-summary { display: block !important; margin-bottom: 30px; page-break-inside: avoid; }
+            #content-barcut, #content-summary { display: block !important; margin-bottom: 20px; page-break-inside: avoid; }
             #content-shapes { display: none !important; }
-            input, select { border: none !important; background: transparent !important; appearance: none !important; font-weight: bold !important; padding: 0 !important; }
-            .shape-preview { border: none !important; }
-            .table-responsive { border: none; overflow: visible; }
-            table { width: 100% !important; border-collapse: collapse !important; }
-            th, td { border: 1px solid #000 !important; padding: 4px !important; }
-            thead th { background-color: #f1f5f9 !important; color: #000 !important; }
+            
+            .project-input-box { font-size: 10pt !important; margin-top: 4px; }
+            .project-input-box label { color: #000 !important; font-weight: bold; }
+            .project-input { border: none !important; background: transparent !important; color: #000 !important; font-weight: bold !important; padding: 0 !important; width: auto !important; }
+
+            input, select { 
+                border: none !important; 
+                background: transparent !important; 
+                appearance: none !important; 
+                -webkit-appearance: none !important;
+                font-weight: bold !important; 
+                padding: 0 !important; 
+                font-size: 8.5pt !important;
+                height: auto !important;
+                text-align: center !important;
+            }
+            .shape-preview { border: none !important; padding: 0 !important; }
+            .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
+            table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; font-size: 8.5pt !important; }
+            th, td { border: 1px solid #000 !important; padding: 3px 2px !important; white-space: normal !important; word-break: break-word !important; }
+            thead th { background-color: #f1f5f9 !important; color: #000 !important; font-size: 8pt !important; }
+            .card { border: 1px solid #000 !important; padding: 10px !important; margin-top: 15px; }
+            .card-title { border-bottom: 1px solid #000 !important; font-size: 10pt !important; margin-bottom: 8px; }
         }
     </style>
 </head>
@@ -88,7 +111,10 @@
         <div class="header">
             <div>
                 <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System)</h1>
-                <p>ถอดแบบรายการเหล็กฐานราก เสา คาน และคำนวณสรุปการสั่งซื้อวัสดุ (BOQ Optimization)</p>
+                <div class="project-input-box">
+                    <label for="workCategory">หมวดหมู่งาน / โครงการ:</label>
+                    <input type="text" id="workCategory" class="project-input" value="เหล็กงานฐานราก" placeholder="เช่น เหล็กงานฐานราก, เหล็กงานคาน, เหล็กงานเสา">
+                </div>
             </div>
             <div class="btn-group no-print">
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณจับคู่เหล็กขั้นสูง (Global Best-Fit)</button>
@@ -122,32 +148,32 @@
                     <table id="barcutTable">
                         <thead>
                             <tr>
-                                <th style="min-width:35px;" class="no-print">#</th>
-                                <th style="min-width:140px;">Component</th>
-                                <th style="min-width:55px;">No.</th>
-                                <th style="min-width:85px;">Type</th>
-                                <th style="min-width:130px; background:#fef3c7;">ความยาวสต็อก</th>
-                                <th style="min-width:60px;">ชุด</th>
-                                <th style="min-width:60px;">ต่อชุด</th>
-                                <th style="min-width:70px; background:#e0e7ff;">รวมชิ้น</th>
-                                <th style="min-width:135px;">รูปทรง (Shape)</th>
+                                <th style="min-width:30px;" class="no-print">#</th>
+                                <th style="min-width:120px;">Component</th>
+                                <th style="min-width:45px;">No.</th>
+                                <th style="min-width:75px;">Type</th>
+                                <th style="min-width:115px; background:#fef3c7;">ความยาวสต็อก</th>
+                                <th style="min-width:50px;">ชุด</th>
+                                <th style="min-width:50px;">ต่อชุด</th>
+                                <th style="min-width:60px; background:#e0e7ff;">รวมชิ้น</th>
+                                <th style="min-width:120px;">รูปทรง (Shape)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ซม.)</th>
-                                <th style="min-width:95px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
-                                <th style="min-width:95px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="min-width:280px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
-                                <th style="min-width:90px; background:#fbcfe8;">น.น. เศษ (kg)</th>
-                                <th style="min-width:70px;" class="no-print">จัดการ</th>
+                                <th style="min-width:85px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
+                                <th style="min-width:85px; background:#d1fae5;">จำนวนท่อนหลัก</th>
+                                <th style="min-width:250px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
+                                <th style="min-width:80px; background:#fbcfe8;">น.น. เศษ (kg)</th>
+                                <th style="min-width:65px;" class="no-print">จัดการ</th>
                             </tr>
                             <tr class="sub-header">
                                 <th class="no-print"></th><th></th><th></th><th></th>
                                 <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
                                 <th>(แบบที่ 1-10)</th>
-                                <th style="min-width:58px;">A</th>
-                                <th style="min-width:58px;">B</th>
-                                <th style="min-width:58px;">C</th>
-                                <th style="min-width:58px;">D</th>
-                                <th style="min-width:58px;">E</th>
-                                <th style="min-width:58px;">F</th>
+                                <th style="min-width:48px;">A</th>
+                                <th style="min-width:48px;">B</th>
+                                <th style="min-width:48px;">C</th>
+                                <th style="min-width:48px;">D</th>
+                                <th style="min-width:48px;">E</th>
+                                <th style="min-width:48px;">F</th>
                                 <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT & REUSE SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
@@ -601,19 +627,23 @@
             if (tab === 'summary') renderSummaryBOQ();
         }
 
-        // Export Multi-Sheet Excel (Includes Barcut Table + Summary BOQ)
         function exportToExcel() {
             if (typeof XLSX === 'undefined') {
                 alert('กำลังโหลดไลบรารี Excel กรุณารอครู่หนึ่งแล้วกดใหม่อีกครั้ง');
                 return;
             }
 
+            const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
             const wb = XLSX.utils.book_new();
             const calcResults = calculateAllItems();
 
-            // Sheet 1: Barcut Detail Sheet
+            // Sheet 1: Barcut Table Sheet
             const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (cm)", "B (cm)", "C (cm)", "D (cm)", "E (cm)", "F (cm)", "Cut Length (m)", "Total Bars", "Offcut & Reuse Summary", "Scrap Weight (kg)"];
-            const barcutRows = [barcutHeader];
+            const barcutRows = [
+                [`หมวดหมู่งาน / โครงการ: ${categoryName}`],
+                [],
+                barcutHeader
+            ];
 
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
@@ -640,9 +670,13 @@
             const wsBarcut = XLSX.utils.aoa_to_sheet(barcutRows);
             XLSX.utils.book_append_sheet(wb, wsBarcut, "ตาราง Barcut คำนวณตัดเหล็ก");
 
-            // Sheet 2: BOQ Procurement Sheet
+            // Sheet 2: BOQ Sheet
             const boqHeader = ["ขนาดเหล็ก", "ความยาวท่อน (ม.)", "จำนวนสั่งซื้อ (ท่อน)", "น้ำหนักสั่งซื้อ (kg)", "น้ำหนักเศษเหลือ (kg)", "สัดส่วนเศษเหลือ (% Scrap)"];
-            const boqRows = [boqHeader];
+            const boqRows = [
+                [`หมวดหมู่งาน / โครงการ: ${categoryName}`],
+                [],
+                boqHeader
+            ];
 
             const boqMap = {};
             itemsData.forEach((item, index) => {
@@ -677,22 +711,18 @@
             const wsBOQ = XLSX.utils.aoa_to_sheet(boqRows);
             XLSX.utils.book_append_sheet(wb, wsBOQ, "สรุปรายการสั่งซื้อ BOQ");
 
-            XLSX.writeFile(wb, "Barcut_Full_Report.xlsx");
+            XLSX.writeFile(wb, `Barcut_${categoryName.replace(/\s+/g, '_')}.xlsx`);
         }
 
-        // Print Complete Report (Includes both Barcut Table + Summary BOQ Sheet)
         function printCompleteReport() {
-            // Unhide summary sheet temporarily for printing
             const summaryDiv = document.getElementById('content-summary');
             const wasHidden = summaryDiv.classList.contains('hidden');
             summaryDiv.classList.remove('hidden');
 
             renderSummaryBOQ();
 
-            // Trigger window print
             window.print();
 
-            // Restore tab state if it was hidden
             if (wasHidden && !document.getElementById('tab-summary').classList.contains('active')) {
                 summaryDiv.classList.add('hidden');
             }
