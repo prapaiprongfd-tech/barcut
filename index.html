@@ -168,7 +168,7 @@
                         </div>
                         <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 mt-4 text-xs text-amber-800">
                             <i class="fa-solid fa-circle-info mr-1 text-amber-600"></i>
-                            <strong>หมายเหตุการคำนวณ:</strong> ค่าน้ำหนักเหล็กอ้างอิงตามมาตรฐาน มอก. โดยใช้สูตร $W = \frac{d^2}{162.2} \text{ kg/m}$ 
+                            <strong>หมายเหตุการคำนวณ:</strong> ค่าน้ำหนักเหล็กอ้างอิงตามมาตรฐาน มอก.
                         </div>
                     </div>
                 </div>
@@ -231,11 +231,6 @@
 
         let weightChart = null;
 
-        function initApp() {
-            renderTable();
-            renderShapes();
-        }
-
         function calculateItem(item) {
             const cutLenM = (item.a + item.b + item.c + item.d + item.e + item.f) / 100;
             const totalPieces = item.setQty * item.perSet;
@@ -249,14 +244,13 @@
 
             function evalStock(len) {
                 const pcs = Math.floor(len / cutLenM);
-                if (pcs <= 0) return { bars: 999999, scrapWeight: 999999 };
+                if (pcs <= 0) return { bars: 999999, scrapLen: 999999 };
                 const fullBars = Math.floor(totalPieces / pcs);
                 const remPcs = totalPieces % pcs;
                 const totalBars = Math.ceil(totalPieces / pcs);
                 const fullScrap = (len - (pcs * cutLenM)) * fullBars;
                 const lastScrap = remPcs > 0 ? (len - (remPcs * cutLenM)) : 0;
-                const totalScrapLen = fullScrap + lastScrap;
-                return { bars: totalBars, scrapLen: totalScrapLen };
+                return { bars: totalBars, scrapLen: fullScrap + lastScrap };
             }
 
             if (isAuto) {
@@ -265,4 +259,284 @@
                 chosenStock = (res10.scrapLen <= res12.scrapLen) ? 10 : 12;
             }
 
-            const pcsPerBar
+            const pcsPerBar = Math.floor(chosenStock / cutLenM);
+            const unitWeight = REBAR_WEIGHTS[item.type] || 1.578;
+
+            if (pcsPerBar <= 0) {
+                return { cutLenM, totalPieces, chosenStock, isAuto, pcsPerBar: 0, totalBars: 0, scrapDetails: 'ยาวเกินท่อนสต็อก', totalScrapWeight: 0, unitWeight };
+            }
+
+            const fullBars = Math.floor(totalPieces / pcsPerBar);
+            const remPcs = totalPieces % pcsPerBar;
+            const totalBars = Math.ceil(totalPieces / pcsPerBar);
+
+            const fullBarScrap = chosenStock - (pcsPerBar * cutLenM);
+            const lastBarScrap = remPcs > 0 ? (chosenStock - (remPcs * cutLenM)) : 0;
+
+            let totalScrapLen = 0;
+            let scrapTextArr = [];
+
+            if (remPcs === 0) {
+                totalScrapLen = fullBarScrap * totalBars;
+                scrapTextArr.push(`${item.type} = ${fullBarScrap.toFixed(2)}m (${totalBars} ท่อน)`);
+            } else {
+                totalScrapLen = (fullBarScrap * fullBars) + lastBarScrap;
+                if (fullBars > 0) {
+                    scrapTextArr.push(`เศษ ${fullBarScrap.toFixed(2)}m (${fullBars} ท่อน)`);
+                }
+                scrapTextArr.push(`เศษ ${lastBarScrap.toFixed(2)}m (1 ท่อน)`);
+            }
+
+            const scrapDetails = scrapTextArr.join(', ');
+            const totalScrapWeight = totalScrapLen * unitWeight;
+
+            return { cutLenM, totalPieces, chosenStock, isAuto, pcsPerBar, totalBars, scrapDetails, totalScrapWeight, unitWeight };
+        }
+
+        function renderTable() {
+            try {
+                const tbody = document.getElementById('tableBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                itemsData.forEach((item, index) => {
+                    const calc = calculateItem(item);
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-amber-50 transition border-b border-gray-200";
+
+                    tr.innerHTML = `
+                        <td class="p-2 border text-center font-bold text-gray-500 no-print">${index + 1}</td>
+                        <td class="p-1 border"><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)" class="w-full px-1 py-0.5 border rounded"></td>
+                        <td class="p-1 border text-center"><input type="number" value="${item.no}" onchange="updateItem(${item.id}, 'no', +this.value)" class="w-10 text-center border rounded"></td>
+                        <td class="p-1 border text-center">
+                            <select onchange="updateItem(${item.id}, 'type', this.value)" class="w-full p-0.5 border rounded font-semibold text-blue-800">
+                                ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="p-1 border text-center bg-amber-50">
+                            <select onchange="updateItem(${item.id}, 'stockLen', this.value)" class="w-full p-0.5 border rounded text-xs font-bold text-amber-900 bg-amber-100">
+                                <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
+                                <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
+                                <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
+                            </select>
+                        </td>
+                        <td class="p-1 border text-center"><input type="number" value="${item.setQty}" onchange="updateItem(${item.id}, 'setQty', +this.value)" class="w-12 text-center excel-input rounded"></td>
+                        <td class="p-1 border text-center"><input type="number" value="${item.perSet}" onchange="updateItem(${item.id}, 'perSet', +this.value)" class="w-12 text-center excel-input rounded"></td>
+                        <td class="p-1 border text-center font-bold text-blue-800 bg-indigo-50">${calc.totalPieces}</td>
+                        <td class="p-1 border text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <select onchange="updateItem(${item.id}, 'shape', +this.value)" class="p-0.5 border rounded font-bold text-xs">
+                                    ${[1,2,3,4,5,6,7,8,9,10].map(s => `<option value="${s}" ${item.shape === s ? 'selected' : ''}>แบบที่ ${s}</option>`).join('')}
+                                </select>
+                                <div class="inline-block border bg-white rounded p-0.5">
+                                    ${getShapeSVG(item.shape, 32, 20)}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-1 border"><input type="number" value="${item.a}" onchange="updateItem(${item.id}, 'a', +this.value)" class="w-12 text-center border rounded"></td>
+                        <td class="p-1 border"><input type="number" value="${item.b}" onchange="updateItem(${item.id}, 'b', +this.value)" class="w-12 text-center border rounded"></td>
+                        <td class="p-1 border"><input type="number" value="${item.c}" onchange="updateItem(${item.id}, 'c', +this.value)" class="w-12 text-center border rounded"></td>
+                        <td class="p-1 border"><input type="number" value="${item.d}" onchange="updateItem(${item.id}, 'd', +this.value)" class="w-12 text-center border rounded"></td>
+                        <td class="p-1 border"><input type="number" value="${item.e}" onchange="updateItem(${item.id}, 'e', +this.value)" class="w-12 text-center border rounded"></td>
+                        <td class="p-1 border"><input type="number" value="${item.f}" onchange="updateItem(${item.id}, 'f', +this.value)" class="w-12 text-center border rounded"></td>
+                        <td class="p-1 border text-center font-bold text-indigo-900 bg-indigo-100">${calc.cutLenM.toFixed(3)}</td>
+                        <td class="p-1 border text-center font-bold text-emerald-800 bg-emerald-100">${calc.totalBars}</td>
+                        <td class="p-1 border text-xs bg-pink-50 text-pink-900 font-medium">
+                            ${calc.scrapDetails}
+                        </td>
+                        <td class="p-1 border text-center font-semibold text-pink-700 bg-pink-100">${calc.totalScrapWeight.toFixed(2)}</td>
+                        <td class="p-1 border text-center no-print">
+                            <button onclick="deleteRow(${item.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                renderSummaryBOQ();
+            } catch (err) {
+                console.error("renderTable error:", err);
+            }
+        }
+
+        function updateItem(id, field, value) {
+            const item = itemsData.find(i => i.id === id);
+            if (item) {
+                item[field] = value;
+                renderTable();
+            }
+        }
+
+        function addRow() {
+            const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
+            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: newId, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 });
+            renderTable();
+        }
+
+        function deleteRow(id) {
+            itemsData = itemsData.filter(i => i.id !== id);
+            renderTable();
+        }
+
+        function loadDefaultData() {
+            itemsData = [
+                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 6, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+                { id: 2, comp: 'CY.รัดรอบ', no: 2, type: 'RB09', stockLen: 'auto', setQty: 6, perSet: 96, shape: 1, a: 20, b: 20, c: 20, d: 20, e: 0, f: 0 },
+                { id: 3, comp: 'C0', no: 3, type: 'DB20', stockLen: 'auto', setQty: 27, perSet: 12, shape: 1, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
+                { id: 4, comp: 'F1.ด้านสั้น', no: 4, type: 'DB16', stockLen: 'auto', setQty: 3, perSet: 10, shape: 1, a: 19.2, b: 30, c: 110, d: 30, e: 19.2, f: 0 }
+            ];
+            renderTable();
+        }
+
+        function renderSummaryBOQ() {
+            try {
+                const boqMap = {};
+
+                itemsData.forEach(item => {
+                    const calc = calculateItem(item);
+                    const key = `${item.type}_${calc.chosenStock}`;
+
+                    if (!boqMap[key]) {
+                        boqMap[key] = { type: item.type, length: calc.chosenStock, bars: 0, weight: 0 };
+                    }
+                    boqMap[key].bars += calc.totalBars;
+                    boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
+                });
+
+                const tbody = document.getElementById('boqTableBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+
+                let grandTotalBars = 0;
+                let grandTotalWeight = 0;
+
+                const sortedKeys = Object.keys(boqMap).sort();
+
+                sortedKeys.forEach(key => {
+                    const data = boqMap[key];
+                    if (data.bars > 0) {
+                        grandTotalBars += data.bars;
+                        grandTotalWeight += data.weight;
+
+                        const tr = document.createElement('tr');
+                        tr.className = "border-b hover:bg-slate-50";
+                        tr.innerHTML = `
+                            <td class="p-2 border font-bold text-blue-900">${data.type}</td>
+                            <td class="p-2 border text-center font-semibold text-amber-800">${data.length}.0 เมตร</td>
+                            <td class="p-2 border text-center font-bold text-emerald-700">${data.bars}</td>
+                            <td class="p-2 border text-right font-semibold">${data.weight.toFixed(2)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                });
+
+                document.getElementById('totalBarCount').innerText = grandTotalBars;
+                document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
+
+                updateChart(boqMap);
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function updateChart(boqMap) {
+            try {
+                if (typeof Chart === 'undefined') return;
+                const canvas = document.getElementById('weightChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const labels = [];
+                const dataWeights = [];
+
+                Object.values(boqMap).forEach(d => {
+                    if (d.weight > 0) {
+                        labels.push(`${d.type} (${d.length}m)`);
+                        dataWeights.push(d.weight.toFixed(2));
+                    }
+                });
+
+                if (weightChart) weightChart.destroy();
+
+                weightChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataWeights,
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            } catch(e) {
+                console.warn("Chart warning:", e);
+            }
+        }
+
+        function renderShapes() {
+            try {
+                const container = document.getElementById('shapesContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                const shapeNames = [
+                    "แบบที่ 1: งอขอ 2 ด้าน",
+                    "แบบที่ 2: เส้นตรง",
+                    "แบบที่ 3: ฉาก L-Shape",
+                    "แบบที่ 4: U-Shape / ด้าน 3 ช่วง",
+                    "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม",
+                    "แบบที่ 6: เหล็กคอม้า / ดัดเยื้อง",
+                    "แบบที่ 7: เหล็กปลอกกลม",
+                    "แบบที่ 8: Z-Shape",
+                    "แบบที่ 9: เหล็กขาโต๊ะ / ขาสเก้า",
+                    "แบบที่ 10: ดัดรูปทรงพิเศษ"
+                ];
+
+                for (let i = 1; i <= 10; i++) {
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-center flex flex-col justify-between";
+                    card.innerHTML = `
+                        <div class="font-bold text-xs text-slate-800 mb-2">${shapeNames[i-1]}</div>
+                        <div class="h-28 bg-slate-50 rounded flex items-center justify-center border text-slate-400 p-2 my-1">
+                            ${getShapeSVG(i, 120, 60)}
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1">สูตร: A + B + C + D + E + F</div>
+                    `;
+                    container.appendChild(card);
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function switchTab(tab) {
+            ['barcut', 'summary', 'shapes'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('border-indigo-600', 'text-indigo-600');
+                document.getElementById(`tab-${t}`).classList.add('border-transparent', 'text-gray-600');
+            });
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('border-indigo-600', 'text-indigo-600');
+            document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-600');
+            
+            if (tab === 'summary') renderSummaryBOQ();
+        }
+
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') return alert('กำลังโหลดไลบรารี Excel กรุณารอครู่นึงแล้วลองใหม่');
+            const wb = XLSX.utils.book_new();
+            const wsData = [["Component", "No.", "Type", "Stock Length", "Set", "Per Set", "Total Pcs", "Cut Length (m)", "Total Bars", "Scrap Summary", "Scrap Wt (kg)"]];
+            itemsData.forEach(item => {
+                const calc = calculateItem(item);
+                wsData.push([item.comp, item.no, item.type, calc.chosenStock, item.setQty, item.perSet, calc.totalPieces, calc.cutLenM, calc.totalBars, calc.scrapDetails, calc.totalScrapWeight]);
+            });
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, "Barcut");
+            XLSX.writeFile(wb, "Barcut_Rebar_Calculation.xlsx");
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTable();
+            renderShapes();
+        });
+    </script>
+</body>
+</html>
