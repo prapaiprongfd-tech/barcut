@@ -26,19 +26,25 @@
         .legend { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 12px; }
         .dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
         .table-responsive { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-        th, td { border: 1px solid #cbd5e1; padding: 6px; }
-        thead th { background: #e2e8f0; color: #334155; font-size: 11px; text-transform: uppercase; text-align: center; }
+        
+        /* Layout & Table Spacing Fixes */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; white-space: nowrap; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 4px; vertical-align: middle; }
+        thead th { background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; }
         thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
-        input, select { width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-family: inherit; }
-        input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 600; }
+        
+        input, select { width: 100%; padding: 4px 2px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-family: inherit; height: 30px; outline: none; }
+        input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+        input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 700; color: #854d0e; }
+        
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
-        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 11px; font-weight: 500; }
+        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
-        .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; }
-        .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; }
-        .btn-del { background: none; border: none; color: #ef4444; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; }
+        
+        .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 120px; }
+        .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 26px; }
+        .btn-del { background: none; border: none; color: #ef4444; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; }
         .btn-del:hover { color: #b91c1c; }
         .hidden { display: none !important; }
         .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
@@ -88,27 +94,32 @@
                     <table id="barcutTable">
                         <thead>
                             <tr>
-                                <th style="width:30px;" class="no-print">#</th>
-                                <th style="min-width:130px;">Component</th>
-                                <th style="width:45px;">No.</th>
-                                <th style="width:80px;">Type</th>
-                                <th style="width:130px; background:#fef3c7;">ความยาวสต็อก</th>
-                                <th style="width:55px;">ชุด</th>
-                                <th style="width:55px;">ต่อชุด</th>
-                                <th style="width:65px; background:#e0e7ff;">รวมชิ้น</th>
-                                <th style="width:110px;">รูปทรง (Shape)</th>
+                                <th style="min-width:35px;" class="no-print">#</th>
+                                <th style="min-width:140px;">Component</th>
+                                <th style="min-width:55px;">No.</th>
+                                <th style="min-width:85px;">Type</th>
+                                <th style="min-width:130px; background:#fef3c7;">ความยาวสต็อก</th>
+                                <th style="min-width:60px;">ชุด</th>
+                                <th style="min-width:60px;">ต่อชุด</th>
+                                <th style="min-width:70px; background:#e0e7ff;">รวมชิ้น</th>
+                                <th style="min-width:135px;">รูปทรง (Shape)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ซม.)</th>
-                                <th style="width:85px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
-                                <th style="width:85px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="min-width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ</th>
-                                <th style="width:80px; background:#fbcfe8;">น.น. เศษ (kg)</th>
-                                <th style="width:35px;" class="no-print">ลบ</th>
+                                <th style="min-width:95px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
+                                <th style="min-width:95px; background:#d1fae5;">จำนวนท่อนหลัก</th>
+                                <th style="min-width:240px; background:#fce7f3;">รายละเอียดเศษเหลือ</th>
+                                <th style="min-width:90px; background:#fbcfe8;">น.น. เศษ (kg)</th>
+                                <th style="min-width:40px;" class="no-print">ลบ</th>
                             </tr>
                             <tr class="sub-header">
                                 <th class="no-print"></th><th></th><th></th><th></th>
                                 <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
                                 <th>(แบบที่ 1-10)</th>
-                                <th style="width:45px;">A</th><th style="width:45px;">B</th><th style="width:45px;">C</th><th style="width:45px;">D</th><th style="width:45px;">E</th><th style="width:45px;">F</th>
+                                <th style="min-width:55px;">A</th>
+                                <th style="min-width:55px;">B</th>
+                                <th style="min-width:55px;">C</th>
+                                <th style="min-width:55px;">D</th>
+                                <th style="min-width:55px;">E</th>
+                                <th style="min-width:55px;">F</th>
                                 <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
@@ -266,7 +277,7 @@
 
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
-                    <td><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)"></td>
+                    <td><input type="text" value="${item.comp}" onchange="updateItem(${item.id}, 'comp', this.value)" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="number" value="${item.no}" onchange="updateItem(${item.id}, 'no', this.value)"></td>
                     <td>
                         <select onchange="updateItem(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
@@ -285,7 +296,7 @@
                     <td class="bg-calc">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
-                            <select onchange="updateItem(${item.id}, 'shape', parseInt(this.value))" style="font-weight:bold;">
+                            <select onchange="updateItem(${item.id}, 'shape', parseInt(this.value))" style="font-weight:bold; width:65px;">
                                 ${[1,2,3,4,5,6,7,8,9,10].map(s => `<option value="${s}" ${item.shape === s ? 'selected' : ''}>แบบที่ ${s}</option>`).join('')}
                             </select>
                             <div class="shape-preview">${getShapeSVG(item.shape, 28, 18)}</div>
