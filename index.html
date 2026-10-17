@@ -96,7 +96,7 @@
                 height: auto !important;
                 text-align: center !important;
             }
-            .shape-box select { display: none !important; } /* Hide dropdown select in print */
+            .shape-box select { display: none !important; }
             .shape-preview { border: none !important; padding: 0 !important; background: transparent !important; width: 100% !important; }
             .shape-preview svg { width: 22px !important; height: 14px !important; display: block; margin: 0 auto; }
             
@@ -121,7 +121,7 @@
                 </div>
             </div>
             <div class="btn-group no-print">
-                <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณจับคู่เหล็กขั้นสูง (Global Best-Fit)</button>
+                <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ วิเคราะห์ความยาวสต็อก Auto ขั้นสูง (Zero-Waste)</button>
                 <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้าไฟล์ Excel</button>
                 <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)">
                 <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
@@ -266,6 +266,7 @@
             { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 760, b: 0, c: 0, d: 0, e: 0, f: 0 }
         ];
 
+        // Global Best-Fit Optimizer Solver
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -291,6 +292,7 @@
                 typeGroups[d.type].push(d);
             });
 
+            // Analyze Best-Fit Cutting Bin Packing per rebar type
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
@@ -303,6 +305,7 @@
                     }
                 });
 
+                // Sort pieces descending for Best-Fit Decreasing Strategy
                 allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
 
                 const bins = [];
@@ -327,10 +330,12 @@
                         bin.pieces.push(piece);
                         bin.remainingSpace -= piece.cutLenM;
                     } else {
+                        // AUTO Optimization Evaluation (Minimum Scrap Strategy)
                         let chosenCapacity = 12;
                         if (piece.preferredStock === '10') chosenCapacity = 10;
                         else if (piece.preferredStock === '12') chosenCapacity = 12;
                         else {
+                            // Compare 10m vs 12m stock waste for minimal scrap
                             const rem10 = (10 - piece.cutLenM);
                             const rem12 = (12 - piece.cutLenM);
                             if (rem10 >= 0 && rem12 >= 0) {
@@ -399,7 +404,7 @@
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. True Residual Scrap
+                // 3. True Remaining Scrap
                 if (res.totalScrapLen > 0) {
                     scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
                 } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
@@ -429,8 +434,10 @@
         }
 
         function optimizeFullProject() {
+            // Force reset all stock choices to Auto to perform Global Zero-Waste Optimization
+            itemsData.forEach(item => { item.stockLen = 'auto'; });
             renderTable();
-            alert('⚡ คำนวณจับคู่ความยาวสต็อก Global Best-Fit ทั้งโครงการเรียบร้อยแล้ว!');
+            alert('⚡ คำนวณจับคู่ความยาวสต็อก AUTO แบบ Zero-Waste ทั้งโครงการเรียบร้อยแล้ว!');
         }
 
         function renderTable() {
@@ -639,7 +646,7 @@
             if (tab === 'summary') renderSummaryBOQ();
         }
 
-        // Import Excel Data Function
+        // Import Excel Data Function with Automatic AUTO Reset for Zero-Waste Re-Optimization
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -665,13 +672,11 @@
                         const row = jsonRows[r];
                         if (!row || row.length === 0) continue;
 
-                        // Check for project title header
                         if (row[0] && String(row[0]).includes('หมวดหมู่งาน / โครงการ:')) {
                             const categoryVal = String(row[0]).replace('หมวดหมู่งาน / โครงการ:', '').trim();
                             if (categoryVal) document.getElementById('workCategory').value = categoryVal;
                         }
 
-                        // Detect start of table
                         if (row[1] === 'Component' || row[0] === '#') {
                             startReading = true;
                             continue;
@@ -681,12 +686,13 @@
                             const comp = String(row[1] || 'ชิ้นงาน');
                             const no = parseInt(row[2]) || (parsedItems.length + 1);
                             const type = String(row[3] || 'DB16').trim();
-                            const stockLenVal = String(row[4] || 'auto').trim();
-                            const stockLen = (stockLenVal === '10' || stockLenVal === '12') ? stockLenVal : 'auto';
+                            
+                            // Force set to AUTO upon importing to recalculate optimal zero-waste stock length
+                            const stockLen = 'auto'; 
+
                             const setQty = parseInt(row[5]) || 1;
                             const perSet = parseInt(row[6]) || 1;
                             
-                            // Parse Shape
                             let shape = 1;
                             if (row[8]) {
                                 const shapeMatch = String(row[8]).match(/\d+/);
@@ -710,7 +716,7 @@
                     if (parsedItems.length > 0) {
                         itemsData = parsedItems;
                         renderTable();
-                        alert(`📥 นำเข้าข้อมูลสำเร็จทั้งหมด ${parsedItems.length} รายการ!`);
+                        alert(`📥 นำเข้าข้อมูลและรีเซ็ตการคำนวณความยาวสต็อก Auto แบบ Zero-Waste เรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
                     } else {
                         alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
                     }
