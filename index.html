@@ -332,6 +332,7 @@
             }
         }
 
+        // Initial clean row
         let itemsData = [
             { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
         ];
@@ -342,7 +343,7 @@
             });
         }
 
-        // FIXED HIGH-PRECISION REBAR BIN PACKING SOLVER
+        // REFINED ACCURATE BIN PACKING SOLVER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -366,10 +367,11 @@
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
+                singleScrapLen: 0,
+                scrapBarsCount: 0,
                 isReuse: false
             }));
 
-            // Process Each Rebar Type Group Separately
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -382,12 +384,11 @@
                 demands.forEach(d => {
                     if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
-                    // Choose optimal stock length (Auto or Forced 10/12)
                     let stockCap = 12;
                     if (d.stockLen === '10') stockCap = 10;
                     else if (d.stockLen === '12') stockCap = 12;
                     else {
-                        // AUTO mode: Evaluate which stock yields minimum scrap
+                        // AUTO mode: Evaluate 10m vs 12m for minimal scrap
                         const pcs10 = Math.floor(10 / d.cutLenM);
                         const scrap10 = pcs10 > 0 ? (10 - (pcs10 * d.cutLenM)) : 999;
                         
@@ -397,23 +398,23 @@
                         stockCap = (scrap10 <= scrap12 && pcs10 > 0) ? 10 : 12;
                     }
 
-                    // Calculate pieces per bar
                     const pcsPerBar = Math.floor(stockCap / d.cutLenM);
 
                     if (pcsPerBar > 0) {
                         const requiredBars = Math.ceil(d.totalPieces / pcsPerBar);
-                        const totalYieldPieces = requiredBars * pcsPerBar;
-                        const totalUsedLen = d.totalPieces * d.cutLenM;
-                        const totalStockLen = requiredBars * stockCap;
-                        const totalScrapLen = totalStockLen - totalUsedLen;
+                        const singleScrapLen = stockCap - (pcsPerBar * d.cutLenM);
+                        const totalScrapLen = requiredBars * singleScrapLen;
 
                         rowResults[d.index].newBarsCount = requiredBars;
                         rowResults[d.index].chosenStock = stockCap;
+                        rowResults[d.index].singleScrapLen = singleScrapLen;
+                        rowResults[d.index].scrapBarsCount = requiredBars;
                         rowResults[d.index].totalScrapLen = Math.max(0, totalScrapLen);
                     } else {
-                        // Piece length exceeds single stock bar length
                         rowResults[d.index].newBarsCount = d.totalPieces;
                         rowResults[d.index].chosenStock = stockCap;
+                        rowResults[d.index].singleScrapLen = 0;
+                        rowResults[d.index].scrapBarsCount = 0;
                         rowResults[d.index].totalScrapLen = 0;
                     }
                 });
@@ -426,8 +427,9 @@
 
                 let scrapTextArr = [];
 
-                if (res.totalScrapLen > 0) {
-                    scrapTextArr.push(`เศษเหลือรวม ${res.totalScrapLen.toFixed(2)}m`);
+                if (res.totalScrapLen > 0.001) {
+                    // SHOW PIECE LENGTH AND BAR COUNT (e.g., "เศษเหลือ 1.58m จำนวน 6 ท่อน")
+                    scrapTextArr.push(`เศษเหลือ ${res.singleScrapLen.toFixed(2)}m จำนวน ${res.scrapBarsCount} ท่อน`);
                 } else if (demand.cutLenM <= 0) {
                     scrapTextArr.push(`ระบุระยะดัด`);
                 } else if (demand.totalPieces <= 0) {
