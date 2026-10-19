@@ -332,7 +332,7 @@
             }
         }
 
-        // Initial clean row
+        // Clean Initial Row State
         let itemsData = [
             { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
         ];
@@ -343,7 +343,7 @@
             });
         }
 
-        // REFINED ACCURATE BIN PACKING SOLVER
+        // GLOBAL BEST-FIT BIN PACKING WITH CROSS-ROW REUSE ANALYSIS
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -367,11 +367,27 @@
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
-                singleScrapLen: 0,
-                scrapBarsCount: 0,
                 isReuse: false
             }));
 
+            // Step 1: Pre-process Exact Zero-Waste Full Bars
+            rowDemands.forEach((d) => {
+                if (d.cutLenM > 0 && d.totalPieces > 0) {
+                    [10, 12].forEach((cap) => {
+                        const pcsPerFullBar = Math.floor(cap / d.cutLenM);
+                        if (pcsPerFullBar > 0 && Math.abs((pcsPerFullBar * d.cutLenM) - cap) < 0.001) {
+                            const fullBarsCount = Math.floor(d.totalPieces / pcsPerFullBar);
+                            if (fullBarsCount > 0) {
+                                rowResults[d.index].newBarsCount += fullBarsCount;
+                                rowResults[d.index].chosenStock = cap;
+                                d.totalPieces -= (fullBarsCount * pcsPerFullBar);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Step 2: Global Best-Fit Bin Packing for remaining pieces & Cross-Row Offcut Matching
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -381,41 +397,89 @@
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
+                let allPieces = [];
                 demands.forEach(d => {
-                    if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
+                    if (d.cutLenM > 0 && d.totalPieces > 0) {
+                        for (let p = 0; p < d.totalPieces; p++) {
+                            allPieces.push({ rowIndex: d.index, rowNo: d.no, cutLenM: d.cutLenM, preferredStock: d.stockLen });
+                        }
+                    }
+                });
 
-                    let stockCap = 12;
-                    if (d.stockLen === '10') stockCap = 10;
-                    else if (d.stockLen === '12') stockCap = 12;
-                    else {
-                        // AUTO mode: Evaluate 10m vs 12m for minimal scrap
-                        const pcs10 = Math.floor(10 / d.cutLenM);
-                        const scrap10 = pcs10 > 0 ? (10 - (pcs10 * d.cutLenM)) : 999;
-                        
-                        const pcs12 = Math.floor(12 / d.cutLenM);
-                        const scrap12 = pcs12 > 0 ? (12 - (pcs12 * d.cutLenM)) : 999;
+                allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
 
-                        stockCap = (scrap10 <= scrap12 && pcs10 > 0) ? 10 : 12;
+                const bins = [];
+
+                allPieces.forEach(piece => {
+                    let bestBinIndex = -1;
+                    let minResidual = 999999;
+
+                    for (let b = 0; b < bins.length; b++) {
+                        const remSpace = bins[b].remainingSpace;
+                        if (remSpace >= (piece.cutLenM - 0.001)) {
+                            const residual = remSpace - piece.cutLenM;
+                            if (residual < minResidual) {
+                                minResidual = residual;
+                                bestBinIndex = b;
+                            }
+                        }
                     }
 
-                    const pcsPerBar = Math.floor(stockCap / d.cutLenM);
-
-                    if (pcsPerBar > 0) {
-                        const requiredBars = Math.ceil(d.totalPieces / pcsPerBar);
-                        const singleScrapLen = stockCap - (pcsPerBar * d.cutLenM);
-                        const totalScrapLen = requiredBars * singleScrapLen;
-
-                        rowResults[d.index].newBarsCount = requiredBars;
-                        rowResults[d.index].chosenStock = stockCap;
-                        rowResults[d.index].singleScrapLen = singleScrapLen;
-                        rowResults[d.index].scrapBarsCount = requiredBars;
-                        rowResults[d.index].totalScrapLen = Math.max(0, totalScrapLen);
+                    if (bestBinIndex >= 0 && minResidual >= 0) {
+                        const bin = bins[bestBinIndex];
+                        bin.pieces.push(piece);
+                        bin.remainingSpace -= piece.cutLenM;
                     } else {
-                        rowResults[d.index].newBarsCount = d.totalPieces;
-                        rowResults[d.index].chosenStock = stockCap;
-                        rowResults[d.index].singleScrapLen = 0;
-                        rowResults[d.index].scrapBarsCount = 0;
-                        rowResults[d.index].totalScrapLen = 0;
+                        let chosenCapacity = 12;
+                        if (piece.preferredStock === '10') chosenCapacity = 10;
+                        else if (piece.preferredStock === '12') chosenCapacity = 12;
+                        else {
+                            const rem10 = (10 - piece.cutLenM);
+                            const rem12 = (12 - piece.cutLenM);
+                            if (rem10 >= 0 && rem12 >= 0) {
+                                chosenCapacity = (rem10 <= rem12) ? 10 : 12;
+                            } else if (rem10 >= 0) chosenCapacity = 10;
+                            else chosenCapacity = 12;
+                        }
+
+                        bins.push({
+                            capacity: chosenCapacity,
+                            remainingSpace: chosenCapacity - piece.cutLenM,
+                            pieces: [piece]
+                        });
+                    }
+                });
+
+                bins.forEach(bin => {
+                    if (bin.pieces.length === 0) return;
+
+                    const primaryRowIdx = bin.pieces[0].rowIndex;
+                    const primaryRowNo = bin.pieces[0].rowNo;
+                    rowResults[primaryRowIdx].newBarsCount += 1;
+                    rowResults[primaryRowIdx].chosenStock = bin.capacity;
+
+                    for (let i = 1; i < bin.pieces.length; i++) {
+                        const reusePiece = bin.pieces[i];
+                        const cutLen = reusePiece.cutLenM;
+                        
+                        if (primaryRowNo !== reusePiece.rowNo) {
+                            const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
+                            if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
+                                rowResults[reusePiece.rowIndex].usedReusesMap[targetKey] = { len: cutLen, fromNo: primaryRowNo, count: 0 };
+                            }
+                            rowResults[reusePiece.rowIndex].usedReusesMap[targetKey].count += 1;
+                            rowResults[reusePiece.rowIndex].isReuse = true;
+
+                            const sourceKey = `${cutLen.toFixed(2)}_${reusePiece.rowNo}`;
+                            if (!rowResults[primaryRowIdx].sentToRowsMap[sourceKey]) {
+                                rowResults[primaryRowIdx].sentToRowsMap[sourceKey] = { len: cutLen, toNo: reusePiece.rowNo, count: 0 };
+                            }
+                            rowResults[primaryRowIdx].sentToRowsMap[sourceKey].count += 1;
+                        }
+                    }
+
+                    if (bin.remainingSpace >= 0.01) {
+                        rowResults[primaryRowIdx].totalScrapLen += bin.remainingSpace;
                     }
                 });
             });
@@ -427,14 +491,26 @@
 
                 let scrapTextArr = [];
 
+                // 1. Cross-row Scrap Taken from another No.
+                Object.values(res.usedReusesMap).forEach(reuse => {
+                    scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
+                });
+
+                // 2. Offcut sent out to another No.
+                Object.values(res.sentToRowsMap).forEach(sent => {
+                    scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
+                });
+
+                // 3. True Unused Net Residual Scrap
                 if (res.totalScrapLen > 0.001) {
-                    // SHOW PIECE LENGTH AND BAR COUNT (e.g., "เศษเหลือ 1.58m จำนวน 6 ท่อน")
-                    scrapTextArr.push(`เศษเหลือ ${res.singleScrapLen.toFixed(2)}m จำนวน ${res.scrapBarsCount} ท่อน`);
+                    scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
+                } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
+                    scrapTextArr.push(`✨ ใช้เศษตัดร่วมครบ (ไม่ต้องเบิกเหล็กใหม่)`);
                 } else if (demand.cutLenM <= 0) {
                     scrapTextArr.push(`ระบุระยะดัด`);
                 } else if (demand.totalPieces <= 0) {
                     scrapTextArr.push(`ระบุจำนวนชิ้น`);
-                } else {
+                } else if (scrapTextArr.length === 0) {
                     scrapTextArr.push(`เศษ 0.00m (พอดีท่อน)`);
                 }
 
