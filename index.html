@@ -346,6 +346,7 @@
                     if (data.status === "APPROVED") {
                         document.getElementById('licenseModal').classList.add('hidden');
                         document.getElementById('mainAppContainer').classList.remove('hidden');
+                        sanitizeAllFormulas();
                         renderTable();
                         renderShapes();
                     } else if (data.status === "BLOCKED") {
@@ -365,6 +366,7 @@
                 .catch(err => {
                     document.getElementById('licenseModal').classList.add('hidden');
                     document.getElementById('mainAppContainer').classList.remove('hidden');
+                    sanitizeAllFormulas();
                     renderTable();
                     renderShapes();
                 });
@@ -421,6 +423,18 @@
                 const fallback = parseFloat(str);
                 return isNaN(fallback) ? 0 : fallback;
             }
+        }
+
+        // 🧹 ฟังก์ชันกวาดล้างสูตรที่ค้างอยู่ใน itemsData เปลี่ยนเป็นผลลัพธ์ตัวเลขเพียวๆ
+        function sanitizeAllFormulas() {
+            itemsData.forEach(item => {
+                ['setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'].forEach(field => {
+                    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
+                        const val = evaluateFormula(item[field]);
+                        item[field] = val === 0 ? '' : String(val);
+                    }
+                });
+            });
         }
 
         function getShapeSVG(shapeNum, width = 60, height = 30) {
@@ -790,7 +804,7 @@
         function handleEnterKey(event, id, currentField) {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                event.target.blur(); // Trigger blur to evaluate formula immediately
+                event.target.blur();
                 const fieldIdx = INPUT_FIELDS_ORDER.indexOf(currentField);
                 
                 if (fieldIdx >= 0 && fieldIdx < INPUT_FIELDS_ORDER.length - 1) {
@@ -879,13 +893,16 @@
             renderTable();
         }
 
+        // 🔄 โหลดตัวอย่าง F1-F4 ฉบับคลีนสูตรเป็นตัวเลขเรียบร้อย
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "1.98", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
-                { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
-                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.48", c: "0", d: "0", e: "0", f: "0" },
-                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "5.00", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "7.60", b: "0", c: "0", d: "0", e: "0", f: "0" }
+                { id: 1, comp: 'F1.ด้านสั้น', no: 1, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "0.192", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
+                { id: 2, comp: 'F1.ด้านยาว', no: 2, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "0.192", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
+                { id: 3, comp: 'F1.รัดรอบ', no: 3, type: 'DB12', stockLen: 'auto', setQty: "3", perSet: "1", shape: 5, a: "1.1", b: "1.1", c: "1.1", d: "1.1", e: "0", f: "0" },
+                { id: 4, comp: 'F2.ด้านสั้น', no: 4, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "0.24", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
+                { id: 5, comp: 'F2.ด้านยาว', no: 5, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "0.24", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
+                { id: 6, comp: 'F2.รัดรอบ', no: 6, type: 'DB16', stockLen: 'auto', setQty: "4", perSet: "1", shape: 5, a: "1.7", b: "1.7", c: "1.7", d: "1.7", e: "0", f: "0" },
+                { id: 7, comp: 'F3.ด้านสั้น', no: 7, type: 'DB20', stockLen: 'auto', setQty: "13", perSet: "22", shape: 1, a: "0.24", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" }
             ];
             renderTable();
         }
@@ -1034,6 +1051,7 @@
             if (projects[categoryName]) {
                 itemsData = projects[categoryName].itemsData;
                 document.getElementById('workCategory').value = projects[categoryName].categoryName;
+                sanitizeAllFormulas();
                 renderTable();
                 closeLibraryModal();
                 alert(`📂 เปิดโครงการ "${categoryName}" ขึ้นมาทำต่อเรียบร้อยแล้ว!`);
@@ -1115,8 +1133,9 @@
 
                     if (parsedItems.length > 0) {
                         itemsData = parsedItems;
+                        sanitizeAllFormulas();
                         renderTable();
-                        alert(`📥 นำเข้าข้อมูลและรีเซ็ตการคำนวณความยาวสต็อก Auto แบบ Zero-Waste เรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
+                        alert(`📥 นำเข้าข้อมูลเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
                     } else {
                         alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
                     }
