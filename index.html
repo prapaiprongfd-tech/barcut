@@ -305,7 +305,7 @@
     <!-- Modal Project Library -->
     <div id="libraryModal" class="modal-overlay hidden">
         <div class="modal-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
+            <div style="display:flex; justify-style:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
                 <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการที่บันทึกไว้</h3>
                 <button type="button" onclick="closeLibraryModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
             </div>
@@ -329,7 +329,6 @@
 
         const INPUT_FIELDS_ORDER = ['comp', 'setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'];
 
-        // --- LICENSE ACCESS CONTROL SYSTEM WITH CORS REDIRECT FIX ---
         function checkLicenseOnLoad() {
             const savedEmail = localStorage.getItem('barcut_user_email');
             const savedKey = localStorage.getItem('barcut_user_key');
@@ -346,7 +345,6 @@
                     if (data.status === "APPROVED") {
                         document.getElementById('licenseModal').classList.add('hidden');
                         document.getElementById('mainAppContainer').classList.remove('hidden');
-                        sanitizeAllFormulas();
                         renderTable();
                         renderShapes();
                     } else if (data.status === "BLOCKED") {
@@ -366,7 +364,6 @@
                 .catch(err => {
                     document.getElementById('licenseModal').classList.add('hidden');
                     document.getElementById('mainAppContainer').classList.remove('hidden');
-                    sanitizeAllFormulas();
                     renderTable();
                     renderShapes();
                 });
@@ -423,18 +420,6 @@
                 const fallback = parseFloat(str);
                 return isNaN(fallback) ? 0 : fallback;
             }
-        }
-
-        // 🧹 ฟังก์ชันกวาดล้างสูตรที่ค้างอยู่ใน itemsData เปลี่ยนเป็นผลลัพธ์ตัวเลขเพียวๆ
-        function sanitizeAllFormulas() {
-            itemsData.forEach(item => {
-                ['setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'].forEach(field => {
-                    if (item[field] !== undefined && item[field] !== null && item[field] !== '') {
-                        const val = evaluateFormula(item[field]);
-                        item[field] = val === 0 ? '' : String(val);
-                    }
-                });
-            });
         }
 
         function getShapeSVG(shapeNum, width = 60, height = 30) {
@@ -697,9 +682,12 @@
                 const tr = document.createElement('tr');
                 tr.id = `row_${item.id}`;
 
-                const dispVal = (field) => {
+                // ฟังก์ชันแสดงผลบนตาราง: คำนวณสูตรเป็นตัวเลขก่อนแสดงผล
+                const getDisplayVal = (field) => {
                     const raw = item[field];
-                    return (raw === null || raw === undefined) ? '' : raw;
+                    if (raw === null || raw === undefined || raw === '') return '';
+                    const evalVal = evaluateFormula(raw);
+                    return evalVal === 0 ? '' : evalVal;
                 };
 
                 const cleanType = String(item.type || 'DB16').trim();
@@ -708,7 +696,7 @@
 
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
-                    <td><input type="text" id="input_${item.id}_comp" value="${dispVal('comp')}" oninput="updateItemData(${item.id}, 'comp', this.value)" onkeydown="handleEnterKey(event, ${item.id}, 'comp')" style="text-align:left; padding-left:6px;"></td>
+                    <td><input type="text" id="input_${item.id}_comp" value="${item.comp || ''}" oninput="updateItemData(${item.id}, 'comp', this.value)" onkeydown="handleEnterKey(event, ${item.id}, 'comp')" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="text" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td>
                         <select onchange="updateItemData(${item.id}, 'type', this.value)" class="${typeColorClass}">
@@ -722,8 +710,8 @@
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
                         </select>
                     </td>
-                    <td><input type="text" id="input_${item.id}_setQty" value="${dispVal('setQty')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'setQty', this)" oninput="updateItemData(${item.id}, 'setQty', this.value)" onblur="onInputBlur(${item.id}, 'setQty', this)" onkeydown="handleEnterKey(event, ${item.id}, 'setQty')" placeholder="0"></td>
-                    <td><input type="text" id="input_${item.id}_perSet" value="${dispVal('perSet')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'perSet', this)" oninput="updateItemData(${item.id}, 'perSet', this.value)" onblur="onInputBlur(${item.id}, 'perSet', this)" onkeydown="handleEnterKey(event, ${item.id}, 'perSet')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_setQty" value="${getDisplayVal('setQty')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'setQty', this)" oninput="updateItemData(${item.id}, 'setQty', this.value)" onblur="onInputBlur(${item.id}, 'setQty', this)" onkeydown="handleEnterKey(event, ${item.id}, 'setQty')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_perSet" value="${getDisplayVal('perSet')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'perSet', this)" oninput="updateItemData(${item.id}, 'perSet', this.value)" onblur="onInputBlur(${item.id}, 'perSet', this)" onkeydown="handleEnterKey(event, ${item.id}, 'perSet')" placeholder="0"></td>
                     <td class="bg-calc" id="calc_totalPieces_${item.id}">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
@@ -733,12 +721,12 @@
                             <div class="shape-preview" id="shape_preview_${item.id}">${getShapeSVG(item.shape, 28, 18)}</div>
                         </div>
                     </td>
-                    <td><input type="text" id="input_${item.id}_a" value="${dispVal('a')}" onfocus="onInputFocus(${item.id}, 'a', this)" oninput="updateItemData(${item.id}, 'a', this.value)" onblur="onInputBlur(${item.id}, 'a', this)" onkeydown="handleEnterKey(event, ${item.id}, 'a')" placeholder="0"></td>
-                    <td><input type="text" id="input_${item.id}_b" value="${dispVal('b')}" onfocus="onInputFocus(${item.id}, 'b', this)" oninput="updateItemData(${item.id}, 'b', this.value)" onblur="onInputBlur(${item.id}, 'b', this)" onkeydown="handleEnterKey(event, ${item.id}, 'b')" placeholder="0"></td>
-                    <td><input type="text" id="input_${item.id}_c" value="${dispVal('c')}" onfocus="onInputFocus(${item.id}, 'c', this)" oninput="updateItemData(${item.id}, 'c', this.value)" onblur="onInputBlur(${item.id}, 'c', this)" onkeydown="handleEnterKey(event, ${item.id}, 'c')" placeholder="0"></td>
-                    <td><input type="text" id="input_${item.id}_d" value="${dispVal('d')}" onfocus="onInputFocus(${item.id}, 'd', this)" oninput="updateItemData(${item.id}, 'd', this.value)" onblur="onInputBlur(${item.id}, 'd', this)" onkeydown="handleEnterKey(event, ${item.id}, 'd')" placeholder="0"></td>
-                    <td><input type="text" id="input_${item.id}_e" value="${dispVal('e')}" onfocus="onInputFocus(${item.id}, 'e', this)" oninput="updateItemData(${item.id}, 'e', this.value)" onblur="onInputBlur(${item.id}, 'e', this)" onkeydown="handleEnterKey(event, ${item.id}, 'e')" placeholder="0"></td>
-                    <td><input type="text" id="input_${item.id}_f" value="${dispVal('f')}" onfocus="onInputFocus(${item.id}, 'f', this)" oninput="updateItemData(${item.id}, 'f', this.value)" onblur="onInputBlur(${item.id}, 'f', this)" onkeydown="handleEnterKey(event, ${item.id}, 'f')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_a" value="${getDisplayVal('a')}" onfocus="onInputFocus(${item.id}, 'a', this)" oninput="updateItemData(${item.id}, 'a', this.value)" onblur="onInputBlur(${item.id}, 'a', this)" onkeydown="handleEnterKey(event, ${item.id}, 'a')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_b" value="${getDisplayVal('b')}" onfocus="onInputFocus(${item.id}, 'b', this)" oninput="updateItemData(${item.id}, 'b', this.value)" onblur="onInputBlur(${item.id}, 'b', this)" onkeydown="handleEnterKey(event, ${item.id}, 'b')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_c" value="${getDisplayVal('c')}" onfocus="onInputFocus(${item.id}, 'c', this)" oninput="updateItemData(${item.id}, 'c', this.value)" onblur="onInputBlur(${item.id}, 'c', this)" onkeydown="handleEnterKey(event, ${item.id}, 'c')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_d" value="${getDisplayVal('d')}" onfocus="onInputFocus(${item.id}, 'd', this)" oninput="updateItemData(${item.id}, 'd', this.value)" onblur="onInputBlur(${item.id}, 'd', this)" onkeydown="handleEnterKey(event, ${item.id}, 'd')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_e" value="${getDisplayVal('e')}" onfocus="onInputFocus(${item.id}, 'e', this)" oninput="updateItemData(${item.id}, 'e', this.value)" onblur="onInputBlur(${item.id}, 'e', this)" onkeydown="handleEnterKey(event, ${item.id}, 'e')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_f" value="${getDisplayVal('f')}" onfocus="onInputFocus(${item.id}, 'f', this)" oninput="updateItemData(${item.id}, 'f', this.value)" onblur="onInputBlur(${item.id}, 'f', this)" onkeydown="handleEnterKey(event, ${item.id}, 'f')" placeholder="0"></td>
                     <td class="bg-calc" id="calc_cutLen_${item.id}">${calc.cutLenM.toFixed(3)}</td>
                     <td class="bg-total" id="calc_totalBars_${item.id}">${calc.totalBars}</td>
                     <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}" id="calc_scrapDetails_${item.id}">${calc.scrapDetails}</td>
@@ -783,21 +771,24 @@
             renderSummaryBOQ();
         }
 
+        // 🔍 เมื่อคลิกเข้าไปในช่อง (Focus) -> สลับมาแสดงสูตรเดิมเพื่อให้เห็น/แก้ไข
         function onInputFocus(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
-                elem.value = item[field];
+                elem.value = item[field]; // โชว์ข้อความสูตรดั้งเดิม เช่น =12*0.016
                 setTimeout(() => { elem.select(); }, 10);
             }
         }
 
+        // ↩️ เมื่อคลิกออกนอกช่อง (Blur) -> คำนวณสูตรแล้วสลับกลับไปแสดงผลลัพธ์เป็นตัวเลข
         function onInputBlur(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
-                const evaluated = evaluateFormula(elem.value);
-                item[field] = evaluated === 0 ? "" : evaluated;
-                elem.value = item[field];
-                renderTable();
+                const val = elem.value;
+                item[field] = val; // เซฟข้อความสูตรไว้ในความจำ
+                const evaluated = evaluateFormula(val);
+                elem.value = evaluated === 0 ? '' : evaluated; // สลับโชว์ตัวเลขผลลัพธ์บนช่อง
+                refreshCalculationsOnly();
             }
         }
 
@@ -893,16 +884,15 @@
             renderTable();
         }
 
-        // 🔄 โหลดตัวอย่าง F1-F4 ฉบับคลีนสูตรเป็นตัวเลขเรียบร้อย
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'F1.ด้านสั้น', no: 1, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "0.192", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
-                { id: 2, comp: 'F1.ด้านยาว', no: 2, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "0.192", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
+                { id: 1, comp: 'F1.ด้านสั้น', no: 1, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "=12*0.016", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
+                { id: 2, comp: 'F1.ด้านยาว', no: 2, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "=12*0.016", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
                 { id: 3, comp: 'F1.รัดรอบ', no: 3, type: 'DB12', stockLen: 'auto', setQty: "3", perSet: "1", shape: 5, a: "1.1", b: "1.1", c: "1.1", d: "1.1", e: "0", f: "0" },
-                { id: 4, comp: 'F2.ด้านสั้น', no: 4, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "0.24", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
-                { id: 5, comp: 'F2.ด้านยาว', no: 5, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "0.24", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
+                { id: 4, comp: 'F2.ด้านสั้น', no: 4, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "=12*0.020", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
+                { id: 5, comp: 'F2.ด้านยาว', no: 5, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "=12*0.020", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
                 { id: 6, comp: 'F2.รัดรอบ', no: 6, type: 'DB16', stockLen: 'auto', setQty: "4", perSet: "1", shape: 5, a: "1.7", b: "1.7", c: "1.7", d: "1.7", e: "0", f: "0" },
-                { id: 7, comp: 'F3.ด้านสั้น', no: 7, type: 'DB20', stockLen: 'auto', setQty: "13", perSet: "22", shape: 1, a: "0.24", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" }
+                { id: 7, comp: 'F3.ด้านสั้น', no: 7, type: 'DB20', stockLen: 'auto', setQty: "13", perSet: "22", shape: 1, a: "=12*0.020", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" }
             ];
             renderTable();
         }
@@ -1051,7 +1041,6 @@
             if (projects[categoryName]) {
                 itemsData = projects[categoryName].itemsData;
                 document.getElementById('workCategory').value = projects[categoryName].categoryName;
-                sanitizeAllFormulas();
                 renderTable();
                 closeLibraryModal();
                 alert(`📂 เปิดโครงการ "${categoryName}" ขึ้นมาทำต่อเรียบร้อยแล้ว!`);
@@ -1133,7 +1122,6 @@
 
                     if (parsedItems.length > 0) {
                         itemsData = parsedItems;
-                        sanitizeAllFormulas();
                         renderTable();
                         alert(`📥 นำเข้าข้อมูลเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
                     } else {
