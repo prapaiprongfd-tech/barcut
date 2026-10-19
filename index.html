@@ -343,7 +343,7 @@
             });
         }
 
-        // GLOBAL BEST-FIT BIN PACKING WITH CROSS-ROW REUSE & PER-PIECE OFFCUT ANALYSIS
+        // REFINED ACCURATE BIN PACKING SOLVER WITH INDIVIDUAL PHYSICAL BAR TRACKING
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -381,6 +381,7 @@
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
+                // Global Best-Fit Bin Packing Across Rows for exact physical bars
                 let allPieces = [];
                 demands.forEach(d => {
                     if (d.cutLenM > 0 && d.totalPieces > 0) {
@@ -390,6 +391,7 @@
                     }
                 });
 
+                // Sort pieces descending for optimal fitting
                 allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
 
                 const bins = [];
@@ -486,7 +488,7 @@
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. Summarize Net Offcut Pieces (e.g. "1.58m จำนวน 6 ท่อน")
+                // 3. Summarize Net Offcut Pieces (Grouped by piece size & count)
                 if (res.scrapPiecesList.length > 0) {
                     const scrapCounts = {};
                     res.scrapPiecesList.forEach(len => {
