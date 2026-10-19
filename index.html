@@ -318,13 +318,9 @@
             }
         }
 
-        // Updated default data in METERS (m)
+        // Clean initial state with 1 row ready for input
         let itemsData = [
-            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "1.98", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
-            { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
-            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.48", c: "0", d: "0", e: "0", f: "0" },
-            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "5.00", b: "0", c: "0", d: "0", e: "0", f: "0" },
-            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "7.60", b: "0", c: "0", d: "0", e: "0", f: "0" }
+            { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "0", b: "0", c: "0", d: "0", e: "0", f: "0" }
         ];
 
         function resequenceNumbers() {
@@ -344,7 +340,6 @@
                 const valE = evaluateFormula(item.e);
                 const valF = evaluateFormula(item.f);
 
-                // DIRECT SUM IN METERS (No division by 100)
                 const cutLenM = valA + valB + valC + valD + valE + valF;
                 const totalPieces = evaluateFormula(item.setQty) * evaluateFormula(item.perSet);
                 const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
@@ -1079,7 +1074,7 @@
             }
         }
 
-        // Auto Render on Load
+        // Auto Render Clean Initial Row on Load
         renderTable();
         renderShapes();
     </script>
