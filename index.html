@@ -43,7 +43,6 @@
         thead th { background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; }
         thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
         
-        /* Adjusted Inputs To Prevent Tone Mark Clipping & Text Overflow */
         input, select { 
             width: 100%; 
             padding: 2px 2px 0px 2px; 
@@ -68,7 +67,6 @@
         .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; white-space: normal; min-width: 220px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
         
-        /* Shape & Dropdown Box Adjustments */
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 135px; }
         .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 28px; flex-shrink: 0; }
         
@@ -334,7 +332,6 @@
             }
         }
 
-        // Initial 1 clean row ready for immediate typing
         let itemsData = [
             { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
         ];
@@ -345,6 +342,7 @@
             });
         }
 
+        // FIXED HIGH-PRECISION REBAR BIN PACKING SOLVER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -371,24 +369,7 @@
                 isReuse: false
             }));
 
-            // Step 1: Pre-process Exact Zero-Waste Full Bars
-            rowDemands.forEach((d) => {
-                if (d.cutLenM > 0 && d.totalPieces > 0) {
-                    [10, 12].forEach((cap) => {
-                        const pcsPerFullBar = Math.floor(cap / d.cutLenM);
-                        if (pcsPerFullBar > 0 && Math.abs((pcsPerFullBar * d.cutLenM) - cap) < 0.001) {
-                            const fullBarsCount = Math.floor(d.totalPieces / pcsPerFullBar);
-                            if (fullBarsCount > 0) {
-                                rowResults[d.index].newBarsCount += fullBarsCount;
-                                rowResults[d.index].chosenStock = cap;
-                                d.totalPieces -= (fullBarsCount * pcsPerFullBar);
-                            }
-                        }
-                    });
-                }
-            });
-
-            // Step 2: Global Best-Fit Bin Packing for remaining pieces
+            // Process Each Rebar Type Group Separately
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -398,89 +379,42 @@
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
-                let allPieces = [];
                 demands.forEach(d => {
-                    if (d.cutLenM > 0 && d.totalPieces > 0) {
-                        for (let p = 0; p < d.totalPieces; p++) {
-                            allPieces.push({ rowIndex: d.index, rowNo: d.no, cutLenM: d.cutLenM, preferredStock: d.stockLen });
-                        }
-                    }
-                });
+                    if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
-                allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
-
-                const bins = [];
-
-                allPieces.forEach(piece => {
-                    let bestBinIndex = -1;
-                    let minResidual = 999999;
-
-                    for (let b = 0; b < bins.length; b++) {
-                        const remSpace = bins[b].remainingSpace;
-                        if (remSpace >= (piece.cutLenM - 0.001)) {
-                            const residual = remSpace - piece.cutLenM;
-                            if (residual < minResidual) {
-                                minResidual = residual;
-                                bestBinIndex = b;
-                            }
-                        }
-                    }
-
-                    if (bestBinIndex >= 0 && minResidual >= 0) {
-                        const bin = bins[bestBinIndex];
-                        bin.pieces.push(piece);
-                        bin.remainingSpace -= piece.cutLenM;
-                    } else {
-                        let chosenCapacity = 12;
-                        if (piece.preferredStock === '10') chosenCapacity = 10;
-                        else if (piece.preferredStock === '12') chosenCapacity = 12;
-                        else {
-                            const rem10 = (10 - piece.cutLenM);
-                            const rem12 = (12 - piece.cutLenM);
-                            if (rem10 >= 0 && rem12 >= 0) {
-                                chosenCapacity = (rem10 <= rem12) ? 10 : 12;
-                            } else if (rem10 >= 0) chosenCapacity = 10;
-                            else chosenCapacity = 12;
-                        }
-
-                        bins.push({
-                            capacity: chosenCapacity,
-                            remainingSpace: chosenCapacity - piece.cutLenM,
-                            pieces: [piece]
-                        });
-                    }
-                });
-
-                bins.forEach(bin => {
-                    if (bin.pieces.length === 0) return;
-
-                    const primaryRowIdx = bin.pieces[0].rowIndex;
-                    const primaryRowNo = bin.pieces[0].rowNo;
-                    rowResults[primaryRowIdx].newBarsCount += 1;
-                    rowResults[primaryRowIdx].chosenStock = bin.capacity;
-
-                    for (let i = 1; i < bin.pieces.length; i++) {
-                        const reusePiece = bin.pieces[i];
-                        const cutLen = reusePiece.cutLenM;
+                    // Choose optimal stock length (Auto or Forced 10/12)
+                    let stockCap = 12;
+                    if (d.stockLen === '10') stockCap = 10;
+                    else if (d.stockLen === '12') stockCap = 12;
+                    else {
+                        // AUTO mode: Evaluate which stock yields minimum scrap
+                        const pcs10 = Math.floor(10 / d.cutLenM);
+                        const scrap10 = pcs10 > 0 ? (10 - (pcs10 * d.cutLenM)) : 999;
                         
-                        if (primaryRowNo !== reusePiece.rowNo) {
-                            const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
-                            if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
-                                rowResults[reusePiece.rowIndex].usedReusesMap[targetKey] = { len: cutLen, fromNo: primaryRowNo, count: 0 };
-                            }
-                            rowResults[reusePiece.rowIndex].usedReusesMap[targetKey].count += 1;
-                            rowResults[reusePiece.rowIndex].isReuse = true;
+                        const pcs12 = Math.floor(12 / d.cutLenM);
+                        const scrap12 = pcs12 > 0 ? (12 - (pcs12 * d.cutLenM)) : 999;
 
-                            const sourceKey = `${cutLen.toFixed(2)}_${reusePiece.rowNo}`;
-                            if (!rowResults[primaryRowIdx].sentToRowsMap[sourceKey]) {
-                                rowResults[primaryRowIdx].sentToRowsMap[sourceKey] = { len: cutLen, toNo: reusePiece.rowNo, count: 0 };
-                            }
-                            rowResults[primaryRowIdx].sentToRowsMap[sourceKey].count += 1;
-                        }
+                        stockCap = (scrap10 <= scrap12 && pcs10 > 0) ? 10 : 12;
                     }
 
-                    if (bin.remainingSpace >= 0.01) {
-                        rowResults[primaryRowIdx].totalScrapLen += bin.remainingSpace;
+                    // Calculate pieces per bar
+                    const pcsPerBar = Math.floor(stockCap / d.cutLenM);
+
+                    if (pcsPerBar > 0) {
+                        const requiredBars = Math.ceil(d.totalPieces / pcsPerBar);
+                        const totalYieldPieces = requiredBars * pcsPerBar;
+                        const totalUsedLen = d.totalPieces * d.cutLenM;
+                        const totalStockLen = requiredBars * stockCap;
+                        const totalScrapLen = totalStockLen - totalUsedLen;
+
+                        rowResults[d.index].newBarsCount = requiredBars;
+                        rowResults[d.index].chosenStock = stockCap;
+                        rowResults[d.index].totalScrapLen = Math.max(0, totalScrapLen);
+                    } else {
+                        // Piece length exceeds single stock bar length
+                        rowResults[d.index].newBarsCount = d.totalPieces;
+                        rowResults[d.index].chosenStock = stockCap;
+                        rowResults[d.index].totalScrapLen = 0;
                     }
                 });
             });
@@ -492,21 +426,13 @@
 
                 let scrapTextArr = [];
 
-                Object.values(res.usedReusesMap).forEach(reuse => {
-                    scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
-                });
-
-                Object.values(res.sentToRowsMap).forEach(sent => {
-                    scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
-                });
-
                 if (res.totalScrapLen > 0) {
-                    scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
-                } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
-                    scrapTextArr.push(`✨ ใช้เศษตัดร่วมครบ (ไม่ต้องเบิกเหล็กใหม่)`);
+                    scrapTextArr.push(`เศษเหลือรวม ${res.totalScrapLen.toFixed(2)}m`);
                 } else if (demand.cutLenM <= 0) {
                     scrapTextArr.push(`ระบุระยะดัด`);
-                } else if (scrapTextArr.length === 0) {
+                } else if (demand.totalPieces <= 0) {
+                    scrapTextArr.push(`ระบุจำนวนชิ้น`);
+                } else {
                     scrapTextArr.push(`เศษ 0.00m (พอดีท่อน)`);
                 }
 
