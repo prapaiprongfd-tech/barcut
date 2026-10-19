@@ -318,9 +318,9 @@
             }
         }
 
-        // Clean initial state with 1 row ready for input
+        // Clean initial state with 1 row ready for input (Values set to empty string for clean typing)
         let itemsData = [
-            { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "0", b: "0", c: "0", d: "0", e: "0", f: "0" }
+            { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
         ];
 
         function resequenceNumbers() {
@@ -539,7 +539,7 @@
 
                 const dispVal = (field) => {
                     const raw = item[field];
-                    return (raw === null || raw === undefined) ? '0' : raw;
+                    return (raw === null || raw === undefined) ? '' : raw;
                 };
 
                 tr.innerHTML = `
@@ -558,8 +558,8 @@
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
                         </select>
                     </td>
-                    <td><input type="text" id="input_${item.id}_setQty" value="${dispVal('setQty')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'setQty', this)" oninput="updateItemData(${item.id}, 'setQty', this.value)" onblur="onInputBlur(${item.id}, 'setQty', this)" onkeydown="handleEnterKey(event, ${item.id}, 'setQty')"></td>
-                    <td><input type="text" id="input_${item.id}_perSet" value="${dispVal('perSet')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'perSet', this)" oninput="updateItemData(${item.id}, 'perSet', this.value)" onblur="onInputBlur(${item.id}, 'perSet', this)" onkeydown="handleEnterKey(event, ${item.id}, 'perSet')"></td>
+                    <td><input type="text" id="input_${item.id}_setQty" value="${dispVal('setQty')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'setQty', this)" oninput="updateItemData(${item.id}, 'setQty', this.value)" onblur="onInputBlur(${item.id}, 'setQty', this)" onkeydown="handleEnterKey(event, ${item.id}, 'setQty')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_perSet" value="${dispVal('perSet')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'perSet', this)" oninput="updateItemData(${item.id}, 'perSet', this.value)" onblur="onInputBlur(${item.id}, 'perSet', this)" onkeydown="handleEnterKey(event, ${item.id}, 'perSet')" placeholder="0"></td>
                     <td class="bg-calc" id="calc_totalPieces_${item.id}">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
@@ -623,6 +623,8 @@
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
                 elem.value = item[field];
+                // Auto Select text when focused so user can overwrite immediately without Backspacing
+                setTimeout(() => { elem.select(); }, 10);
             }
         }
 
@@ -632,7 +634,7 @@
                 const strVal = String(item[field]).trim();
                 if (strVal.includes('+') || strVal.includes('-') || strVal.includes('*') || strVal.includes('/') || strVal.includes('(')) {
                     const evaluated = evaluateFormula(strVal);
-                    elem.value = evaluated;
+                    elem.value = evaluated === 0 ? '' : evaluated;
                 } else {
                     elem.value = strVal;
                 }
@@ -691,7 +693,7 @@
 
         function addRow() {
             const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "0", b: "0", c: "0", d: "0", e: "0", f: "0" });
+            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" });
             renderTable();
         }
 
@@ -936,8 +938,8 @@
                             const type = String(row[3] || 'DB16').trim();
                             const stockLen = 'auto';
 
-                            const setQty = String(row[5] ?? "1");
-                            const perSet = String(row[6] ?? "1");
+                            const setQty = String(row[5] ?? "");
+                            const perSet = String(row[6] ?? "");
                             
                             let shape = 1;
                             if (row[8]) {
@@ -945,12 +947,12 @@
                                 if (shapeMatch) shape = parseInt(shapeMatch[0]);
                             }
 
-                            const a = String(row[9] ?? "0");
-                            const b = String(row[10] ?? "0");
-                            const c = String(row[11] ?? "0");
-                            const d = String(row[12] ?? "0");
-                            const e = String(row[13] ?? "0");
-                            const f = String(row[14] ?? "0");
+                            const a = String(row[9] ?? "");
+                            const b = String(row[10] ?? "");
+                            const c = String(row[11] ?? "");
+                            const d = String(row[12] ?? "");
+                            const e = String(row[13] ?? "");
+                            const f = String(row[14] ?? "");
 
                             parsedItems.push({
                                 id: parsedItems.length + 1,
