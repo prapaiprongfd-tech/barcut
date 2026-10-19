@@ -214,7 +214,7 @@
                                 <th style="min-width:130px; background:#fef3c7;">ความยาวสต็อก</th>
                                 <th style="width:40px;">ชุด</th>
                                 <th style="width:40px;">ต่อชุด</th>
-                                <th style="width:45px; background:#e0e7ff;">รวมชิ้น</th>
+                                <th style="width:45px; background:#e0e0e0;">รวมชิ้น</th>
                                 <th style="min-width:135px;">รูปทรง (SHAPE)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
                                 <th style="width:80px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
@@ -307,7 +307,6 @@
     </div>
 
     <script>
-        // 🛑 YOUR GOOGLE APPS SCRIPT WEB APP URL IS EMBEDDED BELOW 🛑
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_Sv88tt3blqnXzJs-_HimgWQMlQN7vgqwtxjXafByua4A-5qn3uffWFzrGhYicmmH/exec";
 
         const REBAR_WEIGHTS = {
@@ -318,7 +317,7 @@
 
         const INPUT_FIELDS_ORDER = ['comp', 'setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'];
 
-        // --- LICENSE ACCESS CONTROL SYSTEM ---
+        // --- LICENSE ACCESS CONTROL SYSTEM WITH CORS REDIRECT FIX ---
         function checkLicenseOnLoad() {
             const savedEmail = localStorage.getItem('barcut_user_email');
             const savedKey = localStorage.getItem('barcut_user_key');
@@ -329,7 +328,7 @@
                 return;
             }
 
-            fetch(`${GOOGLE_SCRIPT_URL}?action=check&email=${encodeURIComponent(savedEmail)}&key=${encodeURIComponent(savedKey)}`)
+            fetch(`${GOOGLE_SCRIPT_URL}?action=check&email=${encodeURIComponent(savedEmail)}&key=${encodeURIComponent(savedKey)}`, { redirect: "follow" })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === "APPROVED") {
@@ -371,7 +370,7 @@
 
             msgBox.innerText = "🔄 กำลังส่งข้อมูลขออนุมัติไปยังโฮสท์...";
 
-            fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`)
+            fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`, { redirect: "follow" })
                 .then(res => res.json())
                 .then(data => {
                     localStorage.setItem('barcut_user_email', email);
@@ -385,6 +384,7 @@
                     }
                 })
                 .catch(err => {
+                    console.error("Fetch Register Error:", err);
                     msgBox.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
                 });
         }
