@@ -61,6 +61,18 @@
         input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 700; color: #854d0e; }
         
+        /* 🎨 Custom Dynamic Color Styles for Rebar Types & Stock Lengths */
+        .stock-bg-12 { background-color: #f3e8ff !important; color: #6b21a8 !important; font-weight: 700; }
+        .stock-bg-10 { background-color: #ffedd5 !important; color: #c2410c !important; font-weight: 700; }
+        
+        .type-bg-DB12 { background-color: #dbeafe !important; color: #1e40af !important; font-weight: 700; }
+        .type-bg-DB16 { background-color: #d1fae5 !important; color: #065f46 !important; font-weight: 700; }
+        .type-bg-DB20 { background-color: #e0e7ff !important; color: #3730a3 !important; font-weight: 700; }
+        .type-bg-DB25 { background-color: #fce7f3 !important; color: #9d174d !important; font-weight: 700; }
+        .type-bg-DB28 { background-color: #fef9c3 !important; color: #854d0e !important; font-weight: 700; }
+        .type-bg-DB32 { background-color: #ffedd5 !important; color: #9a3412 !important; font-weight: 700; }
+        .type-bg-RB06, .type-bg-RB09 { background-color: #f1f5f9 !important; color: #334155 !important; font-weight: 700; }
+
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
         .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 220px; }
@@ -214,7 +226,7 @@
                                 <th style="min-width:130px; background:#fef3c7;">ความยาวสต็อก</th>
                                 <th style="width:40px;">ชุด</th>
                                 <th style="width:40px;">ต่อชุด</th>
-                                <th style="width:45px; background:#e0e0e0;">รวมชิ้น</th>
+                                <th style="width:45px; background:#e0e7ff;">รวมชิ้น</th>
                                 <th style="min-width:135px;">รูปทรง (SHAPE)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
                                 <th style="width:80px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
@@ -676,17 +688,21 @@
                     return (raw === null || raw === undefined) ? '' : raw;
                 };
 
+                const cleanType = String(item.type || 'DB16').trim();
+                const typeColorClass = `type-bg-${cleanType}`;
+                const stockColorClass = calc.chosenStock === 10 ? 'stock-bg-10' : 'stock-bg-12';
+
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
                     <td><input type="text" id="input_${item.id}_comp" value="${dispVal('comp')}" oninput="updateItemData(${item.id}, 'comp', this.value)" onkeydown="handleEnterKey(event, ${item.id}, 'comp')" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="text" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td>
-                        <select onchange="updateItemData(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
-                            ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${item.type.trim() === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        <select onchange="updateItemData(${item.id}, 'type', this.value)" class="${typeColorClass}">
+                            ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${cleanType === t ? 'selected' : ''}>${t}</option>`).join('')}
                         </select>
                     </td>
-                    <td style="background:#fef3c7;">
-                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" style="font-weight:bold; color:#78350f; background:#fef3c7; min-width:115px;">
+                    <td>
+                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" class="${stockColorClass}" style="min-width:115px;">
                             <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
                             <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
@@ -802,7 +818,11 @@
                     const shapePreviewElem = document.getElementById(`shape_preview_${id}`);
                     if (shapePreviewElem) shapePreviewElem.innerHTML = getShapeSVG(value, 28, 18);
                 }
-                refreshCalculationsOnly();
+                if (field === 'type' || field === 'stockLen') {
+                    renderTable();
+                } else {
+                    refreshCalculationsOnly();
+                }
             }
         }
 
@@ -905,10 +925,11 @@
                     grandTotalScrapWeight += data.scrapWeight;
 
                     const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
+                    const typeColorClass = `type-bg-${data.type}`;
 
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td style="font-weight:bold; color:#1e40af;">${data.type}</td>
+                        <td class="${typeColorClass}">${data.type}</td>
                         <td style="text-align:center; font-weight:600; color:#b45309;">${data.length}.0 เมตร</td>
                         <td style="text-align:center; font-weight:bold; color:#047857;">${data.bars}</td>
                         <td style="text-align:right; font-weight:600;">${data.weight.toFixed(2)}</td>
