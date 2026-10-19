@@ -780,19 +780,17 @@
         function onInputBlur(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
-                const strVal = String(item[field]).trim();
-                if (strVal.includes('+') || strVal.includes('-') || strVal.includes('*') || strVal.includes('/') || strVal.includes('(')) {
-                    const evaluated = evaluateFormula(strVal);
-                    elem.value = evaluated === 0 ? '' : evaluated;
-                } else {
-                    elem.value = strVal;
-                }
+                const evaluated = evaluateFormula(elem.value);
+                item[field] = evaluated === 0 ? "" : evaluated;
+                elem.value = item[field];
+                renderTable();
             }
         }
 
         function handleEnterKey(event, id, currentField) {
             if (event.key === 'Enter') {
                 event.preventDefault();
+                event.target.blur(); // Trigger blur to evaluate formula immediately
                 const fieldIdx = INPUT_FIELDS_ORDER.indexOf(currentField);
                 
                 if (fieldIdx >= 0 && fieldIdx < INPUT_FIELDS_ORDER.length - 1) {
