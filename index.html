@@ -9,7 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
         * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; }
         body { background-color: #f3f4f6; color: #1f2937; padding: 15px; }
-        .container { max-width: 1600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
+        .container { max-width: 1650px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
         .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; }
         
@@ -39,11 +39,11 @@
         .table-responsive { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
         
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        th, td { border: 1px solid #cbd5e1; padding: 6px 3px; vertical-align: middle; white-space: nowrap; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 2px; vertical-align: middle; white-space: nowrap; }
         thead th { background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; }
         thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
         
-        input, select { width: 100%; padding: 4px 2px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-family: inherit; height: 32px; outline: none; background-color: #fff; }
+        input, select { width: 100%; padding: 4px 1px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-family: inherit; height: 32px; outline: none; background-color: #fff; }
         input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 700; color: #854d0e; }
         
@@ -53,7 +53,8 @@
         .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; white-space: normal; min-width: 220px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
         
-        .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 125px; }
+        /* Adjusted width for shape box to prevent text clipping */
+        .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 135px; }
         .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 28px; }
         
         .action-btns { display: flex; justify-content: center; align-items: center; gap: 2px; }
@@ -175,11 +176,11 @@
                                 <th style="width:110px;">Component</th>
                                 <th style="width:35px;">No.</th>
                                 <th style="width:60px;">Type</th>
-                                <th style="width:95px; background:#fef3c7;">ความยาวสต็อก</th>
+                                <th style="width:115px; background:#fef3c7;">ความยาวสต็อก</th>
                                 <th style="width:40px;">ชุด</th>
                                 <th style="width:40px;">ต่อชุด</th>
                                 <th style="width:45px; background:#e0e7ff;">รวมชิ้น</th>
-                                <th style="width:105px;">รูปทรง (Shape)</th>
+                                <th style="width:135px;">รูปทรง (Shape)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
                                 <th style="width:75px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
                                 <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
@@ -191,12 +192,12 @@
                                 <th class="no-print"></th><th></th><th></th><th></th>
                                 <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
                                 <th>(แบบที่ 1-10)</th>
-                                <th style="width:38px;">A</th>
-                                <th style="width:38px;">B</th>
-                                <th style="width:38px;">C</th>
-                                <th style="width:38px;">D</th>
-                                <th style="width:38px;">E</th>
-                                <th style="width:38px;">F</th>
+                                <th style="width:48px;">A</th>
+                                <th style="width:48px;">B</th>
+                                <th style="width:48px;">C</th>
+                                <th style="width:48px;">D</th>
+                                <th style="width:48px;">E</th>
+                                <th style="width:48px;">F</th>
                                 <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT & REUSE SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
@@ -318,7 +319,7 @@
             }
         }
 
-        // Clean initial state with 1 row ready for input (Values set to empty string for clean typing)
+        // Clean initial state with 1 row ready for input
         let itemsData = [
             { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
         ];
@@ -552,7 +553,7 @@
                         </select>
                     </td>
                     <td style="background:#fef3c7;">
-                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" style="font-weight:bold; color:#78350f; background:#fef3c7;">
+                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" style="font-weight:bold; color:#78350f; background:#fef3c7; padding:4px 0;">
                             <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
                             <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
@@ -563,7 +564,7 @@
                     <td class="bg-calc" id="calc_totalPieces_${item.id}">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
-                            <select onchange="updateItemData(${item.id}, 'shape', parseInt(this.value))" style="font-weight:bold; width:65px;">
+                            <select onchange="updateItemData(${item.id}, 'shape', parseInt(this.value))" style="font-weight:bold; width:72px;">
                                 ${[1,2,3,4,5,6,7,8,9,10].map(s => `<option value="${s}" ${item.shape === s ? 'selected' : ''}>แบบที่ ${s}</option>`).join('')}
                             </select>
                             <div class="shape-preview" id="shape_preview_${item.id}">${getShapeSVG(item.shape, 28, 18)}</div>
@@ -623,7 +624,6 @@
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
                 elem.value = item[field];
-                // Auto Select text when focused so user can overwrite immediately without Backspacing
                 setTimeout(() => { elem.select(); }, 10);
             }
         }
