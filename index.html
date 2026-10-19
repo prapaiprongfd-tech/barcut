@@ -343,7 +343,7 @@
             });
         }
 
-        // GLOBAL BEST-FIT BIN PACKING WITH CROSS-ROW REUSE ANALYSIS
+        // GLOBAL BEST-FIT BIN PACKING WITH CROSS-ROW REUSE & PER-PIECE OFFCUT ANALYSIS
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -367,27 +367,11 @@
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
+                scrapPiecesList: [],
                 isReuse: false
             }));
 
-            // Step 1: Pre-process Exact Zero-Waste Full Bars
-            rowDemands.forEach((d) => {
-                if (d.cutLenM > 0 && d.totalPieces > 0) {
-                    [10, 12].forEach((cap) => {
-                        const pcsPerFullBar = Math.floor(cap / d.cutLenM);
-                        if (pcsPerFullBar > 0 && Math.abs((pcsPerFullBar * d.cutLenM) - cap) < 0.001) {
-                            const fullBarsCount = Math.floor(d.totalPieces / pcsPerFullBar);
-                            if (fullBarsCount > 0) {
-                                rowResults[d.index].newBarsCount += fullBarsCount;
-                                rowResults[d.index].chosenStock = cap;
-                                d.totalPieces -= (fullBarsCount * pcsPerFullBar);
-                            }
-                        }
-                    });
-                }
-            });
-
-            // Step 2: Global Best-Fit Bin Packing for remaining pieces & Cross-Row Offcut Matching
+            // Process Each Rebar Type Group Separately
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -480,6 +464,7 @@
 
                     if (bin.remainingSpace >= 0.01) {
                         rowResults[primaryRowIdx].totalScrapLen += bin.remainingSpace;
+                        rowResults[primaryRowIdx].scrapPiecesList.push(bin.remainingSpace);
                     }
                 });
             });
@@ -501,9 +486,17 @@
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. True Unused Net Residual Scrap
-                if (res.totalScrapLen > 0.001) {
-                    scrapTextArr.push(`เศษเหลือ ${res.totalScrapLen.toFixed(2)}m`);
+                // 3. Summarize Net Offcut Pieces (e.g. "1.58m จำนวน 6 ท่อน")
+                if (res.scrapPiecesList.length > 0) {
+                    const scrapCounts = {};
+                    res.scrapPiecesList.forEach(len => {
+                        const key = len.toFixed(2);
+                        scrapCounts[key] = (scrapCounts[key] || 0) + 1;
+                    });
+
+                    Object.keys(scrapCounts).forEach(lenStr => {
+                        scrapTextArr.push(`เศษเหลือ ${lenStr}m จำนวน ${scrapCounts[lenStr]} ท่อน`);
+                    });
                 } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
                     scrapTextArr.push(`✨ ใช้เศษตัดร่วมครบ (ไม่ต้องเบิกเหล็กใหม่)`);
                 } else if (demand.cutLenM <= 0) {
