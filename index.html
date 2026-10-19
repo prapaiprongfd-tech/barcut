@@ -343,7 +343,7 @@
             });
         }
 
-        // PHYSICAL ACCURATE REBAR SOLVER WITH CLEAN CUSTOM TEXT FORMATTING
+        // MAIN BAR PRIORITY FIRST & DIRECT ONE-WAY OFFCUT MATCHING SOLVER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -372,7 +372,7 @@
                 isReuse: false
             }));
 
-            // Step 1: Calculate Main Stock Bars needed per row
+            // Step 1: Calculate Main Stock Bars needed per row FIRST
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -427,7 +427,7 @@
                 }
             });
 
-            // Step 2: CROSS-ROW OFFCUT MATCHING SOLVER
+            // Step 2: STRICT ONE-WAY OFFCUT MATCHING (From earlier rows to later rows only)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -437,52 +437,58 @@
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
-                demands.forEach(target => {
-                    if (target.cutLenM <= 0 || target.totalPieces <= 0) return;
+                // Iterate through target rows in order
+                for (let t = 0; t < demands.length; t++) {
+                    const target = demands[t];
+                    if (target.cutLenM <= 0 || target.totalPieces <= 0) continue;
 
-                    demands.forEach(source => {
-                        if (target.index !== source.index && rowResults[source.index].scrapPiecesList.length > 0) {
-                            if (rowResults[target.index].remPiecesNeed > 0) {
-                                for (let s = rowResults[source.index].scrapPiecesList.length - 1; s >= 0; s--) {
-                                    const offcutLen = rowResults[source.index].scrapPiecesList[s];
-                                    if (offcutLen >= (target.cutLenM - 0.001) && rowResults[target.index].remPiecesNeed > 0) {
-                                        // Match offcut!
-                                        const lenKeyTarget = `${offcutLen.toFixed(2)}_${source.no}`;
-                                        if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
-                                            rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: offcutLen, fromNo: source.no, count: 0 };
-                                        }
-                                        rowResults[target.index].usedReusesMap[lenKeyTarget].count += 1;
-                                        rowResults[target.index].isReuse = true;
+                    // Only look for offcuts in PREVIOUS rows (source.index < target.index)
+                    for (let s = 0; s < t; s++) {
+                        const source = demands[s];
+                        const sourceScrapList = rowResults[source.index].scrapPiecesList;
 
-                                        const lenKeySource = `${offcutLen.toFixed(2)}_${target.no}`;
-                                        if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                            rowResults[source.index].sentToRowsMap[lenKeySource] = { len: offcutLen, toNo: target.no, count: 0 };
-                                        }
-                                        rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
+                        if (sourceScrapList && sourceScrapList.length > 0) {
+                            for (let p = sourceScrapList.length - 1; p >= 0; p--) {
+                                const offcutLen = sourceScrapList[p];
+                                if (offcutLen >= (target.cutLenM - 0.001) && rowResults[target.index].remPiecesNeed > 0) {
+                                    // Match offcut!
+                                    const lenKeyTarget = `${offcutLen.toFixed(2)}_${source.no}`;
+                                    if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
+                                        rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: offcutLen, fromNo: source.no, count: 0 };
+                                    }
+                                    rowResults[target.index].usedReusesMap[lenKeyTarget].count += 1;
+                                    rowResults[target.index].isReuse = true;
 
-                                        // Reduce target pieces needed
-                                        rowResults[target.index].remPiecesNeed -= 1;
+                                    const lenKeySource = `${offcutLen.toFixed(2)}_${target.no}`;
+                                    if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
+                                        rowResults[source.index].sentToRowsMap[lenKeySource] = { len: offcutLen, toNo: target.no, count: 0 };
+                                    }
+                                    rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
 
-                                        // Recalculate Target's new bar count
-                                        const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
-                                        if (pcsPerBar > 0) {
-                                            rowResults[target.index].newBarsCount = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
-                                        }
+                                    // Reduce pieces target needs
+                                    rowResults[target.index].remPiecesNeed -= 1;
 
-                                        // Update source offcut length
-                                        const newRem = offcutLen - target.cutLenM;
-                                        rowResults[source.index].totalScrapLen -= target.cutLenM;
-                                        if (newRem >= 0.01) {
-                                            rowResults[source.index].scrapPiecesList[s] = newRem;
-                                        } else {
-                                            rowResults[source.index].scrapPiecesList.splice(s, 1);
-                                        }
+                                    // Recalculate Target's new main bar count
+                                    const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
+                                    if (pcsPerBar > 0) {
+                                        rowResults[target.index].newBarsCount = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
+                                    } else {
+                                        rowResults[target.index].newBarsCount = rowResults[target.index].remPiecesNeed;
+                                    }
+
+                                    // Update source offcut list
+                                    const newRem = offcutLen - target.cutLenM;
+                                    rowResults[source.index].totalScrapLen -= target.cutLenM;
+                                    if (newRem >= 0.01) {
+                                        sourceScrapList[p] = newRem;
+                                    } else {
+                                        sourceScrapList.splice(p, 1);
                                     }
                                 }
                             }
                         }
-                    });
-                });
+                    }
+                }
             });
 
             const finalResults = [];
@@ -492,17 +498,17 @@
 
                 let scrapTextArr = [];
 
-                // 1. Target Row receiving scrap: Show ONLY "♻️ นำเศษ X.XXm Y ท่อน จาก No.Z"
+                // 1. Target Row receiving scrap: ONLY Show "♻️ นำเศษ X.XXm Y ท่อน จาก No.Z"
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
 
-                // 2. Source Row sending scrap: Show "เศษ X.XXm Y ท่อน (นำไปใช้ใน No.Z)"
+                // 2. Source Row sending scrap out: Show "เศษ X.XXm Y ท่อน (นำไปใช้ใน No.Z)"
                 Object.values(res.sentToRowsMap).forEach(sent => {
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. Net Remaining Scrap
+                // 3. Net Remaining Scrap Pieces (Only if remaining)
                 if (res.scrapPiecesList.length > 0) {
                     const scrapCounts = {};
                     res.scrapPiecesList.forEach(len => {
@@ -514,7 +520,7 @@
                         scrapTextArr.push(`เศษเหลือ ${lenStr}m จำนวน ${scrapCounts[lenStr]} ท่อน`);
                     });
                 } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
-                    scrapTextArr.push(`✨ ใช้เศษตัดร่วมครบ (ไม่ต้องเบิกเหล็กใหม่)`);
+                    // Do not append extra text if fulfilled entirely by scrap
                 } else if (demand.cutLenM <= 0) {
                     scrapTextArr.push(`ระบุระยะดัด`);
                 } else if (demand.totalPieces <= 0) {
@@ -1068,7 +1074,7 @@
                 boqMap[key].scrapWeight += calc.totalScrapWeight;
             });
 
-let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
+            let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
 
             Object.keys(boqMap).sort().forEach(key => {
                 const data = boqMap[key];
