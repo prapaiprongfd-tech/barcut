@@ -155,7 +155,7 @@
             <div id="content-barcut">
                 <div class="toolbar no-print">
                     <div class="legend">
-                        <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล (รองรับการบวกลบคูณหาร เช่น 200+50)</span>
+                        <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล (หน่วยเป็นเมตร - รองรับการบวกลบคูณหาร เช่น 2+0.5)</span>
                         <span><strong class="dot" style="background:#e0e7ff; border:1px solid #818cf8;"></strong> คำนวณอัตโนมัติ</span>
                         <span><strong class="dot" style="background:#fef3c7; border:1px solid #d97706;"></strong> หมุนเวียนใช้เศษเหล็ก (Global Best-Fit)</span>
                     </div>
@@ -180,7 +180,7 @@
                                 <th style="width:40px;">ต่อชุด</th>
                                 <th style="width:45px; background:#e0e7ff;">รวมชิ้น</th>
                                 <th style="width:105px;">รูปทรง (Shape)</th>
-                                <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ซม.)</th>
+                                <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
                                 <th style="width:75px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
                                 <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
                                 <th style="width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
@@ -277,7 +277,6 @@
             'DB28': 4.834, 'DB32': 6.313
         };
 
-        // List of editable cell fields for navigation on Enter key
         const INPUT_FIELDS_ORDER = ['comp', 'setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'];
 
         function evaluateFormula(expr) {
@@ -319,12 +318,13 @@
             }
         }
 
+        // Updated default data in METERS (m)
         let itemsData = [
-            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
-            { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
-            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
-            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
-            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
+            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "1.98", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
+            { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
+            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.48", c: "0", d: "0", e: "0", f: "0" },
+            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "5.00", b: "0", c: "0", d: "0", e: "0", f: "0" },
+            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "7.60", b: "0", c: "0", d: "0", e: "0", f: "0" }
         ];
 
         function resequenceNumbers() {
@@ -344,7 +344,8 @@
                 const valE = evaluateFormula(item.e);
                 const valF = evaluateFormula(item.f);
 
-                const cutLenM = (valA + valB + valC + valD + valE + valF) / 100;
+                // DIRECT SUM IN METERS (No division by 100)
+                const cutLenM = valA + valB + valC + valD + valE + valF;
                 const totalPieces = evaluateFormula(item.setQty) * evaluateFormula(item.perSet);
                 const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
                 rowDemands.push({ id: item.id, no: item.no, type: cleanType, cutLenM, totalPieces, unitWeight, stockLen: item.stockLen, index });
@@ -522,7 +523,6 @@
             alert('⚡ คำนวณจับคู่ความยาวสต็อก AUTO แบบ Zero-Waste ทั้งโครงการเรียบร้อยแล้ว!');
         }
 
-        // Full Render Function
         function renderTable() {
             resequenceNumbers();
             const tbody = document.getElementById('tableBody');
@@ -542,7 +542,6 @@
                 const tr = document.createElement('tr');
                 tr.id = `row_${item.id}`;
 
-                // Display evaluated values or raw formulas if stored
                 const dispVal = (field) => {
                     const raw = item[field];
                     return (raw === null || raw === undefined) ? '0' : raw;
@@ -600,7 +599,6 @@
             renderSummaryBOQ();
         }
 
-        // Live Calculations WITHOUT destroying DOM Elements
         function refreshCalculationsOnly() {
             const calcResults = calculateAllItems();
 
@@ -626,41 +624,36 @@
             renderSummaryBOQ();
         }
 
-        // When user clicks INTO an input field, show the original formula (e.g., "200+50") if present
         function onInputFocus(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
-                elem.value = item[field]; // Show raw formula or value stored in memory
+                elem.value = item[field];
             }
         }
 
-        // When user LEAVES an input field, display the evaluated number (e.g., "250")
         function onInputBlur(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
                 const strVal = String(item[field]).trim();
                 if (strVal.includes('+') || strVal.includes('-') || strVal.includes('*') || strVal.includes('/') || strVal.includes('(')) {
                     const evaluated = evaluateFormula(strVal);
-                    elem.value = evaluated; // Show calculated result
+                    elem.value = evaluated;
                 } else {
                     elem.value = strVal;
                 }
             }
         }
 
-        // Handle ENTER Key: Moves focus to the NEXT cell in order
         function handleEnterKey(event, id, currentField) {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 const fieldIdx = INPUT_FIELDS_ORDER.indexOf(currentField);
                 
                 if (fieldIdx >= 0 && fieldIdx < INPUT_FIELDS_ORDER.length - 1) {
-                    // Move to next field in the same row
                     const nextField = INPUT_FIELDS_ORDER[fieldIdx + 1];
                     const nextElem = document.getElementById(`input_${id}_${nextField}`);
                     if (nextElem) nextElem.focus();
                 } else {
-                    // Last field in row (f) -> move to first field (comp) of next row
                     const itemIdx = itemsData.findIndex(i => i.id === id);
                     if (itemIdx >= 0 && itemIdx < itemsData.length - 1) {
                         const nextRowItem = itemsData[itemIdx + 1];
@@ -740,11 +733,11 @@
 
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
-                { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
-                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
-                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
+                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "1.98", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
+                { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.40", c: "0", d: "0", e: "0", f: "0" },
+                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "2.00", b: "0.48", c: "0", d: "0", e: "0", f: "0" },
+                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "5.00", b: "0", c: "0", d: "0", e: "0", f: "0" },
+                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "7.60", b: "0", c: "0", d: "0", e: "0", f: "0" }
             ];
             renderTable();
         }
@@ -996,7 +989,7 @@
             const wb = XLSX.utils.book_new();
             const calcResults = calculateAllItems();
 
-            const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (cm)", "B (cm)", "C (cm)", "D (cm)", "E (cm)", "F (cm)", "Cut Length (m)", "Total Bars", "Offcut & Reuse Summary", "Scrap Weight (kg)"];
+            const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (m)", "B (m)", "C (m)", "D (m)", "E (m)", "F (m)", "Cut Length (m)", "Total Bars", "Offcut & Reuse Summary", "Scrap Weight (kg)"];
             const barcutRows = [
                 [`หมวดหมู่งาน / โครงการ: ${categoryName}`],
                 [],
