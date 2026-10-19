@@ -277,25 +277,23 @@
             'DB28': 4.834, 'DB32': 6.313
         };
 
-        // Helper function to safely evaluate Excel-like math formulas (e.g., "200+50*2")
+        // List of editable cell fields for navigation on Enter key
+        const INPUT_FIELDS_ORDER = ['comp', 'setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'];
+
         function evaluateFormula(expr) {
             if (expr === null || expr === undefined) return 0;
             if (typeof expr === 'number') return isNaN(expr) ? 0 : expr;
             
             let str = String(expr).trim();
             if (str === '') return 0;
-            
-            // Remove leading '=' if user types =2+3
             if (str.startsWith('=')) str = str.substring(1);
             
-            // Sanitize: Allow only numbers, decimal points, +, -, *, /, (, )
             if (!/^[0-9\.\+\-\*\/\(\)\s]+$/.test(str)) {
                 const fallback = parseFloat(str);
                 return isNaN(fallback) ? 0 : fallback;
             }
 
             try {
-                // Safely evaluate math expression using Function constructor
                 const result = new Function(`'use strict'; return (${str})`)();
                 return (typeof result === 'number' && !isNaN(result) && isFinite(result)) ? result : 0;
             } catch (e) {
@@ -322,11 +320,11 @@
         }
 
         let itemsData = [
-            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
-            { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
-            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
-            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
-            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
+            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
+            { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
+            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
+            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
+            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
         ];
 
         function resequenceNumbers() {
@@ -524,7 +522,7 @@
             alert('⚡ คำนวณจับคู่ความยาวสต็อก AUTO แบบ Zero-Waste ทั้งโครงการเรียบร้อยแล้ว!');
         }
 
-        // Full Render (Only called when row structure changes: add/delete/move/load)
+        // Full Render Function
         function renderTable() {
             resequenceNumbers();
             const tbody = document.getElementById('tableBody');
@@ -544,9 +542,15 @@
                 const tr = document.createElement('tr');
                 tr.id = `row_${item.id}`;
 
+                // Display evaluated values or raw formulas if stored
+                const dispVal = (field) => {
+                    const raw = item[field];
+                    return (raw === null || raw === undefined) ? '0' : raw;
+                };
+
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
-                    <td><input type="text" value="${item.comp}" oninput="updateItemData(${item.id}, 'comp', this.value)" style="text-align:left; padding-left:6px;"></td>
+                    <td><input type="text" id="input_${item.id}_comp" value="${dispVal('comp')}" oninput="updateItemData(${item.id}, 'comp', this.value)" onkeydown="handleEnterKey(event, ${item.id}, 'comp')" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="text" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td>
                         <select onchange="updateItemData(${item.id}, 'type', this.value)" style="font-weight:600; color:#1e40af;">
@@ -560,8 +564,8 @@
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
                         </select>
                     </td>
-                    <td><input type="text" value="${item.setQty}" class="excel-in" oninput="updateItemData(${item.id}, 'setQty', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'setQty', this)"></td>
-                    <td><input type="text" value="${item.perSet}" class="excel-in" oninput="updateItemData(${item.id}, 'perSet', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'perSet', this)"></td>
+                    <td><input type="text" id="input_${item.id}_setQty" value="${dispVal('setQty')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'setQty', this)" oninput="updateItemData(${item.id}, 'setQty', this.value)" onblur="onInputBlur(${item.id}, 'setQty', this)" onkeydown="handleEnterKey(event, ${item.id}, 'setQty')"></td>
+                    <td><input type="text" id="input_${item.id}_perSet" value="${dispVal('perSet')}" class="excel-in" onfocus="onInputFocus(${item.id}, 'perSet', this)" oninput="updateItemData(${item.id}, 'perSet', this.value)" onblur="onInputBlur(${item.id}, 'perSet', this)" onkeydown="handleEnterKey(event, ${item.id}, 'perSet')"></td>
                     <td class="bg-calc" id="calc_totalPieces_${item.id}">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
@@ -571,12 +575,12 @@
                             <div class="shape-preview" id="shape_preview_${item.id}">${getShapeSVG(item.shape, 28, 18)}</div>
                         </div>
                     </td>
-                    <td><input type="text" value="${item.a}" oninput="updateItemData(${item.id}, 'a', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'a', this)" placeholder="0"></td>
-                    <td><input type="text" value="${item.b}" oninput="updateItemData(${item.id}, 'b', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'b', this)" placeholder="0"></td>
-                    <td><input type="text" value="${item.c}" oninput="updateItemData(${item.id}, 'c', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'c', this)" placeholder="0"></td>
-                    <td><input type="text" value="${item.d}" oninput="updateItemData(${item.id}, 'd', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'd', this)" placeholder="0"></td>
-                    <td><input type="text" value="${item.e}" oninput="updateItemData(${item.id}, 'e', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'e', this)" placeholder="0"></td>
-                    <td><input type="text" value="${item.f}" oninput="updateItemData(${item.id}, 'f', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'f', this)" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_a" value="${dispVal('a')}" onfocus="onInputFocus(${item.id}, 'a', this)" oninput="updateItemData(${item.id}, 'a', this.value)" onblur="onInputBlur(${item.id}, 'a', this)" onkeydown="handleEnterKey(event, ${item.id}, 'a')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_b" value="${dispVal('b')}" onfocus="onInputFocus(${item.id}, 'b', this)" oninput="updateItemData(${item.id}, 'b', this.value)" onblur="onInputBlur(${item.id}, 'b', this)" onkeydown="handleEnterKey(event, ${item.id}, 'b')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_c" value="${dispVal('c')}" onfocus="onInputFocus(${item.id}, 'c', this)" oninput="updateItemData(${item.id}, 'c', this.value)" onblur="onInputBlur(${item.id}, 'c', this)" onkeydown="handleEnterKey(event, ${item.id}, 'c')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_d" value="${dispVal('d')}" onfocus="onInputFocus(${item.id}, 'd', this)" oninput="updateItemData(${item.id}, 'd', this.value)" onblur="onInputBlur(${item.id}, 'd', this)" onkeydown="handleEnterKey(event, ${item.id}, 'd')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_e" value="${dispVal('e')}" onfocus="onInputFocus(${item.id}, 'e', this)" oninput="updateItemData(${item.id}, 'e', this.value)" onblur="onInputBlur(${item.id}, 'e', this)" onkeydown="handleEnterKey(event, ${item.id}, 'e')" placeholder="0"></td>
+                    <td><input type="text" id="input_${item.id}_f" value="${dispVal('f')}" onfocus="onInputFocus(${item.id}, 'f', this)" oninput="updateItemData(${item.id}, 'f', this.value)" onblur="onInputBlur(${item.id}, 'f', this)" onkeydown="handleEnterKey(event, ${item.id}, 'f')" placeholder="0"></td>
                     <td class="bg-calc" id="calc_cutLen_${item.id}">${calc.cutLenM.toFixed(3)}</td>
                     <td class="bg-total" id="calc_totalBars_${item.id}">${calc.totalBars}</td>
                     <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}" id="calc_scrapDetails_${item.id}">${calc.scrapDetails}</td>
@@ -622,6 +626,51 @@
             renderSummaryBOQ();
         }
 
+        // When user clicks INTO an input field, show the original formula (e.g., "200+50") if present
+        function onInputFocus(id, field, elem) {
+            const item = itemsData.find(i => i.id === id);
+            if (item && item[field] !== undefined) {
+                elem.value = item[field]; // Show raw formula or value stored in memory
+            }
+        }
+
+        // When user LEAVES an input field, display the evaluated number (e.g., "250")
+        function onInputBlur(id, field, elem) {
+            const item = itemsData.find(i => i.id === id);
+            if (item && item[field] !== undefined) {
+                const strVal = String(item[field]).trim();
+                if (strVal.includes('+') || strVal.includes('-') || strVal.includes('*') || strVal.includes('/') || strVal.includes('(')) {
+                    const evaluated = evaluateFormula(strVal);
+                    elem.value = evaluated; // Show calculated result
+                } else {
+                    elem.value = strVal;
+                }
+            }
+        }
+
+        // Handle ENTER Key: Moves focus to the NEXT cell in order
+        function handleEnterKey(event, id, currentField) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const fieldIdx = INPUT_FIELDS_ORDER.indexOf(currentField);
+                
+                if (fieldIdx >= 0 && fieldIdx < INPUT_FIELDS_ORDER.length - 1) {
+                    // Move to next field in the same row
+                    const nextField = INPUT_FIELDS_ORDER[fieldIdx + 1];
+                    const nextElem = document.getElementById(`input_${id}_${nextField}`);
+                    if (nextElem) nextElem.focus();
+                } else {
+                    // Last field in row (f) -> move to first field (comp) of next row
+                    const itemIdx = itemsData.findIndex(i => i.id === id);
+                    if (itemIdx >= 0 && itemIdx < itemsData.length - 1) {
+                        const nextRowItem = itemsData[itemIdx + 1];
+                        const nextElem = document.getElementById(`input_${nextRowItem.id}_${INPUT_FIELDS_ORDER[0]}`);
+                        if (nextElem) nextElem.focus();
+                    }
+                }
+            }
+        }
+
         function updateItemData(id, field, value) {
             const item = itemsData.find(i => i.id === id);
             if (item) {
@@ -631,20 +680,6 @@
                     if (shapePreviewElem) shapePreviewElem.innerHTML = getShapeSVG(value, 28, 18);
                 }
                 refreshCalculationsOnly();
-            }
-        }
-
-        // On Blur (leaving input field), evaluate math expressions like "200+50" to calculated values "250"
-        function evaluateInputOnBlur(id, field, elem) {
-            const item = itemsData.find(i => i.id === id);
-            if (item) {
-                const rawVal = elem.value;
-                if (rawVal && (rawVal.includes('+') || rawVal.includes('-') || rawVal.includes('*') || rawVal.includes('/') || rawVal.includes('('))) {
-                    const evaluated = evaluateFormula(rawVal);
-                    item[field] = evaluated;
-                    elem.value = evaluated;
-                    refreshCalculationsOnly();
-                }
             }
         }
 
@@ -668,7 +703,7 @@
 
         function addRow() {
             const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "0", b: "0", c: "0", d: "0", e: "0", f: "0" });
+            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "0", b: "0", c: "0", d: "0", e: "0", f: "0" });
             renderTable();
         }
 
@@ -705,11 +740,11 @@
 
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
-                { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
-                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
-                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
+                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "4", shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
+                { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
+                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
+                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
+                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "1", shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
             ];
             renderTable();
         }
@@ -913,8 +948,8 @@
                             const type = String(row[3] || 'DB16').trim();
                             const stockLen = 'auto';
 
-                            const setQty = parseInt(row[5]) || 1;
-                            const perSet = parseInt(row[6]) || 1;
+                            const setQty = String(row[5] ?? "1");
+                            const perSet = String(row[6] ?? "1");
                             
                             let shape = 1;
                             if (row[8]) {
@@ -978,8 +1013,8 @@
                     item.no,
                     cleanType,
                     calc.chosenStock,
-                    item.setQty,
-                    item.perSet,
+                    evaluateFormula(item.setQty),
+                    evaluateFormula(item.perSet),
                     calc.totalPieces,
                     `แบบที่ ${item.shape}`,
                     evaluateFormula(item.a), evaluateFormula(item.b), evaluateFormula(item.c), 
@@ -1057,9 +1092,3 @@
     </script>
 </body>
 </html>
-```eof
-
-### สรุปฟังก์ชันที่เพิ่มในไฟล์ `index.html`:
-1. **รองรับการพิมพ์สมการคณิตศาสตร์แบบ Excel:** ในช่องระยะดัดงอ $A, B, C, D, E, F$ และจำนวนชุด/ต่อชุด คุณสามารถคีย์สูตรบวกลบคูณหาร เช่น `200+50`, `150*2`, `300-25` หรือ `100/2` ได้ทันที
-2. **ประมวลผลอัตโนมัติเมื่อออกจากช่อง (On Blur):** เมื่อกด Tap หรือคลิกออกจากช่อง สคริปต์จะแปลงสมการนั้นเป็นตัวเลขผลลัพธ์สุทธิให้อัตโนมัติ (เช่น คีย์ `2+3` พอคลิกออกจะเปลี่ยนเป็น `5` ทันที)
-3. **รักษาเสถียรภาพการพิมพ์/ลบ:** ใช้การอัปเดตแบบ Dom-Preserving ช่วยให้การพิมพ์จากหน้าไปหลังและการกดลบ Backspace ทำได้ลื่นไหล ไม่หลุดเคอร์เซอร์อย่างสมบูรณ์ครับ
