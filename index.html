@@ -343,7 +343,7 @@
             });
         }
 
-        // REFINED ACCURATE BIN PACKING SOLVER WITH INDIVIDUAL PHYSICAL BAR TRACKING
+        // PHYSICAL ACCURATE REBAR CUTTING & OFFCUT SOLVER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -371,7 +371,66 @@
                 isReuse: false
             }));
 
-            // Process Each Rebar Type Group Separately
+            // Calculate Physical Cutting Per Row
+            rowDemands.forEach(d => {
+                if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
+
+                let stockCap = 12;
+                if (d.stockLen === '10') stockCap = 10;
+                else if (d.stockLen === '12') stockCap = 12;
+                else {
+                    // AUTO mode: Compare 10m vs 12m stock waste
+                    const pcs10 = Math.floor(10 / d.cutLenM);
+                    const scrap10 = pcs10 > 0 ? (10 - (pcs10 * d.cutLenM)) : 999;
+                    
+                    const pcs12 = Math.floor(12 / d.cutLenM);
+                    const scrap12 = pcs12 > 0 ? (12 - (pcs12 * d.cutLenM)) : 999;
+
+                    stockCap = (scrap10 <= scrap12 && pcs10 > 0) ? 10 : 12;
+                }
+
+                const pcsPerBar = Math.floor(stockCap / d.cutLenM);
+
+                if (pcsPerBar > 0) {
+                    const requiredBars = Math.ceil(d.totalPieces / pcsPerBar);
+                    const fullBarsCount = Math.floor(d.totalPieces / pcsPerBar);
+                    const remPiecesInLastBar = d.totalPieces % pcsPerBar;
+
+                    const normalScrapPerBar = stockCap - (pcsPerBar * d.cutLenM);
+                    let totalScrapLen = 0;
+                    let scrapList = [];
+
+                    if (remPiecesInLastBar === 0) {
+                        // All bars produce equal scrap
+                        totalScrapLen = requiredBars * normalScrapPerBar;
+                        for (let i = 0; i < requiredBars; i++) {
+                            if (normalScrapPerBar >= 0.01) scrapList.push(normalScrapPerBar);
+                        }
+                    } else {
+                        // Full bars scrap
+                        for (let i = 0; i < fullBarsCount; i++) {
+                            if (normalScrapPerBar >= 0.01) scrapList.push(normalScrapPerBar);
+                        }
+                        // Last bar scrap
+                        const lastBarScrap = stockCap - (remPiecesInLastBar * d.cutLenM);
+                        if (lastBarScrap >= 0.01) scrapList.push(lastBarScrap);
+
+                        totalScrapLen = (fullBarsCount * normalScrapPerBar) + lastBarScrap;
+                    }
+
+                    rowResults[d.index].newBarsCount = requiredBars;
+                    rowResults[d.index].chosenStock = stockCap;
+                    rowResults[d.index].scrapPiecesList = scrapList;
+                    rowResults[d.index].totalScrapLen = Math.max(0, totalScrapLen);
+                } else {
+                    rowResults[d.index].newBarsCount = d.totalPieces;
+                    rowResults[d.index].chosenStock = stockCap;
+                    rowResults[d.index].scrapPiecesList = [];
+                    rowResults[d.index].totalScrapLen = 0;
+                }
+            });
+
+            // Perform Cross-Row Scrap Matching (Allowing offcuts to be used in other rows)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -381,93 +440,42 @@
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
-                // Global Best-Fit Bin Packing Across Rows for exact physical bars
-                let allPieces = [];
-                demands.forEach(d => {
-                    if (d.cutLenM > 0 && d.totalPieces > 0) {
-                        for (let p = 0; p < d.totalPieces; p++) {
-                            allPieces.push({ rowIndex: d.index, rowNo: d.no, cutLenM: d.cutLenM, preferredStock: d.stockLen });
-                        }
-                    }
-                });
+                // Check if any row needs pieces that can be satisfied by offcuts of another row
+                demands.forEach(target => {
+                    demands.forEach(source => {
+                        if (target.index !== source.index && rowResults[source.index].scrapPiecesList.length > 0) {
+                            const neededPcs = target.totalPieces;
+                            if (neededPcs > 0 && target.cutLenM > 0) {
+                                for (let s = rowResults[source.index].scrapPiecesList.length - 1; s >= 0; s--) {
+                                    const offcutLen = rowResults[source.index].scrapPiecesList[s];
+                                    if (offcutLen >= (target.cutLenM - 0.001)) {
+                                        // Match offcut!
+                                        const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
+                                        if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
+                                            rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
+                                        }
+                                        rowResults[target.index].usedReusesMap[lenKeyTarget].count += 1;
+                                        rowResults[target.index].isReuse = true;
 
-                // Sort pieces descending for optimal fitting
-                allPieces.sort((a, b) => b.cutLenM - a.cutLenM);
+                                        const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
+                                        if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
+                                            rowResults[source.index].sentToRowsMap[lenKeySource] = { len: target.cutLenM, toNo: target.no, count: 0 };
+                                        }
+                                        rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
 
-                const bins = [];
-
-                allPieces.forEach(piece => {
-                    let bestBinIndex = -1;
-                    let minResidual = 999999;
-
-                    for (let b = 0; b < bins.length; b++) {
-                        const remSpace = bins[b].remainingSpace;
-                        if (remSpace >= (piece.cutLenM - 0.001)) {
-                            const residual = remSpace - piece.cutLenM;
-                            if (residual < minResidual) {
-                                minResidual = residual;
-                                bestBinIndex = b;
+                                        // Update remaining offcut length
+                                        const newRem = offcutLen - target.cutLenM;
+                                        rowResults[source.index].totalScrapLen -= target.cutLenM;
+                                        if (newRem >= 0.01) {
+                                            rowResults[source.index].scrapPiecesList[s] = newRem;
+                                        } else {
+                                            rowResults[source.index].scrapPiecesList.splice(s, 1);
+                                        }
+                                    }
+                                }
                             }
                         }
-                    }
-
-                    if (bestBinIndex >= 0 && minResidual >= 0) {
-                        const bin = bins[bestBinIndex];
-                        bin.pieces.push(piece);
-                        bin.remainingSpace -= piece.cutLenM;
-                    } else {
-                        let chosenCapacity = 12;
-                        if (piece.preferredStock === '10') chosenCapacity = 10;
-                        else if (piece.preferredStock === '12') chosenCapacity = 12;
-                        else {
-                            const rem10 = (10 - piece.cutLenM);
-                            const rem12 = (12 - piece.cutLenM);
-                            if (rem10 >= 0 && rem12 >= 0) {
-                                chosenCapacity = (rem10 <= rem12) ? 10 : 12;
-                            } else if (rem10 >= 0) chosenCapacity = 10;
-                            else chosenCapacity = 12;
-                        }
-
-                        bins.push({
-                            capacity: chosenCapacity,
-                            remainingSpace: chosenCapacity - piece.cutLenM,
-                            pieces: [piece]
-                        });
-                    }
-                });
-
-                bins.forEach(bin => {
-                    if (bin.pieces.length === 0) return;
-
-                    const primaryRowIdx = bin.pieces[0].rowIndex;
-                    const primaryRowNo = bin.pieces[0].rowNo;
-                    rowResults[primaryRowIdx].newBarsCount += 1;
-                    rowResults[primaryRowIdx].chosenStock = bin.capacity;
-
-                    for (let i = 1; i < bin.pieces.length; i++) {
-                        const reusePiece = bin.pieces[i];
-                        const cutLen = reusePiece.cutLenM;
-                        
-                        if (primaryRowNo !== reusePiece.rowNo) {
-                            const targetKey = `${cutLen.toFixed(2)}_${primaryRowNo}`;
-                            if (!rowResults[reusePiece.rowIndex].usedReusesMap[targetKey]) {
-                                rowResults[reusePiece.rowIndex].usedReusesMap[targetKey] = { len: cutLen, fromNo: primaryRowNo, count: 0 };
-                            }
-                            rowResults[reusePiece.rowIndex].usedReusesMap[targetKey].count += 1;
-                            rowResults[reusePiece.rowIndex].isReuse = true;
-
-                            const sourceKey = `${cutLen.toFixed(2)}_${reusePiece.rowNo}`;
-                            if (!rowResults[primaryRowIdx].sentToRowsMap[sourceKey]) {
-                                rowResults[primaryRowIdx].sentToRowsMap[sourceKey] = { len: cutLen, toNo: reusePiece.rowNo, count: 0 };
-                            }
-                            rowResults[primaryRowIdx].sentToRowsMap[sourceKey].count += 1;
-                        }
-                    }
-
-                    if (bin.remainingSpace >= 0.01) {
-                        rowResults[primaryRowIdx].totalScrapLen += bin.remainingSpace;
-                        rowResults[primaryRowIdx].scrapPiecesList.push(bin.remainingSpace);
-                    }
+                    });
                 });
             });
 
@@ -488,7 +496,7 @@
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. Summarize Net Offcut Pieces (Grouped by piece size & count)
+                // 3. Summarize Net Offcut Pieces (Grouped by exact piece size & count)
                 if (res.scrapPiecesList.length > 0) {
                     const scrapCounts = {};
                     res.scrapPiecesList.forEach(len => {
@@ -510,7 +518,7 @@
                 }
 
                 const scrapDetails = scrapTextArr.join(' | ');
-                const totalScrapWeight = res.totalScrapLen * demand.unitWeight;
+                const totalScrapWeight = Math.max(0, res.totalScrapLen) * demand.unitWeight;
 
                 finalResults.push({
                     cutLenM: demand.cutLenM,
