@@ -155,7 +155,7 @@
             <div id="content-barcut">
                 <div class="toolbar no-print">
                     <div class="legend">
-                        <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล</span>
+                        <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล (รองรับการบวกลบคูณหาร เช่น 200+50)</span>
                         <span><strong class="dot" style="background:#e0e7ff; border:1px solid #818cf8;"></strong> คำนวณอัตโนมัติ</span>
                         <span><strong class="dot" style="background:#fef3c7; border:1px solid #d97706;"></strong> หมุนเวียนใช้เศษเหล็ก (Global Best-Fit)</span>
                     </div>
@@ -277,6 +277,33 @@
             'DB28': 4.834, 'DB32': 6.313
         };
 
+        // Helper function to safely evaluate Excel-like math formulas (e.g., "200+50*2")
+        function evaluateFormula(expr) {
+            if (expr === null || expr === undefined) return 0;
+            if (typeof expr === 'number') return isNaN(expr) ? 0 : expr;
+            
+            let str = String(expr).trim();
+            if (str === '') return 0;
+            
+            // Remove leading '=' if user types =2+3
+            if (str.startsWith('=')) str = str.substring(1);
+            
+            // Sanitize: Allow only numbers, decimal points, +, -, *, /, (, )
+            if (!/^[0-9\.\+\-\*\/\(\)\s]+$/.test(str)) {
+                const fallback = parseFloat(str);
+                return isNaN(fallback) ? 0 : fallback;
+            }
+
+            try {
+                // Safely evaluate math expression using Function constructor
+                const result = new Function(`'use strict'; return (${str})`)();
+                return (typeof result === 'number' && !isNaN(result) && isFinite(result)) ? result : 0;
+            } catch (e) {
+                const fallback = parseFloat(str);
+                return isNaN(fallback) ? 0 : fallback;
+            }
+        }
+
         function getShapeSVG(shapeNum, width = 60, height = 30) {
             const stroke = "#2563eb";
             const sw = 2.5;
@@ -295,11 +322,11 @@
         }
 
         let itemsData = [
-            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
-            { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 40, c: 0, d: 0, e: 0, f: 0 },
-            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 48, c: 0, d: 0, e: 0, f: 0 },
-            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 500, b: 0, c: 0, d: 0, e: 0, f: 0 },
-            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 760, b: 0, c: 0, d: 0, e: 0, f: 0 }
+            { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
+            { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
+            { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
+            { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
+            { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
         ];
 
         function resequenceNumbers() {
@@ -312,8 +339,15 @@
             const rowDemands = [];
             itemsData.forEach((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim();
-                const cutLenM = (parseFloat(item.a||0) + parseFloat(item.b||0) + parseFloat(item.c||0) + parseFloat(item.d||0) + parseFloat(item.e||0) + parseFloat(item.f||0)) / 100;
-                const totalPieces = parseInt(item.setQty||0) * parseInt(item.perSet||0);
+                const valA = evaluateFormula(item.a);
+                const valB = evaluateFormula(item.b);
+                const valC = evaluateFormula(item.c);
+                const valD = evaluateFormula(item.d);
+                const valE = evaluateFormula(item.e);
+                const valF = evaluateFormula(item.f);
+
+                const cutLenM = (valA + valB + valC + valD + valE + valF) / 100;
+                const totalPieces = evaluateFormula(item.setQty) * evaluateFormula(item.perSet);
                 const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
                 rowDemands.push({ id: item.id, no: item.no, type: cleanType, cutLenM, totalPieces, unitWeight, stockLen: item.stockLen, index });
             });
@@ -344,7 +378,7 @@
                 }
             });
 
-            // Step 2: Global Best-Fit Bin Packing
+            // Step 2: Global Best-Fit Bin Packing for remaining pieces
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -471,7 +505,7 @@
 
                 finalResults.push({
                     cutLenM: demand.cutLenM,
-                    totalPieces: (item.setQty * item.perSet),
+                    totalPieces: (evaluateFormula(item.setQty) * evaluateFormula(item.perSet)),
                     chosenStock: res.chosenStock,
                     totalBars: res.newBarsCount,
                     scrapDetails,
@@ -526,8 +560,8 @@
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
                         </select>
                     </td>
-                    <td><input type="text" inputmode="decimal" value="${item.setQty}" class="excel-in" oninput="updateItemNumData(${item.id}, 'setQty', this.value)"></td>
-                    <td><input type="text" inputmode="decimal" value="${item.perSet}" class="excel-in" oninput="updateItemNumData(${item.id}, 'perSet', this.value)"></td>
+                    <td><input type="text" value="${item.setQty}" class="excel-in" oninput="updateItemData(${item.id}, 'setQty', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'setQty', this)"></td>
+                    <td><input type="text" value="${item.perSet}" class="excel-in" oninput="updateItemData(${item.id}, 'perSet', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'perSet', this)"></td>
                     <td class="bg-calc" id="calc_totalPieces_${item.id}">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
@@ -537,12 +571,12 @@
                             <div class="shape-preview" id="shape_preview_${item.id}">${getShapeSVG(item.shape, 28, 18)}</div>
                         </div>
                     </td>
-                    <td><input type="text" inputmode="decimal" value="${item.a}" oninput="updateItemNumData(${item.id}, 'a', this.value)"></td>
-                    <td><input type="text" inputmode="decimal" value="${item.b}" oninput="updateItemNumData(${item.id}, 'b', this.value)"></td>
-                    <td><input type="text" inputmode="decimal" value="${item.c}" oninput="updateItemNumData(${item.id}, 'c', this.value)"></td>
-                    <td><input type="text" inputmode="decimal" value="${item.d}" oninput="updateItemNumData(${item.id}, 'd', this.value)"></td>
-                    <td><input type="text" inputmode="decimal" value="${item.e}" oninput="updateItemNumData(${item.id}, 'e', this.value)"></td>
-                    <td><input type="text" inputmode="decimal" value="${item.f}" oninput="updateItemNumData(${item.id}, 'f', this.value)"></td>
+                    <td><input type="text" value="${item.a}" oninput="updateItemData(${item.id}, 'a', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'a', this)" placeholder="0"></td>
+                    <td><input type="text" value="${item.b}" oninput="updateItemData(${item.id}, 'b', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'b', this)" placeholder="0"></td>
+                    <td><input type="text" value="${item.c}" oninput="updateItemData(${item.id}, 'c', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'c', this)" placeholder="0"></td>
+                    <td><input type="text" value="${item.d}" oninput="updateItemData(${item.id}, 'd', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'd', this)" placeholder="0"></td>
+                    <td><input type="text" value="${item.e}" oninput="updateItemData(${item.id}, 'e', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'e', this)" placeholder="0"></td>
+                    <td><input type="text" value="${item.f}" oninput="updateItemData(${item.id}, 'f', this.value)" onblur="evaluateInputOnBlur(${item.id}, 'f', this)" placeholder="0"></td>
                     <td class="bg-calc" id="calc_cutLen_${item.id}">${calc.cutLenM.toFixed(3)}</td>
                     <td class="bg-total" id="calc_totalBars_${item.id}">${calc.totalBars}</td>
                     <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}" id="calc_scrapDetails_${item.id}">${calc.scrapDetails}</td>
@@ -562,7 +596,7 @@
             renderSummaryBOQ();
         }
 
-        // Live Calculations WITHOUT destroying DOM Elements (Fixes Cursor Focus completely)
+        // Live Calculations WITHOUT destroying DOM Elements
         function refreshCalculationsOnly() {
             const calcResults = calculateAllItems();
 
@@ -600,12 +634,17 @@
             }
         }
 
-        function updateItemNumData(id, field, strVal) {
+        // On Blur (leaving input field), evaluate math expressions like "200+50" to calculated values "250"
+        function evaluateInputOnBlur(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item) {
-                const parsed = parseFloat(strVal);
-                item[field] = isNaN(parsed) ? 0 : parsed;
-                refreshCalculationsOnly();
+                const rawVal = elem.value;
+                if (rawVal && (rawVal.includes('+') || rawVal.includes('-') || rawVal.includes('*') || rawVal.includes('/') || rawVal.includes('('))) {
+                    const evaluated = evaluateFormula(rawVal);
+                    item[field] = evaluated;
+                    elem.value = evaluated;
+                    refreshCalculationsOnly();
+                }
             }
         }
 
@@ -629,7 +668,7 @@
 
         function addRow() {
             const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 });
+            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "0", b: "0", c: "0", d: "0", e: "0", f: "0" });
             renderTable();
         }
 
@@ -666,11 +705,11 @@
 
         function loadDefaultData() {
             itemsData = [
-                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: 198, b: 40, c: 0, d: 0, e: 0, f: 0 },
-                { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 40, c: 0, d: 0, e: 0, f: 0 },
-                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: 200, b: 48, c: 0, d: 0, e: 0, f: 0 },
-                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 500, b: 0, c: 0, d: 0, e: 0, f: 0 },
-                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: 760, b: 0, c: 0, d: 0, e: 0, f: 0 }
+                { id: 1, comp: 'CY', no: 1, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 4, shape: 3, a: "198", b: "40", c: "0", d: "0", e: "0", f: "0" },
+                { id: 2, comp: 'CY.ดัดฉาก', no: 2, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "40", c: "0", d: "0", e: "0", f: "0" },
+                { id: 3, comp: 'CY.ดัดฉาก', no: 3, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 3, a: "200", b: "48", c: "0", d: "0", e: "0", f: "0" },
+                { id: 4, comp: 'ชิ้นงานใหม่', no: 4, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "500", b: "0", c: "0", d: "0", e: "0", f: "0" },
+                { id: 5, comp: 'ชิ้นงานใหม่', no: 5, type: 'DB12', stockLen: 'auto', setQty: 1, perSet: 1, shape: 1, a: "760", b: "0", c: "0", d: "0", e: "0", f: "0" }
             ];
             renderTable();
         }
@@ -883,12 +922,12 @@
                                 if (shapeMatch) shape = parseInt(shapeMatch[0]);
                             }
 
-                            const a = parseFloat(row[9]) || 0;
-                            const b = parseFloat(row[10]) || 0;
-                            const c = parseFloat(row[11]) || 0;
-                            const d = parseFloat(row[12]) || 0;
-                            const e = parseFloat(row[13]) || 0;
-                            const f = parseFloat(row[14]) || 0;
+                            const a = String(row[9] ?? "0");
+                            const b = String(row[10] ?? "0");
+                            const c = String(row[11] ?? "0");
+                            const d = String(row[12] ?? "0");
+                            const e = String(row[13] ?? "0");
+                            const f = String(row[14] ?? "0");
 
                             parsedItems.push({
                                 id: parsedItems.length + 1,
@@ -943,7 +982,8 @@
                     item.perSet,
                     calc.totalPieces,
                     `แบบที่ ${item.shape}`,
-                    item.a, item.b, item.c, item.d, item.e, item.f,
+                    evaluateFormula(item.a), evaluateFormula(item.b), evaluateFormula(item.c), 
+                    evaluateFormula(item.d), evaluateFormula(item.e), evaluateFormula(item.f),
                     calc.cutLenM.toFixed(3),
                     calc.totalBars,
                     cleanScrap,
@@ -1017,3 +1057,9 @@
     </script>
 </body>
 </html>
+```eof
+
+### สรุปฟังก์ชันที่เพิ่มในไฟล์ `index.html`:
+1. **รองรับการพิมพ์สมการคณิตศาสตร์แบบ Excel:** ในช่องระยะดัดงอ $A, B, C, D, E, F$ และจำนวนชุด/ต่อชุด คุณสามารถคีย์สูตรบวกลบคูณหาร เช่น `200+50`, `150*2`, `300-25` หรือ `100/2` ได้ทันที
+2. **ประมวลผลอัตโนมัติเมื่อออกจากช่อง (On Blur):** เมื่อกด Tap หรือคลิกออกจากช่อง สคริปต์จะแปลงสมการนั้นเป็นตัวเลขผลลัพธ์สุทธิให้อัตโนมัติ (เช่น คีย์ `2+3` พอคลิกออกจะเปลี่ยนเป็น `5` ทันที)
+3. **รักษาเสถียรภาพการพิมพ์/ลบ:** ใช้การอัปเดตแบบ Dom-Preserving ช่วยให้การพิมพ์จากหน้าไปหลังและการกดลบ Backspace ทำได้ลื่นไหล ไม่หลุดเคอร์เซอร์อย่างสมบูรณ์ครับ
