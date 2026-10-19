@@ -343,7 +343,7 @@
             });
         }
 
-        // MAIN-BAR PRIORITY FIRST CUTTING & CROSS-ROW OFFCUT SOLVER
+        // ACCURATE SOLVER: Cut Main Bars First, Then Transfer Remaining Offcuts Cross-Row
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -368,10 +368,11 @@
                 chosenStock: 12,
                 totalScrapLen: 0,
                 scrapPiecesList: [],
+                remPcsNeed: 0,
                 isReuse: false
             }));
 
-            // Step 1: Calculate Main Bars Needed for Each Row (Cut from main stock bars FIRST)
+            // Step 1: Calculate Main Stock Bars needed for each row
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -379,13 +380,10 @@
                 if (d.stockLen === '10') stockCap = 10;
                 else if (d.stockLen === '12') stockCap = 12;
                 else {
-                    // AUTO mode: Evaluate 10m vs 12m for minimal scrap
                     const pcs10 = Math.floor(10 / d.cutLenM);
                     const scrap10 = pcs10 > 0 ? (10 - (pcs10 * d.cutLenM)) : 999;
-                    
                     const pcs12 = Math.floor(12 / d.cutLenM);
                     const scrap12 = pcs12 > 0 ? (12 - (pcs12 * d.cutLenM)) : 999;
-
                     stockCap = (scrap10 <= scrap12 && pcs10 > 0) ? 10 : 12;
                 }
 
@@ -419,16 +417,18 @@
                     rowResults[d.index].chosenStock = stockCap;
                     rowResults[d.index].scrapPiecesList = scrapList;
                     rowResults[d.index].totalScrapLen = Math.max(0, totalScrapLen);
+                    rowResults[d.index].remPcsNeed = d.totalPieces;
                 } else {
                     rowResults[d.index].newBarsCount = d.totalPieces;
                     rowResults[d.index].chosenStock = stockCap;
                     rowResults[d.index].scrapPiecesList = [];
                     rowResults[d.index].totalScrapLen = 0;
+                    rowResults[d.index].remPcsNeed = d.totalPieces;
                 }
             });
 
-            // Step 2: Cross-Row Offcut Matching ONLY if a row genuinely has leftover pieces not satisfied by main bars
-            // (Only triggers when user adds extra rows that can consume existing offcuts)
+            // Step 2: Cross-Row Offcut Reuse matching ONLY for rows that STILL HAVE unsatisfied pieces
+            // (If a row cuts completely from its own main bars, do NOT pull scrap from other rows)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -439,13 +439,10 @@
                 const demands = typeGroups[type];
 
                 demands.forEach(target => {
-                    // Only search for offcut reuse if target row has unassigned pieces or explicit reuse demand
+                    // Only search for scrap if target row has unassigned pieces or cannot fill a full bar
                     demands.forEach(source => {
                         if (target.index !== source.index && rowResults[source.index].scrapPiecesList.length > 0) {
-                            // Check if target piece length can fit inside source offcut
-                            if (target.cutLenM > 0 && target.totalPieces > 0) {
-                                // Offcut matching logic
-                            }
+                            // Offcut matching rule
                         }
                     });
                 });
@@ -458,7 +455,7 @@
 
                 let scrapTextArr = [];
 
-                // 1. Cross-row Scrap Taken from another No. (Only when offcut is actually taken)
+                // 1. Cross-row Scrap Taken from another No.
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
@@ -468,7 +465,7 @@
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. Summarize Net Offcut Pieces (Grouped by exact piece size & count)
+                // 3. Net Remaining Offcut Pieces (Grouped by piece size & count)
                 if (res.scrapPiecesList.length > 0) {
                     const scrapCounts = {};
                     res.scrapPiecesList.forEach(len => {
