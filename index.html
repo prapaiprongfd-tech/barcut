@@ -85,8 +85,8 @@
         .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-card { background: white; border-radius: 12px; max-width: 600px; width: 90%; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-card { background: white; border-radius: 12px; max-width: 500px; width: 90%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
 
         .print-only-title { display: none; }
         
@@ -134,7 +134,29 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- LICENSE ACCESS CONTROL MODAL -->
+    <div id="licenseModal" class="modal-overlay">
+        <div class="modal-card">
+            <h2 style="font-size:20px; font-weight:bold; color:#1e293b; margin-bottom:10px;">🔒 ยืนยันสิทธิ์การใช้งานโปรแกรม</h2>
+            <p style="font-size:13px; color:#64748b; margin-bottom:20px;">กรุณากรอกชื่อและอีเมลของคุณเพื่อส่งขอสิทธิ์เข้าใช้งานโปรแกรม Barcut</p>
+            
+            <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
+                <div>
+                    <label style="font-size:12px; font-weight:bold; color:#334155;">ชื่อ-นามสกุล / ชื่อผู้ใช้งาน:</label>
+                    <input type="text" id="licenseName" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น สมชาย ใจดี">
+                </div>
+                <div>
+                    <label style="font-size:12px; font-weight:bold; color:#334155;">อีเมลผู้ใช้งาน (Email):</label>
+                    <input type="email" id="licenseEmail" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น user@gmail.com">
+                </div>
+                <div id="licenseMessage" style="font-size:12px; font-weight:bold; color:#ea580c; text-align:center; min-height:18px;"></div>
+                <button type="button" class="btn btn-indigo" style="width:100%; justify-content:center; padding:10px; font-size:14px; margin-top:5px;" onclick="submitLicenseRequest()">🚀 ส่งขอสิทธิ์ / เข้าใช้งาน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="container hidden" id="mainAppContainer">
         <!-- Header -->
         <div class="header">
             <div>
@@ -271,7 +293,7 @@
     <!-- Modal Project Library -->
     <div id="libraryModal" class="modal-overlay hidden">
         <div class="modal-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
+            <div style="display:flex; justify-style:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
                 <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการที่บันทึกไว้</h3>
                 <button type="button" onclick="closeLibraryModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
             </div>
@@ -285,6 +307,9 @@
     </div>
 
     <script>
+        // 🛑 วาง URL ของ GOOGLE APPS SCRIPT WEB APP ที่นี่ 🛑
+        const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+
         const REBAR_WEIGHTS = {
             'RB06': 0.222, 'RB09': 0.499, 'DB12': 0.888,
             'DB16': 1.578, 'DB20': 2.466, 'DB25': 3.853,
@@ -292,6 +317,78 @@
         };
 
         const INPUT_FIELDS_ORDER = ['comp', 'setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'];
+
+        // --- LICENSE ACCESS CONTROL SYSTEM ---
+        function checkLicenseOnLoad() {
+            const savedEmail = localStorage.getItem('barcut_user_email');
+            const savedKey = localStorage.getItem('barcut_user_key');
+
+            if (!savedEmail || !savedKey) {
+                document.getElementById('licenseModal').classList.remove('hidden');
+                document.getElementById('mainAppContainer').classList.add('hidden');
+                return;
+            }
+
+            fetch(`${GOOGLE_SCRIPT_URL}?action=check&email=${encodeURIComponent(savedEmail)}&key=${encodeURIComponent(savedKey)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "APPROVED") {
+                        document.getElementById('licenseModal').classList.add('hidden');
+                        document.getElementById('mainAppContainer').classList.remove('hidden');
+                        renderTable();
+                        renderShapes();
+                    } else if (data.status === "BLOCKED") {
+                        alert("❌ บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อโฮสท์ผู้ดูแลระบบ");
+                        localStorage.clear();
+                        location.reload();
+                    } else if (data.status === "EXPIRED") {
+                        alert("⏰ ระยะเวลาการใช้งานของคุณหมดอายุแล้ว กรุณาติดต่อโฮสท์เพื่อต่ออายุสิทธิ์");
+                        localStorage.clear();
+                        location.reload();
+                    } else {
+                        document.getElementById('licenseModal').classList.remove('hidden');
+                        document.getElementById('mainAppContainer').classList.add('hidden');
+                        document.getElementById('licenseMessage').innerText = "⏳ คำขอสิทธิ์ของคุณกำลังรอการอนุมัติจากโฮสท์ผู้ดูแลระบบ...";
+                    }
+                })
+                .catch(err => {
+                    // Fallback offline access
+                    document.getElementById('licenseModal').classList.add('hidden');
+                    document.getElementById('mainAppContainer').classList.remove('hidden');
+                    renderTable();
+                    renderShapes();
+                });
+        }
+
+        function submitLicenseRequest() {
+            const name = document.getElementById('licenseName').value.trim();
+            const email = document.getElementById('licenseEmail').value.trim();
+            const msgBox = document.getElementById('licenseMessage');
+
+            if (!name || !email) {
+                msgBox.innerText = "⚠️ กรุณากรอกชื่อและอีเมลให้ครบถ้วน";
+                return;
+            }
+
+            msgBox.innerText = "🔄 กำลังส่งข้อมูลขออนุมัติไปยังโฮสท์...";
+
+            fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`)
+                .then(res => res.json())
+                .then(data => {
+                    localStorage.setItem('barcut_user_email', email);
+                    localStorage.setItem('barcut_user_key', data.key);
+
+                    if (data.status === "APPROVED") {
+                        alert("✅ อนุมัติสิทธิ์เรียบร้อยแล้ว เข้าใช้งานได้ทันที!");
+                        location.reload();
+                    } else {
+                        msgBox.innerText = "⏳ ส่งคำขอเรียบร้อยแล้ว! กรุณาแจ้งโฮสท์ผู้ดูแลระบบเพื่อเปิดสิทธิ์อนุมัติ";
+                    }
+                })
+                .catch(err => {
+                    msgBox.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
+                });
+        }
 
         function evaluateFormula(expr) {
             if (expr === null || expr === undefined) return 0;
@@ -343,7 +440,7 @@
             });
         }
 
-        // MAIN BAR PRIORITY FIRST & DIRECT ONE-WAY OFFCUT MATCHING SOLVER
+        // BEST-FIT EXACT MATCHING SOLVER (Selects closest fitting offcut first)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -427,7 +524,7 @@
                 }
             });
 
-            // Step 2: STRICT ONE-WAY OFFCUT MATCHING (From earlier rows to later rows only)
+            // Step 2: BEST-FIT OFFCUT MATCHING (Picks closest/smallest fitting offcut FIRST)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -437,38 +534,48 @@
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
-                // Iterate through target rows in order
                 for (let t = 0; t < demands.length; t++) {
                     const target = demands[t];
                     if (target.cutLenM <= 0 || target.totalPieces <= 0) continue;
 
-                    // Only look for offcuts in PREVIOUS rows (source.index < target.index)
                     for (let s = 0; s < t; s++) {
                         const source = demands[s];
                         const sourceScrapList = rowResults[source.index].scrapPiecesList;
 
                         if (sourceScrapList && sourceScrapList.length > 0) {
-                            for (let p = sourceScrapList.length - 1; p >= 0; p--) {
-                                const offcutLen = sourceScrapList[p];
-                                if (offcutLen >= (target.cutLenM - 0.001) && rowResults[target.index].remPiecesNeed > 0) {
-                                    // Match offcut!
-                                    const lenKeyTarget = `${offcutLen.toFixed(2)}_${source.no}`;
+                            while (rowResults[target.index].remPiecesNeed > 0) {
+                                let bestIdx = -1;
+                                let minWaste = 999999;
+
+                                for (let p = 0; p < sourceScrapList.length; p++) {
+                                    const offcutLen = sourceScrapList[p];
+                                    if (offcutLen >= (target.cutLenM - 0.001)) {
+                                        const waste = offcutLen - target.cutLenM;
+                                        if (waste < minWaste) {
+                                            minWaste = waste;
+                                            bestIdx = p;
+                                        }
+                                    }
+                                }
+
+                                if (bestIdx >= 0) {
+                                    const matchedLen = sourceScrapList[bestIdx];
+
+                                    const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
                                     if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
-                                        rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: offcutLen, fromNo: source.no, count: 0 };
+                                        rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
                                     }
                                     rowResults[target.index].usedReusesMap[lenKeyTarget].count += 1;
                                     rowResults[target.index].isReuse = true;
 
-                                    const lenKeySource = `${offcutLen.toFixed(2)}_${target.no}`;
+                                    const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
                                     if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                        rowResults[source.index].sentToRowsMap[lenKeySource] = { len: offcutLen, toNo: target.no, count: 0 };
+                                        rowResults[source.index].sentToRowsMap[lenKeySource] = { len: target.cutLenM, toNo: target.no, count: 0 };
                                     }
                                     rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
 
-                                    // Reduce pieces target needs
                                     rowResults[target.index].remPiecesNeed -= 1;
 
-                                    // Recalculate Target's new main bar count
                                     const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
                                     if (pcsPerBar > 0) {
                                         rowResults[target.index].newBarsCount = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
@@ -476,14 +583,15 @@
                                         rowResults[target.index].newBarsCount = rowResults[target.index].remPiecesNeed;
                                     }
 
-                                    // Update source offcut list
-                                    const newRem = offcutLen - target.cutLenM;
+                                    const newRem = matchedLen - target.cutLenM;
                                     rowResults[source.index].totalScrapLen -= target.cutLenM;
                                     if (newRem >= 0.01) {
-                                        sourceScrapList[p] = newRem;
+                                        sourceScrapList[bestIdx] = newRem;
                                     } else {
-                                        sourceScrapList.splice(p, 1);
+                                        sourceScrapList.splice(bestIdx, 1);
                                     }
+                                } else {
+                                    break;
                                 }
                             }
                         }
@@ -498,7 +606,7 @@
 
                 let scrapTextArr = [];
 
-                // 1. Target Row receiving scrap: ONLY Show "♻️ นำเศษ X.XXm Y ท่อน จาก No.Z"
+                // 1. Target Row receiving scrap: Show ONLY "♻️ นำเศษ X.XXm Y ท่อน จาก No.Z"
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
@@ -508,7 +616,7 @@
                     scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                // 3. Net Remaining Scrap Pieces (Only if remaining)
+                // 3. Net Remaining Scrap Pieces
                 if (res.scrapPiecesList.length > 0) {
                     const scrapCounts = {};
                     res.scrapPiecesList.forEach(len => {
@@ -1110,9 +1218,8 @@
             }
         }
 
-        // Auto Render Clean Initial Row on Load
-        renderTable();
-        renderShapes();
+        // Auto Check License & Render Table
+        checkLicenseOnLoad();
     </script>
 </body>
 </html>
