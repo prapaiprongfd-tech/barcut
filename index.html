@@ -39,11 +39,26 @@
         .table-responsive { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
         
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        th, td { border: 1px solid #cbd5e1; padding: 6px 2px; vertical-align: middle; white-space: nowrap; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 3px; vertical-align: middle; white-space: nowrap; }
         thead th { background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; }
         thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
         
-        input, select { width: 100%; padding: 4px 1px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; font-family: inherit; height: 32px; outline: none; background-color: #fff; }
+        /* Adjusted Inputs To Prevent Tone Mark Clipping & Text Overflow */
+        input, select { 
+            width: 100%; 
+            padding: 2px 2px 0px 2px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 4px; 
+            text-align: center; 
+            font-family: inherit; 
+            height: 34px; 
+            line-height: 1.2; 
+            outline: none; 
+            background-color: #fff; 
+            overflow: visible;
+        }
         input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 700; color: #854d0e; }
         
@@ -53,9 +68,9 @@
         .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; white-space: normal; min-width: 220px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
         
-        /* Adjusted width for shape box to prevent text clipping */
+        /* Shape & Dropdown Box Adjustments */
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 135px; }
-        .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 28px; }
+        .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 28px; flex-shrink: 0; }
         
         .action-btns { display: flex; justify-content: center; align-items: center; gap: 2px; }
         .btn-move { background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; font-size: 11px; font-weight: bold; border-radius: 3px; padding: 2px 4px; cursor: pointer; }
@@ -173,31 +188,31 @@
                             </tr>
                             <tr>
                                 <th style="width:25px;" class="no-print">#</th>
-                                <th style="width:110px;">Component</th>
-                                <th style="width:35px;">No.</th>
-                                <th style="width:60px;">Type</th>
-                                <th style="width:115px; background:#fef3c7;">ความยาวสต็อก</th>
+                                <th style="min-width:130px;">COMPONENT</th>
+                                <th style="width:35px;">NO.</th>
+                                <th style="width:65px;">TYPE</th>
+                                <th style="min-width:130px; background:#fef3c7;">ความยาวสต็อก</th>
                                 <th style="width:40px;">ชุด</th>
                                 <th style="width:40px;">ต่อชุด</th>
                                 <th style="width:45px; background:#e0e7ff;">รวมชิ้น</th>
-                                <th style="width:135px;">รูปทรง (Shape)</th>
+                                <th style="min-width:135px;">รูปทรง (SHAPE)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
-                                <th style="width:75px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
+                                <th style="width:80px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
                                 <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
-                                <th style="width:70px; background:#fbcfe8;">น.น. เศษ (kg)</th>
+                                <th style="min-width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
+                                <th style="width:75px; background:#fbcfe8;">น.น. เศษ (KG)</th>
                                 <th style="width:100px;" class="no-print">จัดการ</th>
                             </tr>
                             <tr class="sub-header">
                                 <th class="no-print"></th><th></th><th></th><th></th>
                                 <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
                                 <th>(แบบที่ 1-10)</th>
-                                <th style="width:48px;">A</th>
-                                <th style="width:48px;">B</th>
-                                <th style="width:48px;">C</th>
-                                <th style="width:48px;">D</th>
-                                <th style="width:48px;">E</th>
-                                <th style="width:48px;">F</th>
+                                <th style="min-width:48px;">A</th>
+                                <th style="min-width:48px;">B</th>
+                                <th style="min-width:48px;">C</th>
+                                <th style="min-width:48px;">D</th>
+                                <th style="min-width:48px;">E</th>
+                                <th style="min-width:48px;">F</th>
                                 <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT & REUSE SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
@@ -319,7 +334,7 @@
             }
         }
 
-        // Clean initial state with 1 row ready for input
+        // Initial 1 clean row ready for immediate typing
         let itemsData = [
             { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
         ];
@@ -553,7 +568,7 @@
                         </select>
                     </td>
                     <td style="background:#fef3c7;">
-                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" style="font-weight:bold; color:#78350f; background:#fef3c7; padding:4px 0;">
+                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" style="font-weight:bold; color:#78350f; background:#fef3c7; min-width:115px;">
                             <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
                             <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
@@ -564,7 +579,7 @@
                     <td class="bg-calc" id="calc_totalPieces_${item.id}">${calc.totalPieces}</td>
                     <td>
                         <div class="shape-box">
-                            <select onchange="updateItemData(${item.id}, 'shape', parseInt(this.value))" style="font-weight:bold; width:72px;">
+                            <select onchange="updateItemData(${item.id}, 'shape', parseInt(this.value))" style="font-weight:bold; min-width:70px;">
                                 ${[1,2,3,4,5,6,7,8,9,10].map(s => `<option value="${s}" ${item.shape === s ? 'selected' : ''}>แบบที่ ${s}</option>`).join('')}
                             </select>
                             <div class="shape-preview" id="shape_preview_${item.id}">${getShapeSVG(item.shape, 28, 18)}</div>
