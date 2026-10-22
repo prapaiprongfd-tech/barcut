@@ -62,7 +62,6 @@
         input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 700; color: #854d0e; }
         
-        /* 🛠️ CSS แก้ไขขนาดช่อง TYPE ให้กว้างเต็มตา */
         .col-type-td {
             width: 105px !important;
             min-width: 105px !important;
@@ -478,6 +477,7 @@
             });
         }
 
+        // 🧠 ACCURATE TWO-PASS CUTTING OPTIMIZER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -506,6 +506,7 @@
                 isPerfectFit: false
             }));
 
+            // Pass 1: Baseline Main Stock Calculation
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -564,6 +565,7 @@
                 }
             });
 
+            // Pass 2: Sequential Exact Offcut Matching
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
