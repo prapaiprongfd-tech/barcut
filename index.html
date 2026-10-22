@@ -475,7 +475,7 @@
             });
         }
 
-        // 🧠 STRICT COST-REDUCTION OPTIMIZER WITH DYNAMIC TOTAL BAR EVALUATION
+        // 🧠 OPTIMIZED ENGINE WITH ACCURATE BAR-SAVING REUSE VALIDATION
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -563,7 +563,7 @@
                 }
             });
 
-            // Pass 2: STRICT OFF-CUT MATCHING ONLY WHEN IT SAVES MAIN BARS
+            // Pass 2: Sequential Global Best-Fit Allocation with Direct Total-Bar Reduction Check
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -589,50 +589,53 @@
                             while (p < sourceScrapList.length && rowResults[target.index].remPiecesNeed > 0) {
                                 const offcutLen = sourceScrapList[p];
                                 if (offcutLen >= (target.cutLenM - 0.001)) {
-                                    // 🛑 CRITICAL REUSE CHECK: ONLY USE SCRAP IF IT ACTUALLY REDUCES MAIN BARS BY AT LEAST 1 BAR!
-                                    const currentBars = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
-                                    const nextBars = Math.ceil((rowResults[target.index].remPiecesNeed - 1) / pcsPerBar);
+                                    const pcsCanCut = Math.floor(offcutLen / target.cutLenM);
+                                    
+                                    if (pcsCanCut > 0) {
+                                        const currentBars = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
+                                        const nextBars = Math.ceil((rowResults[target.index].remPiecesNeed - pcsCanCut) / pcsPerBar);
 
-                                    if (nextBars < currentBars) {
-                                        // Effective bar reduction achieved! Proceed with Reuse.
-                                        const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
-                                        if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
-                                            rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
-                                        }
-                                        rowResults[target.index].usedReusesMap[lenKeyTarget].count += 1;
+                                        // ALLOW REUSE IF IT REDUCES TOTAL MAIN BARS SOUGHT
+                                        if (nextBars < currentBars) {
+                                            const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
+                                            if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
+                                                rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
+                                            }
+                                            rowResults[target.index].usedReusesMap[lenKeyTarget].count += pcsCanCut;
 
-                                        const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
-                                        if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                            rowResults[source.index].sentToRowsMap[lenKeySource] = { len: target.cutLenM, toNo: target.no, count: 0 };
-                                        }
-                                        rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
+                                            const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
+                                            if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
+                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { len: target.cutLenM, toNo: target.no, count: 0 };
+                                            }
+                                            rowResults[source.index].sentToRowsMap[lenKeySource].count += pcsCanCut;
 
-                                        rowResults[target.index].remPiecesNeed -= 1;
-                                        rowResults[target.index].newBarsCount = nextBars;
+                                            rowResults[target.index].remPiecesNeed -= pcsCanCut;
+                                            rowResults[target.index].newBarsCount = nextBars;
 
-                                        // Recalculate Target's own scrap pool based on remaining pieces on main bars
-                                        const normalScrap = rowResults[target.index].chosenStock - (pcsPerBar * target.cutLenM);
-                                        const remPcs = rowResults[target.index].remPiecesNeed % pcsPerBar;
-                                        const fullBars = Math.floor(rowResults[target.index].remPiecesNeed / pcsPerBar);
-                                        
-                                        let newScrapList = [];
-                                        if (remPcs === 0) {
-                                            for(let b=0; b<nextBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
-                                        } else {
-                                            for(let b=0; b<fullBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
-                                            const lastScrap = rowResults[target.index].chosenStock - (remPcs * target.cutLenM);
-                                            if (lastScrap >= 0.01) newScrapList.push(Number(lastScrap.toFixed(3)));
-                                        }
-                                        rowResults[target.index].availableScrapPieces = newScrapList;
+                                            // Recalculate Target's own scrap pool
+                                            const normalScrap = rowResults[target.index].chosenStock - (pcsPerBar * target.cutLenM);
+                                            const remPcs = rowResults[target.index].remPiecesNeed % pcsPerBar;
+                                            const fullBars = Math.floor(rowResults[target.index].remPiecesNeed / pcsPerBar);
+                                            
+                                            let newScrapList = [];
+                                            if (remPcs === 0) {
+                                                for(let b=0; b<nextBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
+                                            } else {
+                                                for(let b=0; b<fullBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
+                                                const lastScrap = rowResults[target.index].chosenStock - (remPcs * target.cutLenM);
+                                                if (lastScrap >= 0.01) newScrapList.push(Number(lastScrap.toFixed(3)));
+                                            }
+                                            rowResults[target.index].availableScrapPieces = newScrapList;
 
-                                        const newRem = offcutLen - target.cutLenM;
-                                        rowResults[source.index].totalScrapLen -= target.cutLenM;
+                                            const newRem = offcutLen - (pcsCanCut * target.cutLenM);
+                                            rowResults[source.index].totalScrapLen -= (pcsCanCut * target.cutLenM);
 
-                                        if (newRem >= 0.01) {
-                                            sourceScrapList[p] = Number(newRem.toFixed(3));
-                                        } else {
-                                            sourceScrapList.splice(p, 1);
-                                            continue;
+                                            if (newRem >= 0.01) {
+                                                sourceScrapList[p] = Number(newRem.toFixed(3));
+                                            } else {
+                                                sourceScrapList.splice(p, 1);
+                                                continue;
+                                            }
                                         }
                                     }
                                 }
@@ -643,7 +646,7 @@
                 }
             });
 
-            // Pass 3: Dual Sync String Assembly
+            // Pass 3: String Output Formatting
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
