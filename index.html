@@ -46,7 +46,7 @@
         
         input, select { 
             width: 100%; 
-            padding: 2px 2px 0px 2px; 
+            padding: 2px 1px 0px 1px; 
             font-size: 13px; 
             font-weight: 600; 
             border: 1px solid #cbd5e1; 
@@ -76,7 +76,6 @@
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
         
-        /* 🎨 Separate Column Colors for Reuse & Scrap */
         .bg-reuse-col { background-color: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 180px; }
         .bg-scrap-col { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 200px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
@@ -230,7 +229,7 @@
                                 <th style="width:25px;" class="no-print">#</th>
                                 <th style="min-width:130px;">COMPONENT</th>
                                 <th style="width:35px;">NO.</th>
-                                <th style="width:65px;">TYPE</th>
+                                <th style="width:78px;">TYPE</th>
                                 <th style="min-width:130px; background:#fef3c7;">ความยาวสต็อก</th>
                                 <th style="width:40px;">ชุด</th>
                                 <th style="width:40px;">ต่อชุด</th>
@@ -458,7 +457,6 @@
             });
         }
 
-        // 🧠 STRICT OPTIMIZATION ENGINE & SEPARATED SUMMARY SOLVER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -487,7 +485,6 @@
                 isPerfectFit: false
             }));
 
-            // Step 1: Calculate Main Stock Requirements for ALL rows
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -546,7 +543,6 @@
                 }
             });
 
-            // Step 2: Global Best-Fit Scrap Allocation (EXCEPT Perfect-Fit Rows)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -625,13 +621,11 @@
                 const demand = rowDemands[index];
                 const res = rowResults[index];
 
-                // 1. REUSE COLUMN SUMMARY (นำเศษมาใช้)
                 let reuseTextArr = [];
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     reuseTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
 
-                // 2. OFFCUT COLUMN SUMMARY (เศษเหลือ)
                 let offcutTextArr = [];
                 Object.values(res.sentToRowsMap).forEach(sent => {
                     offcutTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
@@ -716,7 +710,7 @@
                     <td><input type="text" id="input_${item.id}_comp" value="${item.comp || ''}" oninput="updateItemData(${item.id}, 'comp', this.value)" onkeydown="handleEnterKey(event, ${item.id}, 'comp')" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="text" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td>
-                        <select onchange="updateItemData(${item.id}, 'type', this.value)" class="${typeColorClass}">
+                        <select onchange="updateItemData(${item.id}, 'type', this.value)" class="${typeColorClass}" style="padding: 2px 0px 0px 2px; font-weight:700;">
                             ${Object.keys(REBAR_WEIGHTS).map(t => `<option value="${t}" ${cleanType === t ? 'selected' : ''}>${t}</option>`).join('')}
                         </select>
                     </td>
