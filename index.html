@@ -211,7 +211,7 @@
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณความยาวสต็อก Auto ขั้นสูง</button>
                 <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้าไฟล์ Excel</button>
                 <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)">
-                <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
+                <button type="button" class="btn btn-amber" onclick="loadDefaultData(true)">🔄 โหลดตัวอย่าง F1-F4</button>
                 <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
                 <button type="button" class="btn btn-indigo" onclick="printCompleteReport()">🖨️ พิมพ์รายงานสมบูรณ์</button>
             </div>
@@ -373,7 +373,7 @@
                     if (data.status === "APPROVED") {
                         document.getElementById('licenseModal').classList.add('hidden');
                         document.getElementById('mainAppContainer').classList.remove('hidden');
-                        renderTable();
+                        loadDefaultData(false);
                         renderShapes();
                     } else if (data.status === "BLOCKED") {
                         alert("❌ บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อโฮสท์ผู้ดูแลระบบ");
@@ -392,7 +392,7 @@
                 .catch(err => {
                     document.getElementById('licenseModal').classList.add('hidden');
                     document.getElementById('mainAppContainer').classList.remove('hidden');
-                    renderTable();
+                    loadDefaultData(false);
                     renderShapes();
                 });
         }
@@ -467,9 +467,7 @@
             }
         }
 
-        let itemsData = [
-            { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
-        ];
+        let itemsData = [];
 
         function resequenceNumbers() {
             itemsData.forEach((item, idx) => {
@@ -477,7 +475,7 @@
             });
         }
 
-        // 🧠 ACCURATE TWO-PASS CUTTING OPTIMIZER
+        // 🧠 ACCURATE TWO-PASS CUTTING OPTIMIZER (STRICT MATCH)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -916,7 +914,8 @@
             renderTable();
         }
 
-        function loadDefaultData() {
+        // 🔄 โหลดตัวอย่างพร้อมเคลียร์แคชเดิมในเครื่องแบบบังคับ 100%
+        function loadDefaultData(isManual = true) {
             itemsData = [
                 { id: 1, comp: 'ST.1 มุมลูกขั้นบันได', no: 1, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "7", shape: 2, a: "10.8", b: "0", c: "0", d: "0", e: "0", f: "0" },
                 { id: 2, comp: 'ST.1 ลูกขั้นบันได', no: 2, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "73", shape: 6, a: "2.0", b: "0", c: "0", d: "0", e: "0", f: "0" },
@@ -934,6 +933,9 @@
                 { id: 14, comp: 'ST.3 ลูกขั้นบันได', no: 14, type: 'RB09', stockLen: 'auto', setQty: "2", perSet: "28", shape: 6, a: "5.0", b: "0", c: "0", d: "0", e: "0", f: "0" }
             ];
             renderTable();
+            if (isManual) {
+                alert('🔄 โหลดและคำนวณข้อมูลชุดใหม่เรียบร้อยแล้ว!');
+            }
         }
 
         function renderSummaryBOQ() {
