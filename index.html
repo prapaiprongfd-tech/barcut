@@ -211,7 +211,7 @@
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณความยาวสต็อก Auto ขั้นสูง</button>
                 <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้าไฟล์ Excel</button>
                 <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)">
-                <button type="button" class="btn btn-amber" onclick="loadDefaultData(true)">🔄 โหลดตัวอย่าง F1-F4</button>
+                <button type="button" class="btn btn-amber" onclick="clearToInitialEmptyState()">🧹 ล้างตารางเริ่มงานใหม่</button>
                 <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
                 <button type="button" class="btn btn-indigo" onclick="printCompleteReport()">🖨️ พิมพ์รายงานสมบูรณ์</button>
             </div>
@@ -373,7 +373,7 @@
                     if (data.status === "APPROVED") {
                         document.getElementById('licenseModal').classList.add('hidden');
                         document.getElementById('mainAppContainer').classList.remove('hidden');
-                        loadDefaultData(false);
+                        clearToInitialEmptyState();
                         renderShapes();
                     } else if (data.status === "BLOCKED") {
                         alert("❌ บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อโฮสท์ผู้ดูแลระบบ");
@@ -392,7 +392,7 @@
                 .catch(err => {
                     document.getElementById('licenseModal').classList.add('hidden');
                     document.getElementById('mainAppContainer').classList.remove('hidden');
-                    loadDefaultData(false);
+                    clearToInitialEmptyState();
                     renderShapes();
                 });
         }
@@ -475,7 +475,6 @@
             });
         }
 
-        // 🧠 ACCURATE TWO-PASS CUTTING OPTIMIZER (STRICT MATCH)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -504,7 +503,6 @@
                 isPerfectFit: false
             }));
 
-            // Pass 1: Baseline Main Stock Calculation
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -563,7 +561,6 @@
                 }
             });
 
-            // Pass 2: Sequential Exact Offcut Matching
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -914,28 +911,12 @@
             renderTable();
         }
 
-        // 🔄 โหลดตัวอย่างพร้อมเคลียร์แคชเดิมในเครื่องแบบบังคับ 100%
-        function loadDefaultData(isManual = true) {
+        // 🧹 เคลียร์หน้าเว็บให้เป็นตารางว่างเปล่าแบบหน้าเริ่มต้น
+        function clearToInitialEmptyState() {
             itemsData = [
-                { id: 1, comp: 'ST.1 มุมลูกขั้นบันได', no: 1, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "7", shape: 2, a: "10.8", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 2, comp: 'ST.1 ลูกขั้นบันได', no: 2, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "73", shape: 6, a: "2.0", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 3, comp: 'ST.1 ชานพัก-ด้านสั้น', no: 3, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "22", shape: 2, a: "10.8", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 4, comp: 'ST.1 ชานพัก-ด้านยาว', no: 4, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "109", shape: 2, a: "4.1", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 5, comp: 'ST.1 ชานพัก-ด้านยาว', no: 5, type: 'DB12', stockLen: 'auto', setQty: "1", perSet: "109", shape: 2, a: "2.8", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 6, comp: 'ST.1 แม่บันได', no: 6, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "11", shape: 2, a: "10.8", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 7, comp: 'ST.2 มุมลูกขั้นบันได', no: 7, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "7", shape: 2, a: "10.4", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 8, comp: 'ST.2 ลูกขั้นบันได', no: 8, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "70", shape: 6, a: "2.0", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 9, comp: 'ST.2 ชานพัก-ด้านสั้น', no: 9, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "14", shape: 2, a: "10.4", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 10, comp: 'ST.2 ชานพัก-ด้านยาว', no: 10, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "105", shape: 2, a: "2.95", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 11, comp: 'ST.2 ชานพัก-ด้านสั้น', no: 11, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "105", shape: 2, a: "2.3", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 12, comp: 'ST.2 แม่บันได', no: 12, type: 'RB09', stockLen: 'auto', setQty: "1", perSet: "9", shape: 2, a: "10.4", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 13, comp: 'ST.3 มุมลูกขั้นบันได', no: 13, type: 'RB09', stockLen: 'auto', setQty: "2", perSet: "42", shape: 2, a: "2.0", b: "0", c: "0", d: "0", e: "0", f: "0" },
-                { id: 14, comp: 'ST.3 ลูกขั้นบันได', no: 14, type: 'RB09', stockLen: 'auto', setQty: "2", perSet: "28", shape: 6, a: "5.0", b: "0", c: "0", d: "0", e: "0", f: "0" }
+                { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
             ];
             renderTable();
-            if (isManual) {
-                alert('🔄 โหลดและคำนวณข้อมูลชุดใหม่เรียบร้อยแล้ว!');
-            }
         }
 
         function renderSummaryBOQ() {
@@ -1204,7 +1185,7 @@
                     if (parsedItems.length > 0) {
                         itemsData = parsedItems;
                         renderTable();
-                        alert(`📥 นำเข้าข้อมูลเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
+                        alert(`📥 นำเข้าข้อมูลและรีเซ็ตการคำนวณใหม่เรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
                     } else {
                         alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
                     }
@@ -1218,7 +1199,7 @@
 
         function exportToExcel() {
             if (typeof XLSX === 'undefined') {
-                alert('กำลังโหลดไลบรารี Excel กรุณารอครู่หนึ่งแล้วกดใหม่อีกครั้ง');
+                alert('กำลังโหลดไลบรารี Excel กรุณารอครู่หนึ่งแล้วกดใหมีกครั้ง');
                 return;
             }
 
