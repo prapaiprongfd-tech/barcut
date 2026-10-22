@@ -475,7 +475,7 @@
             });
         }
 
-        // 🧠 ACCURATE TWO-PASS OPTIMIZER (STRICT FRESH RE-CALCULATION)
+        // 🧠 REDEFINED THREE-PASS OPTIMIZER ENGINE
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -499,12 +499,12 @@
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
-                scrapPiecesList: [],
+                availableScrapPieces: [],
                 remPiecesNeed: 0,
                 isPerfectFit: false
             }));
 
-            // Pass 1: Baseline Main Stock Calculation
+            // PASS 1: Calculate Main Bars and Initial Exact Scrap Pieces per Row
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -533,21 +533,21 @@
                     if (remPiecesInLastBar === 0) {
                         totalScrapLen = requiredBars * normalScrapPerBar;
                         for (let i = 0; i < requiredBars; i++) {
-                            if (normalScrapPerBar >= 0.01) scrapList.push(normalScrapPerBar);
+                            if (normalScrapPerBar >= 0.01) scrapList.push(Number(normalScrapPerBar.toFixed(3)));
                         }
                     } else {
                         for (let i = 0; i < fullBarsCount; i++) {
-                            if (normalScrapPerBar >= 0.01) scrapList.push(normalScrapPerBar);
+                            if (normalScrapPerBar >= 0.01) scrapList.push(Number(normalScrapPerBar.toFixed(3)));
                         }
                         const lastBarScrap = stockCap - (remPiecesInLastBar * d.cutLenM);
-                        if (lastBarScrap >= 0.01) scrapList.push(lastBarScrap);
+                        if (lastBarScrap >= 0.01) scrapList.push(Number(lastBarScrap.toFixed(3)));
 
                         totalScrapLen = (fullBarsCount * normalScrapPerBar) + lastBarScrap;
                     }
 
                     rowResults[d.index].newBarsCount = requiredBars;
                     rowResults[d.index].chosenStock = stockCap;
-                    rowResults[d.index].scrapPiecesList = scrapList;
+                    rowResults[d.index].availableScrapPieces = scrapList;
                     rowResults[d.index].totalScrapLen = Math.max(0, totalScrapLen);
                     rowResults[d.index].remPiecesNeed = d.totalPieces;
 
@@ -557,13 +557,13 @@
                 } else {
                     rowResults[d.index].newBarsCount = d.totalPieces;
                     rowResults[d.index].chosenStock = stockCap;
-                    rowResults[d.index].scrapPiecesList = [];
+                    rowResults[d.index].availableScrapPieces = [];
                     rowResults[d.index].totalScrapLen = 0;
                     rowResults[d.index].remPiecesNeed = d.totalPieces;
                 }
             });
 
-            // Pass 2: Sequential Exact Offcut Matching
+            // PASS 2: Sequential Global Best-Fit Offcut Allocation (Strict Isolated Tracking)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -579,27 +579,14 @@
 
                     for (let s = 0; s < t; s++) {
                         const source = demands[s];
-                        const sourceScrapList = rowResults[source.index].scrapPiecesList;
+                        const sourceScrapList = rowResults[source.index].availableScrapPieces;
 
                         if (sourceScrapList && sourceScrapList.length > 0) {
-                            while (rowResults[target.index].remPiecesNeed > 0) {
-                                let bestIdx = -1;
-                                let minWaste = 999999;
-
-                                for (let p = 0; p < sourceScrapList.length; p++) {
-                                    const offcutLen = sourceScrapList[p];
-                                    if (offcutLen >= (target.cutLenM - 0.001)) {
-                                        const waste = offcutLen - target.cutLenM;
-                                        if (waste < minWaste) {
-                                            minWaste = waste;
-                                            bestIdx = p;
-                                        }
-                                    }
-                                }
-
-                                if (bestIdx >= 0) {
-                                    const matchedLen = sourceScrapList[bestIdx];
-
+                            let p = 0;
+                            while (p < sourceScrapList.length && rowResults[target.index].remPiecesNeed > 0) {
+                                const offcutLen = sourceScrapList[p];
+                                if (offcutLen >= (target.cutLenM - 0.001)) {
+                                    // Matched offcut!
                                     const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
                                     if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
                                         rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
@@ -621,22 +608,24 @@
                                         rowResults[target.index].newBarsCount = rowResults[target.index].remPiecesNeed;
                                     }
 
-                                    const newRem = matchedLen - target.cutLenM;
+                                    const newRem = offcutLen - target.cutLenM;
                                     rowResults[source.index].totalScrapLen -= target.cutLenM;
+
                                     if (newRem >= 0.01) {
-                                        sourceScrapList[bestIdx] = newRem;
+                                        sourceScrapList[p] = Number(newRem.toFixed(3));
                                     } else {
-                                        sourceScrapList.splice(bestIdx, 1);
+                                        sourceScrapList.splice(p, 1);
+                                        continue;
                                     }
-                                } else {
-                                    break;
                                 }
+                                p++;
                             }
                         }
                     }
                 }
             });
 
+            // PASS 3: Generate Clean Display Strings for Columns
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
@@ -652,9 +641,9 @@
                     offcutTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
-                if (res.scrapPiecesList.length > 0) {
+                if (res.availableScrapPieces.length > 0) {
                     const scrapCounts = {};
-                    res.scrapPiecesList.forEach(len => {
+                    res.availableScrapPieces.forEach(len => {
                         const key = len.toFixed(2);
                         scrapCounts[key] = (scrapCounts[key] || 0) + 1;
                     });
@@ -1117,7 +1106,7 @@
             }
         }
 
-        // 📥 IMPORT EXCEL FUNCTION - FILTER OUT OLD SUMMARY COLUMNS AND FORCE FRESH ENGINE
+        // 📥 IMPORT EXCEL FUNCTION - ABSOLUTE RAW DATA ISOLATION
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1178,7 +1167,6 @@
                             const e = String(row[13] ?? "");
                             const f = String(row[14] ?? "");
 
-                            // ONLY KEEP INPUT VALUES - IGNORE EXCEL'S PRE-COMPUTED OFFSETS & REUSES
                             parsedItems.push({
                                 id: parsedItems.length + 1,
                                 comp, no, type, stockLen, setQty, perSet, shape, a, b, c, d, e, f
@@ -1188,7 +1176,7 @@
 
                     if (parsedItems.length > 0) {
                         itemsData = parsedItems;
-                        renderTable(); // Force re-render with Two-Pass fresh calculation
+                        renderTable();
                         alert(`📥 นำเข้าข้อมูลและสั่งคำนวณใหม่สดเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
                     } else {
                         alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
