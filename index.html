@@ -475,7 +475,7 @@
             });
         }
 
-        // 🧠 REDEFINED THREE-PASS OPTIMIZER ENGINE
+        // 🧠 ACCURATE OPTIMIZER - CLEAN ISOLATED OFFCUT DISPLAY
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -495,7 +495,6 @@
 
             const rowResults = itemsData.map(() => ({
                 usedReusesMap: {},
-                sentToRowsMap: {},
                 newBarsCount: 0,
                 chosenStock: 12,
                 totalScrapLen: 0,
@@ -504,7 +503,7 @@
                 isPerfectFit: false
             }));
 
-            // PASS 1: Calculate Main Bars and Initial Exact Scrap Pieces per Row
+            // Pass 1: Baseline Main Stock Calculation
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -563,7 +562,7 @@
                 }
             });
 
-            // PASS 2: Sequential Global Best-Fit Offcut Allocation (Strict Isolated Tracking)
+            // Pass 2: Sequential Exact Offcut Matching
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -586,18 +585,12 @@
                             while (p < sourceScrapList.length && rowResults[target.index].remPiecesNeed > 0) {
                                 const offcutLen = sourceScrapList[p];
                                 if (offcutLen >= (target.cutLenM - 0.001)) {
-                                    // Matched offcut!
+                                    // Track reuse for target row
                                     const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
                                     if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
                                         rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
                                     }
                                     rowResults[target.index].usedReusesMap[lenKeyTarget].count += 1;
-
-                                    const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
-                                    if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                        rowResults[source.index].sentToRowsMap[lenKeySource] = { len: target.cutLenM, toNo: target.no, count: 0 };
-                                    }
-                                    rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
 
                                     rowResults[target.index].remPiecesNeed -= 1;
 
@@ -625,7 +618,7 @@
                 }
             });
 
-            // PASS 3: Generate Clean Display Strings for Columns
+            // Pass 3: Final Output Format Assembly
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
@@ -637,10 +630,6 @@
                 });
 
                 let offcutTextArr = [];
-                Object.values(res.sentToRowsMap).forEach(sent => {
-                    offcutTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
-                });
-
                 if (res.availableScrapPieces.length > 0) {
                     const scrapCounts = {};
                     res.availableScrapPieces.forEach(len => {
@@ -655,7 +644,7 @@
                     offcutTextArr.push(`ระบุระยะดัด`);
                 } else if (demand.totalPieces <= 0) {
                     offcutTextArr.push(`ระบุจำนวนชิ้น`);
-                } else if (offcutTextArr.length === 0) {
+                } else {
                     offcutTextArr.push(`เศษ 0.00m (พอดีท่อน)`);
                 }
 
@@ -1106,7 +1095,6 @@
             }
         }
 
-        // 📥 IMPORT EXCEL FUNCTION - ABSOLUTE RAW DATA ISOLATION
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
