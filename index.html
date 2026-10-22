@@ -475,7 +475,7 @@
             });
         }
 
-        // 🧠 STRICT TWO-PASS CUTTING OPTIMIZER WITH CLEAN STATE RESET
+        // 🧠 ACCURATE TWO-PASS OPTIMIZER (STRICT FRESH RE-CALCULATION)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -1117,7 +1117,7 @@
             }
         }
 
-        // 📥 IMPORT EXCEL FUNCTION WITH RAW DATA PARSING & RE-CALCULATION
+        // 📥 IMPORT EXCEL FUNCTION - FILTER OUT OLD SUMMARY COLUMNS AND FORCE FRESH ENGINE
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1178,6 +1178,7 @@
                             const e = String(row[13] ?? "");
                             const f = String(row[14] ?? "");
 
+                            // ONLY KEEP INPUT VALUES - IGNORE EXCEL'S PRE-COMPUTED OFFSETS & REUSES
                             parsedItems.push({
                                 id: parsedItems.length + 1,
                                 comp, no, type, stockLen, setQty, perSet, shape, a, b, c, d, e, f
@@ -1187,8 +1188,8 @@
 
                     if (parsedItems.length > 0) {
                         itemsData = parsedItems;
-                        renderTable();
-                        alert(`📥 นำเข้าข้อมูลและคำนวณใหม่สำเร็จเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
+                        renderTable(); // Force re-render with Two-Pass fresh calculation
+                        alert(`📥 นำเข้าข้อมูลและสั่งคำนวณใหม่สดเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
                     } else {
                         alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
                     }
