@@ -475,7 +475,7 @@
             });
         }
 
-        // 🧠 ACCURATE TWO-PASS CUTTING OPTIMIZER WITH CLEAN STATE RESET
+        // 🧠 STRICT TWO-PASS CUTTING OPTIMIZER WITH CLEAN STATE RESET
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -1117,7 +1117,7 @@
             }
         }
 
-        // 📥 IMPORT EXCEL FUNCTION WITH CLEAN RE-CALCULATION
+        // 📥 IMPORT EXCEL FUNCTION WITH RAW DATA PARSING & RE-CALCULATION
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
