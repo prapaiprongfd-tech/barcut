@@ -9,7 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
         * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; margin: 0; padding: 0; }
         body { background-color: #f3f4f6; color: #1f2937; padding: 15px; }
-        .container { max-width: 1650px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
+        .container { max-width: 1750px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
         .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; }
         
@@ -75,8 +75,10 @@
 
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
-        .bg-scrap { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 220px; }
-        .bg-scrap-reuse { background-color: #fef3c7; color: #92400e; font-weight: 700; font-size: 12px; padding: 6px 8px; white-space: normal; min-width: 220px; }
+        
+        /* 🎨 Separate Column Colors for Reuse & Scrap */
+        .bg-reuse-col { background-color: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 180px; }
+        .bg-scrap-col { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 200px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
         
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 135px; }
@@ -220,7 +222,7 @@
                     <table id="barcutTable">
                         <thead>
                             <tr class="print-only-title">
-                                <th colspan="19" id="printProjectHeaderTitle">
+                                <th colspan="20" id="printProjectHeaderTitle">
                                     📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: - | หมวดหมู่งาน: เหล็กงานฐานราก
                                 </th>
                             </tr>
@@ -237,7 +239,8 @@
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
                                 <th style="width:80px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
                                 <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="min-width:220px; background:#fce7f3;">รายละเอียดเศษเหลือ & การนำเศษไปใช้</th>
+                                <th style="min-width:180px; background:#fef3c7;">การนำเศษเหล็กมาใช้ (REUSE SUMMARY)</th>
+                                <th style="min-width:200px; background:#fce7f3;">รายละเอียดเศษเหลือ (OFFCUT SUMMARY)</th>
                                 <th style="width:75px; background:#fbcfe8;">น.น. เศษ (KG)</th>
                                 <th style="width:100px;" class="no-print">จัดการ</th>
                             </tr>
@@ -251,7 +254,7 @@
                                 <th style="min-width:48px;">D</th>
                                 <th style="min-width:48px;">E</th>
                                 <th style="min-width:48px;">F</th>
-                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>OFFCUT & REUSE SUMMARY</th><th>SCRAP WT.</th>
+                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>REUSE SUMMARY</th><th>OFFCUT SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
                         </thead>
@@ -455,7 +458,7 @@
             });
         }
 
-        // 🧠 TIGHT OPTIMIZATION SOLVER WITH PERFECT-FIT PREFERENCE
+        // 🧠 STRICT OPTIMIZATION ENGINE & SEPARATED SUMMARY SOLVER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -481,11 +484,10 @@
                 totalScrapLen: 0,
                 scrapPiecesList: [],
                 remPiecesNeed: 0,
-                isReuse: false,
                 isPerfectFit: false
             }));
 
-            // Step 1: Calculate initial stock requirements & detect Perfect Fits
+            // Step 1: Calculate Main Stock Requirements for ALL rows
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -532,7 +534,6 @@
                     rowResults[d.index].totalScrapLen = Math.max(0, totalScrapLen);
                     rowResults[d.index].remPiecesNeed = d.totalPieces;
 
-                    // Check Perfect Fit: Zero scrap from main stock cuts
                     if (Math.abs(totalScrapLen) < 0.001) {
                         rowResults[d.index].isPerfectFit = true;
                     }
@@ -557,7 +558,6 @@
 
                 for (let t = 0; t < demands.length; t++) {
                     const target = demands[t];
-                    // 🛑 CRITICAL FIX: If row is PERFECT FIT from main bars, DO NOT take offcuts from earlier rows!
                     if (target.cutLenM <= 0 || target.totalPieces <= 0 || rowResults[target.index].isPerfectFit) continue;
 
                     for (let s = 0; s < t; s++) {
@@ -588,7 +588,6 @@
                                         rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
                                     }
                                     rowResults[target.index].usedReusesMap[lenKeyTarget].count += 1;
-                                    rowResults[target.index].isReuse = true;
 
                                     const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
                                     if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
@@ -626,14 +625,16 @@
                 const demand = rowDemands[index];
                 const res = rowResults[index];
 
-                let scrapTextArr = [];
-
+                // 1. REUSE COLUMN SUMMARY (นำเศษมาใช้)
+                let reuseTextArr = [];
                 Object.values(res.usedReusesMap).forEach(reuse => {
-                    scrapTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
+                    reuseTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
                 });
 
+                // 2. OFFCUT COLUMN SUMMARY (เศษเหลือ)
+                let offcutTextArr = [];
                 Object.values(res.sentToRowsMap).forEach(sent => {
-                    scrapTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
+                    offcutTextArr.push(`เศษ ${sent.len.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
                 if (res.scrapPiecesList.length > 0) {
@@ -644,18 +645,18 @@
                     });
 
                     Object.keys(scrapCounts).forEach(lenStr => {
-                        scrapTextArr.push(`เศษเหลือ ${lenStr}m จำนวน ${scrapCounts[lenStr]} ท่อน`);
+                        offcutTextArr.push(`เศษเหลือ ${lenStr}m จำนวน ${scrapCounts[lenStr]} ท่อน`);
                     });
-                } else if (Object.keys(res.usedReusesMap).length > 0 && Object.keys(res.sentToRowsMap).length === 0) {
                 } else if (demand.cutLenM <= 0) {
-                    scrapTextArr.push(`ระบุระยะดัด`);
+                    offcutTextArr.push(`ระบุระยะดัด`);
                 } else if (demand.totalPieces <= 0) {
-                    scrapTextArr.push(`ระบุจำนวนชิ้น`);
-                } else if (scrapTextArr.length === 0) {
-                    scrapTextArr.push(`เศษ 0.00m (พอดีท่อน)`);
+                    offcutTextArr.push(`ระบุจำนวนชิ้น`);
+                } else if (offcutTextArr.length === 0) {
+                    offcutTextArr.push(`เศษ 0.00m (พอดีท่อน)`);
                 }
 
-                const scrapDetails = scrapTextArr.join(' | ');
+                const reuseDetails = reuseTextArr.length > 0 ? reuseTextArr.join(' | ') : '-';
+                const scrapDetails = offcutTextArr.join(' | ');
                 const totalScrapWeight = Math.max(0, res.totalScrapLen) * demand.unitWeight;
 
                 finalResults.push({
@@ -663,10 +664,10 @@
                     totalPieces: (evaluateFormula(item.setQty) * evaluateFormula(item.perSet)),
                     chosenStock: res.chosenStock,
                     totalBars: res.newBarsCount,
+                    reuseDetails,
                     scrapDetails,
                     totalScrapWeight,
-                    unitWeight: demand.unitWeight,
-                    isReuse: res.isReuse
+                    unitWeight: demand.unitWeight
                 });
             });
 
@@ -745,7 +746,8 @@
                     <td><input type="text" id="input_${item.id}_f" value="${getDisplayVal('f')}" onfocus="onInputFocus(${item.id}, 'f', this)" oninput="updateItemData(${item.id}, 'f', this.value)" onblur="onInputBlur(${item.id}, 'f', this)" onkeydown="handleEnterKey(event, ${item.id}, 'f')" placeholder="0"></td>
                     <td class="bg-calc" id="calc_cutLen_${item.id}">${calc.cutLenM.toFixed(3)}</td>
                     <td class="bg-total" id="calc_totalBars_${item.id}">${calc.totalBars}</td>
-                    <td class="${calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap'}" id="calc_scrapDetails_${item.id}">${calc.scrapDetails}</td>
+                    <td class="bg-reuse-col" id="calc_reuseDetails_${item.id}">${calc.reuseDetails}</td>
+                    <td class="bg-scrap-col" id="calc_scrapDetails_${item.id}">${calc.scrapDetails}</td>
                     <td class="bg-scrap-wt" id="calc_scrapWt_${item.id}">${calc.totalScrapWeight.toFixed(2)}</td>
                     <td class="no-print" style="text-align:center;">
                         <div class="action-btns">
@@ -771,16 +773,15 @@
                 const totalPcsElem = document.getElementById(`calc_totalPieces_${item.id}`);
                 const cutLenElem = document.getElementById(`calc_cutLen_${item.id}`);
                 const totalBarsElem = document.getElementById(`calc_totalBars_${item.id}`);
+                const reuseDetailsElem = document.getElementById(`calc_reuseDetails_${item.id}`);
                 const scrapDetailsElem = document.getElementById(`calc_scrapDetails_${item.id}`);
                 const scrapWtElem = document.getElementById(`calc_scrapWt_${item.id}`);
 
                 if (totalPcsElem) totalPcsElem.innerText = calc.totalPieces;
                 if (cutLenElem) cutLenElem.innerText = calc.cutLenM.toFixed(3);
                 if (totalBarsElem) totalBarsElem.innerText = calc.totalBars;
-                if (scrapDetailsElem) {
-                    scrapDetailsElem.innerText = calc.scrapDetails;
-                    scrapDetailsElem.className = calc.isReuse ? 'bg-scrap-reuse' : 'bg-scrap';
-                }
+                if (reuseDetailsElem) reuseDetailsElem.innerText = calc.reuseDetails;
+                if (scrapDetailsElem) scrapDetailsElem.innerText = calc.scrapDetails;
                 if (scrapWtElem) scrapWtElem.innerText = calc.totalScrapWeight.toFixed(2);
             });
 
@@ -1007,7 +1008,6 @@
             if (tab === 'summary') renderSummaryBOQ();
         }
 
-        // 🔒 MULTI-USER ISOLATED LIBRARY STORAGE
         function getUserLibraryKey() {
             const userEmail = localStorage.getItem('barcut_user_email') || 'guest';
             return `barcut_library_${userEmail}`;
@@ -1208,7 +1208,7 @@
             const wb = XLSX.utils.book_new();
             const calcResults = calculateAllItems();
 
-            const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (m)", "B (m)", "C (m)", "D (m)", "E (m)", "F (m)", "Cut Length (m)", "Total Bars", "Offcut & Reuse Summary", "Scrap Weight (kg)"];
+            const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (m)", "B (m)", "C (m)", "D (m)", "E (m)", "F (m)", "Cut Length (m)", "Total Bars", "Reuse Summary", "Offcut Summary", "Scrap Weight (kg)"];
             const barcutRows = [
                 [`📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`],
                 [],
@@ -1218,6 +1218,7 @@
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
                 const cleanType = String(item.type || 'DB16').trim();
+                const cleanReuse = String(calc.reuseDetails).replace(/<br>|\|/g, ' ');
                 const cleanScrap = String(calc.scrapDetails).replace(/<br>|\|/g, ' ');
                 barcutRows.push([
                     index + 1,
@@ -1233,6 +1234,7 @@
                     evaluateFormula(item.d), evaluateFormula(item.e), evaluateFormula(item.f),
                     calc.cutLenM.toFixed(3),
                     calc.totalBars,
+                    cleanReuse,
                     cleanScrap,
                     calc.totalScrapWeight.toFixed(2)
                 ]);
