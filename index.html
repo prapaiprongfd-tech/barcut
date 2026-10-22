@@ -475,6 +475,7 @@
             });
         }
 
+        // 🧠 ACCURATE TWO-PASS CUTTING OPTIMIZER WITH CLEAN STATE RESET
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -503,6 +504,7 @@
                 isPerfectFit: false
             }));
 
+            // Pass 1: Baseline Main Stock Calculation
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -561,6 +563,7 @@
                 }
             });
 
+            // Pass 2: Sequential Exact Offcut Matching
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -911,7 +914,6 @@
             renderTable();
         }
 
-        // 🧹 เคลียร์หน้าเว็บให้เป็นตารางว่างเปล่าแบบหน้าเริ่มต้น
         function clearToInitialEmptyState() {
             itemsData = [
                 { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
@@ -1115,6 +1117,7 @@
             }
         }
 
+        // 📥 IMPORT EXCEL FUNCTION WITH CLEAN RE-CALCULATION
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1185,7 +1188,7 @@
                     if (parsedItems.length > 0) {
                         itemsData = parsedItems;
                         renderTable();
-                        alert(`📥 นำเข้าข้อมูลและรีเซ็ตการคำนวณใหม่เรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
+                        alert(`📥 นำเข้าข้อมูลและคำนวณใหม่สำเร็จเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
                     } else {
                         alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
                     }
@@ -1199,7 +1202,7 @@
 
         function exportToExcel() {
             if (typeof XLSX === 'undefined') {
-                alert('กำลังโหลดไลบรารี Excel กรุณารอครู่หนึ่งแล้วกดใหมีกครั้ง');
+                alert('กำลังโหลดไลบรารี Excel กรุณารอครู่หนึ่งแล้วกดใหม่อีกครั้ง');
                 return;
             }
 
