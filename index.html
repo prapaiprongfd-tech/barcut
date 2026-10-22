@@ -61,7 +61,6 @@
         input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 700; color: #854d0e; }
         
-        /* 🎨 Custom Dynamic Color Styles for Rebar Types & Stock Lengths */
         .stock-bg-12 { background-color: #f3e8ff !important; color: #6b21a8 !important; font-weight: 700; }
         .stock-bg-10 { background-color: #ffedd5 !important; color: #c2410c !important; font-weight: 700; }
         
@@ -174,17 +173,17 @@
             <div>
                 <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System)</h1>
                 <div class="project-input-box">
-                    <label for="workCategory">หมวดหมู่งาน / โครงการ:</label>
-                    <input type="text" id="workCategory" class="project-input" value="เหล็กงานฐานราก" placeholder="เช่น เหล็กงานฐานราก, เหล็กงานคาน, เหล็กงานเสา">
+                    <label for="workCategory">ชื่อโครงการ / หมวดหมู่งาน:</label>
+                    <input type="text" id="workCategory" class="project-input" value="โครงการ 1 - งานฐานราก" placeholder="เช่น โครงการ 1 - งานฐานราก">
+                    <button type="button" class="btn btn-amber" style="padding:4px 8px; font-size:12px;" onclick="createNewProjectPrompt()">➕ สร้างโครงการใหม่</button>
                 </div>
             </div>
             <div class="btn-group no-print">
-                <button type="button" class="btn btn-teal" onclick="saveProjectToLibrary()">💾 บันทึกโครงการลงคลัง</button>
-                <button type="button" class="btn btn-slate" onclick="openLibraryModal()">📂 คลังโครงการที่บันทึกไว้</button>
+                <button type="button" class="btn btn-teal" onclick="saveProjectToLibrary()">💾 บันทึกงานโครงการนี้</button>
+                <button type="button" class="btn btn-slate" onclick="openLibraryModal()">📂 คลังโครงการส่วนตัว</button>
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณความยาวสต็อก Auto ขั้นสูง</button>
                 <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้าไฟล์ Excel</button>
                 <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)">
-                <button type="button" class="btn btn-amber" onclick="loadDefaultData()">🔄 โหลดตัวอย่าง F1-F4</button>
                 <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
                 <button type="button" class="btn btn-indigo" onclick="printCompleteReport()">🖨️ พิมพ์รายงานสมบูรณ์</button>
             </div>
@@ -215,7 +214,7 @@
                         <thead>
                             <tr class="print-only-title">
                                 <th colspan="19" id="printProjectHeaderTitle">
-                                    📌 รายงานรายการสั่งตัดเหล็กเสริม | หมวดหมู่งาน/โครงการ: เหล็กงานฐานราก
+                                    📌 รายงานรายการสั่งตัดเหล็กเสริม | ชื่อโครงการ: โครงการ 1 - งานฐานราก
                                 </th>
                             </tr>
                             <tr>
@@ -305,8 +304,8 @@
     <!-- Modal Project Library -->
     <div id="libraryModal" class="modal-overlay hidden">
         <div class="modal-card">
-            <div style="display:flex; justify-style:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
-                <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการที่บันทึกไว้</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการส่วนตัว</h3>
                 <button type="button" onclick="closeLibraryModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
             </div>
             <div id="libraryListContainer" style="max-height:300px; overflow-y:auto; margin-bottom:15px;">
@@ -328,6 +327,11 @@
         };
 
         const INPUT_FIELDS_ORDER = ['comp', 'setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'];
+
+        function getUserStorageKey() {
+            const email = localStorage.getItem('barcut_user_email') || 'default_user';
+            return `barcut_library_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        }
 
         function checkLicenseOnLoad() {
             const savedEmail = localStorage.getItem('barcut_user_email');
@@ -449,6 +453,7 @@
             });
         }
 
+        // 🎯 FIX LOGIC: ป้องกันการดึงเศษมาใช้ หากรายการนั้นตัดพอดีท่อนลงตัว (Scrap = 0)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -474,9 +479,11 @@
                 totalScrapLen: 0,
                 scrapPiecesList: [],
                 remPiecesNeed: 0,
-                isReuse: false
+                isReuse: false,
+                isZeroScrapExactFit: false
             }));
 
+            // Step 1: คำนวณตัดสต็อกท่อนหลัก
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -517,6 +524,11 @@
                         totalScrapLen = (fullBarsCount * normalScrapPerBar) + lastBarScrap;
                     }
 
+                    // เช็คว่าพอดีท่อนแบบไม่มีเศษเหลือ (Scrap = 0) หรือไม่
+                    if (Math.abs(normalScrapPerBar) < 0.001 && remPiecesInLastBar === 0) {
+                        rowResults[d.index].isZeroScrapExactFit = true;
+                    }
+
                     rowResults[d.index].newBarsCount = requiredBars;
                     rowResults[d.index].chosenStock = stockCap;
                     rowResults[d.index].scrapPiecesList = scrapList;
@@ -531,6 +543,7 @@
                 }
             });
 
+            // Step 2: จับคู่เศษหมุนเวียน (ยกเว้นแถวที่ตัดพอดีท่อนไม่มีเศษ)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -543,6 +556,9 @@
                 for (let t = 0; t < demands.length; t++) {
                     const target = demands[t];
                     if (target.cutLenM <= 0 || target.totalPieces <= 0) continue;
+
+                    // 🛑 หากรายการเป้าหมายลงท่อนหลักได้พอดีท่อนเป๊ะ ไม่ต้องดึงเศษมาใช้!
+                    if (rowResults[target.index].isZeroScrapExactFit) continue;
 
                     for (let s = 0; s < t; s++) {
                         const source = demands[s];
@@ -671,10 +687,10 @@
 
             const calcResults = calculateAllItems();
 
-            const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
+            const categoryName = document.getElementById('workCategory').value || 'โครงการ 1 - งานฐานราก';
             const printTitleElem = document.getElementById('printProjectHeaderTitle');
             if (printTitleElem) {
-                printTitleElem.innerHTML = `📌 รายงานรายการสั่งตัดเหล็กเสริม | หมวดหมู่งาน/โครงการ: ${categoryName}`;
+                printTitleElem.innerHTML = `📌 รายงานรายการสั่งตัดเหล็กเสริม | ชื่อโครงการ: ${categoryName}`;
             }
 
             itemsData.forEach((item, index) => {
@@ -682,7 +698,6 @@
                 const tr = document.createElement('tr');
                 tr.id = `row_${item.id}`;
 
-                // ฟังก์ชันแสดงผลบนตาราง: คำนวณสูตรเป็นตัวเลขก่อนแสดงผล
                 const getDisplayVal = (field) => {
                     const raw = item[field];
                     if (raw === null || raw === undefined || raw === '') return '';
@@ -771,23 +786,21 @@
             renderSummaryBOQ();
         }
 
-        // 🔍 เมื่อคลิกเข้าไปในช่อง (Focus) -> สลับมาแสดงสูตรเดิมเพื่อให้เห็น/แก้ไข
         function onInputFocus(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
-                elem.value = item[field]; // โชว์ข้อความสูตรดั้งเดิม เช่น =12*0.016
+                elem.value = item[field];
                 setTimeout(() => { elem.select(); }, 10);
             }
         }
 
-        // ↩️ เมื่อคลิกออกนอกช่อง (Blur) -> คำนวณสูตรแล้วสลับกลับไปแสดงผลลัพธ์เป็นตัวเลข
         function onInputBlur(id, field, elem) {
             const item = itemsData.find(i => i.id === id);
             if (item && item[field] !== undefined) {
                 const val = elem.value;
-                item[field] = val; // เซฟข้อความสูตรไว้ในความจำ
+                item[field] = val;
                 const evaluated = evaluateFormula(val);
-                elem.value = evaluated === 0 ? '' : evaluated; // สลับโชว์ตัวเลขผลลัพธ์บนช่อง
+                elem.value = evaluated === 0 ? '' : evaluated;
                 refreshCalculationsOnly();
             }
         }
@@ -884,111 +897,24 @@
             renderTable();
         }
 
-        function loadDefaultData() {
-            itemsData = [
-                { id: 1, comp: 'F1.ด้านสั้น', no: 1, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "=12*0.016", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
-                { id: 2, comp: 'F1.ด้านยาว', no: 2, type: 'DB16', stockLen: 'auto', setQty: "3", perSet: "10", shape: 1, a: "=12*0.016", b: "0.3", c: "1.1", d: "0.3", e: "0.192", f: "0" },
-                { id: 3, comp: 'F1.รัดรอบ', no: 3, type: 'DB12', stockLen: 'auto', setQty: "3", perSet: "1", shape: 5, a: "1.1", b: "1.1", c: "1.1", d: "1.1", e: "0", f: "0" },
-                { id: 4, comp: 'F2.ด้านสั้น', no: 4, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "=12*0.020", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
-                { id: 5, comp: 'F2.ด้านยาว', no: 5, type: 'DB20', stockLen: 'auto', setQty: "4", perSet: "15", shape: 1, a: "=12*0.020", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" },
-                { id: 6, comp: 'F2.รัดรอบ', no: 6, type: 'DB16', stockLen: 'auto', setQty: "4", perSet: "1", shape: 5, a: "1.7", b: "1.7", c: "1.7", d: "1.7", e: "0", f: "0" },
-                { id: 7, comp: 'F3.ด้านสั้น', no: 7, type: 'DB20', stockLen: 'auto', setQty: "13", perSet: "22", shape: 1, a: "=12*0.020", b: "0.35", c: "1.7", d: "0.35", e: "0.24", f: "0" }
-            ];
-            renderTable();
-        }
-
-        function renderSummaryBOQ() {
-            const boqMap = {};
-            const calcResults = calculateAllItems();
-
-            itemsData.forEach((item, index) => {
-                const calc = calcResults[index];
-                const cleanType = String(item.type || 'DB16').trim();
-                const key = `${cleanType}_${calc.chosenStock}`;
-
-                if (!boqMap[key]) {
-                    boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
-                }
-                boqMap[key].bars += calc.totalBars;
-                boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
-                boqMap[key].scrapWeight += calc.totalScrapWeight;
-            });
-
-            const tbody = document.getElementById('boqTableBody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            let grandTotalBars = 0;
-            let grandTotalWeight = 0;
-            let grandTotalScrapWeight = 0;
-
-            Object.keys(boqMap).sort().forEach(key => {
-                const data = boqMap[key];
-                if (data.bars > 0 || data.weight > 0) {
-                    grandTotalBars += data.bars;
-                    grandTotalWeight += data.weight;
-                    grandTotalScrapWeight += data.scrapWeight;
-
-                    const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
-                    const typeColorClass = `type-bg-${data.type}`;
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="${typeColorClass}">${data.type}</td>
-                        <td style="text-align:center; font-weight:600; color:#b45309;">${data.length}.0 เมตร</td>
-                        <td style="text-align:center; font-weight:bold; color:#047857;">${data.bars}</td>
-                        <td style="text-align:right; font-weight:600;">${data.weight.toFixed(2)}</td>
-                        <td style="text-align:right; font-weight:600; color:#9d174d; background:#fcf2f6;">${data.scrapWeight.toFixed(2)}</td>
-                        <td style="text-align:center; font-weight:700; color:#92400e; background:#fffbeb;">${percent}%</td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-            });
-
-            const grandPercent = grandTotalWeight > 0 ? ((grandTotalScrapWeight / grandTotalWeight) * 100).toFixed(2) : '0.00';
-
-            document.getElementById('totalBarCount').innerText = grandTotalBars;
-            document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
-            document.getElementById('totalScrapWeightKg').innerText = grandTotalScrapWeight.toFixed(2);
-            document.getElementById('totalScrapPercent').innerText = `${grandPercent}%`;
-        }
-
-        function renderShapes() {
-            const container = document.getElementById('shapesContainer');
-            if (!container) return;
-            container.innerHTML = '';
-            const shapeNames = [
-                "แบบที่ 1: งอขอ 2 ด้าน", "แบบที่ 2: เส้นตรง", "แบบที่ 3: ฉาก L-Shape",
-                "แบบที่ 4: U-Shape / ด้าน 3 ช่วง", "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม", "แบบที่ 6: เหล็กคอม้า",
-                "แบบที่ 7: เหล็กปลอกกลม", "แบบที่ 8: Z-Shape", "แบบที่ 9: เหล็กขาโต๊ะ", "แบบที่ 10: รูปทรงพิเศษ"
-            ];
-
-            for (let i = 1; i <= 10; i++) {
-                const card = document.createElement('div');
-                card.className = "shape-card";
-                card.innerHTML = `
-                    <div style="font-weight:bold; font-size:13px; color:#1e293b;">${shapeNames[i-1]}</div>
-                    <div class="shape-card-img">${getShapeSVG(i, 110, 50)}</div>
-                    <div style="font-size:11px; color:#64748b;">สูตร: A + B + C + D + E + F</div>
-                `;
-                container.appendChild(card);
+        // 🏗️ ฟังก์ชันสร้างโครงการใหม่
+        function createNewProjectPrompt() {
+            const projName = prompt("กรุณาระบุชื่อโครงการใหม่ที่ต้องการสร้าง:", "โครงการ 2 - งานคานและเสา");
+            if (projName && projName.trim() !== "") {
+                document.getElementById('workCategory').value = projName.trim();
+                itemsData = [
+                    { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
+                ];
+                renderTable();
+                alert(`✨ สร้างโครงการ "${projName.trim()}" เรียบร้อยแล้ว สามารถเริ่มพิมพ์รายการได้เลยครับ`);
             }
         }
 
-        function switchTab(tab) {
-            ['barcut', 'summary', 'shapes'].forEach(t => {
-                document.getElementById(`content-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('active');
-            });
-            document.getElementById(`content-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            
-            if (tab === 'summary') renderSummaryBOQ();
-        }
-
+        // 💾 บันทึกคลังแยกรายอีเมลผู้ใช้งาน (User Isolation)
         function saveProjectToLibrary() {
-            const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
-            const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+            const categoryName = document.getElementById('workCategory').value || 'โครงการใหม่';
+            const userKey = getUserStorageKey();
+            const projects = JSON.parse(localStorage.getItem(userKey) || '{}');
             
             projects[categoryName] = {
                 categoryName: categoryName,
@@ -996,25 +922,26 @@
                 itemsData: itemsData
             };
 
-            localStorage.setItem('barcut_projects_library', JSON.stringify(projects));
-            alert(`💾 บันทึกโครงการ "${categoryName}" ลงคลังเรียบร้อยแล้ว!`);
+            localStorage.setItem(userKey, JSON.stringify(projects));
+            alert(`💾 บันทึกโครงการ "${categoryName}" ลงคลังส่วนตัวของคุณเรียบร้อยแล้ว!`);
         }
 
         function openLibraryModal() {
             const modal = document.getElementById('libraryModal');
             const container = document.getElementById('libraryListContainer');
-            const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+            const userKey = getUserStorageKey();
+            const projects = JSON.parse(localStorage.getItem(userKey) || '{}');
             
             container.innerHTML = '';
             const keys = Object.keys(projects);
 
             if (keys.length === 0) {
-                container.innerHTML = `<p style="text-align:center; color:#64748b; padding:20px;">ยังไม่มีโครงการที่บันทึกไว้ในคลัง</p>`;
+                container.innerHTML = `<p style="text-align:center; color:#64748b; padding:20px;">ยังไม่มีงานโครงการที่บันทึกไว้ในคลังของคุณ</p>`;
             } else {
                 keys.forEach(key => {
                     const proj = projects[key];
                     const div = document.createElement('div');
-                    div.style.cssText = "display:flex; justify-space-between; align-items:center; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:8px; background:#f8fafc;";
+                    div.style.cssText = "display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0; padding:10px; border-radius:6px; margin-bottom:8px; background:#f8fafc;";
                     div.innerHTML = `
                         <div>
                             <div style="font-weight:bold; color:#1e293b; font-size:14px;">${proj.categoryName}</div>
@@ -1037,7 +964,8 @@
         }
 
         function loadProjectFromLibrary(categoryName) {
-            const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+            const userKey = getUserStorageKey();
+            const projects = JSON.parse(localStorage.getItem(userKey) || '{}');
             if (projects[categoryName]) {
                 itemsData = projects[categoryName].itemsData;
                 document.getElementById('workCategory').value = projects[categoryName].categoryName;
@@ -1048,10 +976,11 @@
         }
 
         function deleteProjectFromLibrary(categoryName) {
-            if (confirm(`คุณต้องการลบโครงการ "${categoryName}" ออกจากคลังใช่หรือไม่?`)) {
-                const projects = JSON.parse(localStorage.getItem('barcut_projects_library') || '{}');
+            if (confirm(`คุณต้องการลบโครงการ "${categoryName}" ออกจากคลังส่วนตัวใช่หรือไม่?`)) {
+                const userKey = getUserStorageKey();
+                const projects = JSON.parse(localStorage.getItem(userKey) || '{}');
                 delete projects[categoryName];
-                localStorage.setItem('barcut_projects_library', JSON.stringify(projects));
+                localStorage.setItem(userKey, JSON.stringify(projects));
                 openLibraryModal();
             }
         }
@@ -1081,8 +1010,8 @@
                         const row = jsonRows[r];
                         if (!row || row.length === 0) continue;
 
-                        if (row[0] && String(row[0]).includes('หมวดหมู่งาน / โครงการ:')) {
-                            const categoryVal = String(row[0]).replace('หมวดหมู่งาน / โครงการ:', '').trim();
+                        if (row[0] && String(row[0]).includes('ชื่อโครงการ:')) {
+                            const categoryVal = String(row[0]).replace('ชื่อโครงการ:', '').trim();
                             if (categoryVal) document.getElementById('workCategory').value = categoryVal;
                         }
 
@@ -1141,13 +1070,13 @@
                 return;
             }
 
-            const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
+            const categoryName = document.getElementById('workCategory').value || 'โครงการใหม่';
             const wb = XLSX.utils.book_new();
             const calcResults = calculateAllItems();
 
             const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (m)", "B (m)", "C (m)", "D (m)", "E (m)", "F (m)", "Cut Length (m)", "Total Bars", "Offcut & Reuse Summary", "Scrap Weight (kg)"];
             const barcutRows = [
-                [`หมวดหมู่งาน / โครงการ: ${categoryName}`],
+                [`ชื่อโครงการ: ${categoryName}`],
                 [],
                 barcutHeader
             ];
@@ -1180,7 +1109,7 @@
 
             const boqHeader = ["ขนาดเหล็ก", "ความยาวท่อน (ม.)", "จำนวนสั่งซื้อ (ท่อน)", "น้ำหนักสั่งซื้อ (kg)", "น้ำหนักเศษเหลือ (kg)", "สัดส่วนเศษเหลือ (% Scrap)"];
             const boqRows = [
-                [`หมวดหมู่งาน / โครงการ: ${categoryName}`],
+                [`ชื่อโครงการ: ${categoryName}`],
                 [],
                 boqHeader
             ];
