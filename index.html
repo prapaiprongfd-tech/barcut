@@ -475,7 +475,7 @@
             });
         }
 
-        // 🧠 ACCURATE OPTIMIZER ENGINE WITH DYNAMIC BAR RE-EVALUATION & BI-DIRECTIONAL SYNC
+        // 🧠 STRICT COST-REDUCTION OPTIMIZER WITH DYNAMIC TOTAL BAR EVALUATION
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -504,7 +504,7 @@
                 isPerfectFit: false
             }));
 
-            // Pass 1: Initial Main Bar Allocation
+            // Pass 1: Baseline Main Stock Calculation
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
