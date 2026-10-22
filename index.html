@@ -385,7 +385,7 @@
                         location.reload();
                     } else {
                         document.getElementById('licenseModal').classList.remove('hidden');
-                        document.getElementById('mainAppContainer').classList.add('hidden');
+                        document.getElementById('mainAppContainer').classList.remove('hidden');
                         document.getElementById('licenseMessage').innerText = "⏳ คำขอสิทธิ์ของคุณกำลังรอการอนุมัติจากโฮสท์ผู้ดูแลระบบ...";
                     }
                 })
@@ -475,7 +475,7 @@
             });
         }
 
-        // 🧠 OPTIMIZED ENGINE WITH ACCURATE BAR-SAVING REUSE VALIDATION
+        // 🧠 PERFECT FIT & BAR-SAVING PRIORITIZED OPTIMIZER
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -563,7 +563,7 @@
                 }
             });
 
-            // Pass 2: Sequential Global Best-Fit Allocation with Direct Total-Bar Reduction Check
+            // Pass 2: Sequential Global Best-Fit Allocation (SORTED BY ZERO-SCRAP EFFICIENCY FIRST)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -573,80 +573,97 @@
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
-                for (let t = 0; t < demands.length; t++) {
-                    const target = demands[t];
-                    if (target.cutLenM <= 0 || target.totalPieces <= 0 || rowResults[target.index].isPerfectFit) continue;
+                for (let s = 0; s < demands.length; s++) {
+                    const source = demands[s];
+                    const sourceScrapList = rowResults[source.index].availableScrapPieces;
 
-                    const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
-                    if (pcsPerBar <= 0) continue;
+                    if (!sourceScrapList || sourceScrapList.length === 0) continue;
 
-                    for (let s = 0; s < t; s++) {
-                        const source = demands[s];
-                        const sourceScrapList = rowResults[source.index].availableScrapPieces;
+                    let p = 0;
+                    while (p < sourceScrapList.length) {
+                        const offcutLen = sourceScrapList[p];
+                        let bestTargetIdx = -1;
+                        let bestPcsToCut = 0;
+                        let minWastage = 99999;
 
-                        if (sourceScrapList && sourceScrapList.length > 0) {
-                            let p = 0;
-                            while (p < sourceScrapList.length && rowResults[target.index].remPiecesNeed > 0) {
-                                const offcutLen = sourceScrapList[p];
-                                if (offcutLen >= (target.cutLenM - 0.001)) {
-                                    const pcsCanCut = Math.floor(offcutLen / target.cutLenM);
-                                    
-                                    if (pcsCanCut > 0) {
-                                        const currentBars = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
-                                        const nextBars = Math.ceil((rowResults[target.index].remPiecesNeed - pcsCanCut) / pcsPerBar);
+                        // Find best candidate target row that gets ZERO SCRAP or MAX BAR SAVING
+                        for (let t = s + 1; t < demands.length; t++) {
+                            const target = demands[t];
+                            if (target.cutLenM <= 0 || target.totalPieces <= 0 || rowResults[target.index].remPiecesNeed <= 0 || rowResults[target.index].isPerfectFit) continue;
 
-                                        // ALLOW REUSE IF IT REDUCES TOTAL MAIN BARS SOUGHT
-                                        if (nextBars < currentBars) {
-                                            const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
-                                            if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
-                                                rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
-                                            }
-                                            rowResults[target.index].usedReusesMap[lenKeyTarget].count += pcsCanCut;
+                            const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
+                            if (pcsPerBar <= 0) continue;
 
-                                            const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
-                                            if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { len: target.cutLenM, toNo: target.no, count: 0 };
-                                            }
-                                            rowResults[source.index].sentToRowsMap[lenKeySource].count += pcsCanCut;
+                            if (offcutLen >= (target.cutLenM - 0.001)) {
+                                const pcsCanCut = Math.floor(offcutLen / target.cutLenM);
+                                if (pcsCanCut > 0) {
+                                    const currentBars = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
+                                    const nextBars = Math.ceil((rowResults[target.index].remPiecesNeed - pcsCanCut) / pcsPerBar);
 
-                                            rowResults[target.index].remPiecesNeed -= pcsCanCut;
-                                            rowResults[target.index].newBarsCount = nextBars;
-
-                                            // Recalculate Target's own scrap pool
-                                            const normalScrap = rowResults[target.index].chosenStock - (pcsPerBar * target.cutLenM);
-                                            const remPcs = rowResults[target.index].remPiecesNeed % pcsPerBar;
-                                            const fullBars = Math.floor(rowResults[target.index].remPiecesNeed / pcsPerBar);
-                                            
-                                            let newScrapList = [];
-                                            if (remPcs === 0) {
-                                                for(let b=0; b<nextBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
-                                            } else {
-                                                for(let b=0; b<fullBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
-                                                const lastScrap = rowResults[target.index].chosenStock - (remPcs * target.cutLenM);
-                                                if (lastScrap >= 0.01) newScrapList.push(Number(lastScrap.toFixed(3)));
-                                            }
-                                            rowResults[target.index].availableScrapPieces = newScrapList;
-
-                                            const newRem = offcutLen - (pcsCanCut * target.cutLenM);
-                                            rowResults[source.index].totalScrapLen -= (pcsCanCut * target.cutLenM);
-
-                                            if (newRem >= 0.01) {
-                                                sourceScrapList[p] = Number(newRem.toFixed(3));
-                                            } else {
-                                                sourceScrapList.splice(p, 1);
-                                                continue;
-                                            }
+                                    if (nextBars < currentBars) {
+                                        const wastage = offcutLen - (pcsCanCut * target.cutLenM);
+                                        // Prioritize zero wastage first!
+                                        if (wastage < minWastage) {
+                                            minWastage = wastage;
+                                            bestTargetIdx = t;
+                                            bestPcsToCut = pcsCanCut;
                                         }
                                     }
                                 }
-                                p++;
                             }
                         }
+
+                        if (bestTargetIdx >= 0) {
+                            const target = demands[bestTargetIdx];
+                            const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
+
+                            const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
+                            if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
+                                rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
+                            }
+                            rowResults[target.index].usedReusesMap[lenKeyTarget].count += bestPcsToCut;
+
+                            const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
+                            if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
+                                rowResults[source.index].sentToRowsMap[lenKeySource] = { len: target.cutLenM, toNo: target.no, count: 0 };
+                            }
+                            rowResults[source.index].sentToRowsMap[lenKeySource].count += bestPcsToCut;
+
+                            rowResults[target.index].remPiecesNeed -= bestPcsToCut;
+                            const nextBars = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
+                            rowResults[target.index].newBarsCount = nextBars;
+
+                            // Recalculate Target's scrap pool
+                            const normalScrap = rowResults[target.index].chosenStock - (pcsPerBar * target.cutLenM);
+                            const remPcs = rowResults[target.index].remPiecesNeed % pcsPerBar;
+                            const fullBars = Math.floor(rowResults[target.index].remPiecesNeed / pcsPerBar);
+                            
+                            let newScrapList = [];
+                            if (remPcs === 0) {
+                                for(let b=0; b<nextBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
+                            } else {
+                                for(let b=0; b<fullBars; b++) { if(normalScrap >= 0.01) newScrapList.push(Number(normalScrap.toFixed(3))); }
+                                const lastScrap = rowResults[target.index].chosenStock - (remPcs * target.cutLenM);
+                                if (lastScrap >= 0.01) newScrapList.push(Number(lastScrap.toFixed(3)));
+                            }
+                            rowResults[target.index].availableScrapPieces = newScrapList;
+
+                            const newRem = offcutLen - (bestPcsToCut * target.cutLenM);
+                            rowResults[source.index].totalScrapLen -= (bestPcsToCut * target.cutLenM);
+
+                            if (newRem >= 0.01) {
+                                sourceScrapList[p] = Number(newRem.toFixed(3));
+                            } else {
+                                sourceScrapList.splice(p, 1);
+                                continue;
+                            }
+                        }
+                        p++;
                     }
                 }
             });
 
-            // Pass 3: String Output Formatting
+            // Pass 3: Formatting Strings
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
