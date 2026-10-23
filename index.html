@@ -477,7 +477,7 @@
             });
         }
 
-        // 🧠 ACCURATE 2-PASS ISOLATED ENGINE WITH ABSOLUTE ZERO PHANTOM LOOPS
+        // 🧠 ACCURATE ISOLATED 2-PASS OPTIMIZER ENGINE (FREEZE PASS 1 -> RUN PASS 2)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -505,7 +505,7 @@
                 isPerfectFit: false
             }));
 
-            // STEP 1: Baseline Main Stock Allocation
+            // Step 1: Base Line Main Stock Allocation
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -538,11 +538,8 @@
                         for (let i = 0; i < fullBarsCount; i++) {
                             if (normalScrapPerBar >= 0.01) scrapList.push({ len: Number(normalScrapPerBar.toFixed(3)), sourceNo: d.no });
                         }
-                        
                         const lastBarScrap = stockCap - (remPiecesInLastBar * d.cutLenM);
-                        if (lastBarScrap >= 0.01) {
-                            scrapList.push({ len: Number(lastBarScrap.toFixed(3)), sourceNo: d.no });
-                        }
+                        if (lastBarScrap >= 0.01) scrapList.push({ len: Number(lastBarScrap.toFixed(3)), sourceNo: d.no });
                     }
 
                     rowResults[d.index].newBarsCount = requiredBars;
@@ -561,7 +558,7 @@
                 }
             });
 
-            // PASS 1: Sequential Cut Order (s < t)
+            // PASS 1: Strict Sequential Search (s < t) ONLY IF SOURCE HAD REAL MAIN BARS
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -580,6 +577,9 @@
 
                     for (let s = 0; s < t; s++) { // STRICT SEQUENTIAL s < t
                         const source = demands[s];
+                        // SOURCE MUST HAVE GENUINELY BOUGHT MAIN BARS
+                        if (rowResults[source.index].newBarsCount <= 0) continue;
+
                         const sourceScrapList = rowResults[source.index].availableScrapPieces;
 
                         if (sourceScrapList && sourceScrapList.length > 0) {
@@ -643,10 +643,10 @@
                 }
             });
 
-            // SNAPSHOT: FREEZE PASS 1 SCRAP POOL FOR PASS 2
+            // FREEZE PASS 1 SCRAP POOL FOR PASS 2
             const snapshotScrapPool = JSON.parse(JSON.stringify(rowResults.map(r => r.availableScrapPieces)));
 
-            // PASS 2: GLOBAL PROJECT-WIDE MATCHING (Against Snapshot ONLY)
+            // PASS 2: GLOBAL OPTIMIZATION PASS (Run against Frozen Pass 1 Snapshot Scraps ONLY)
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
@@ -654,7 +654,7 @@
                     const target = demands[t];
                     if (target.cutLenM <= 0 || target.totalPieces <= 0 || rowResults[target.index].isPerfectFit) continue;
 
-                    // Skip if target already reduced to 0 bars
+                    // Only consider targets that still need main bars after Pass 1
                     if (rowResults[target.index].newBarsCount <= 0) continue;
 
                     const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
@@ -664,6 +664,9 @@
                         if (s === t) continue;
 
                         const source = demands[s];
+                        // SOURCE MUST HAVE BOUGHT REAL BARS IN PASS 1
+                        if (rowResults[source.index].newBarsCount <= 0) continue;
+
                         const sourceScrapList = snapshotScrapPool[source.index];
 
                         if (sourceScrapList && sourceScrapList.length > 0) {
@@ -713,7 +716,7 @@
                 }
             });
 
-            // OUTPUT FORMATTING & ACCURATE WEIGHT CALCULATION
+            // OUTPUT FORMATTING
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
@@ -754,7 +757,7 @@
                 const reuseDetails = reuseTextArr.length > 0 ? reuseTextArr.join(' | ') : '-';
                 const scrapDetails = offcutTextArr.join(' | ');
 
-                // Weight strictly based on real remaining scrap length
+                // Calculate weight strictly on remaining real scrap pieces
                 const totalScrapWeight = Math.max(0, finalScrapLenTotal) * demand.unitWeight;
 
                 finalResults.push({
@@ -1287,7 +1290,7 @@
                     alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel กรุณาตรวจสอบรูปแบบไฟล์');
                 }
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsBuffer ? reader.readAsArrayBuffer(file) : reader.readAsArrayBuffer(file);
         }
 
         function exportToExcel() {
