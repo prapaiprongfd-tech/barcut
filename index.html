@@ -12,7 +12,7 @@
         .container { max-width: 1750px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
         .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; display: flex; align-items: center; }
-        .version-badge { font-size: 12px; background: #10b981; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .version-badge { font-size: 12px; background: #8b5cf6; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .project-input-group { display: flex; align-items: center; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
         .project-input-box { display: flex; align-items: center; gap: 6px; }
@@ -143,7 +143,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v6.0 Stable Engine</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v8.0 Physical Lock Engine</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -369,7 +369,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v6.0 STABLE ENGINE - NO ARRAY SHIFTS, ID-BASED MATCHING
+        // 🧠 v8.0 THE ULTIMATE PHYSICAL LOCK ENGINE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim();
@@ -383,12 +383,14 @@
                 usedReusesMap: {},
                 sentToRowsMap: {},
                 newBarsCount: 0,
-                chosenStock: 12,
-                availableScraps: []
+                chosenStock: 12
             }));
 
+            const physicalBars = [];
+            const globalScrapPool = [];
+
             // ==========================================
-            // STEP 1: EVERY ROW BUYS ITS OWN FULL BARS
+            // PHASE 1: INITIAL ALLOCATION (Baseline Supply)
             // ==========================================
             demands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
@@ -408,123 +410,153 @@
                 if (pcsPerBar <= 0) return;
 
                 const requiredBars = Math.ceil(d.totalPieces / pcsPerBar);
-                const normalScrap = stockCap - (pcsPerBar * d.cutLenM);
-                const remPcs = d.totalPieces % pcsPerBar;
-
                 rowResults[d.index].chosenStock = stockCap;
                 rowResults[d.index].newBarsCount = requiredBars;
-                d.piecesInLastBar = remPcs === 0 ? pcsPerBar : remPcs;
 
-                const fullBars = Math.floor(d.totalPieces / pcsPerBar);
-                for (let i = 0; i < fullBars; i++) {
-                    if (normalScrap >= 0.01) {
-                        rowResults[d.index].availableScraps.push({ 
-                            id: Math.random().toString(36).substr(2, 9), 
-                            len: Number(normalScrap.toFixed(3)), 
-                            sourceNo: d.no, 
-                            sourceIdx: d.index, 
-                            type: d.type 
-                        });
+                let piecesAccountedFor = 0;
+
+                for (let b = 0; b < requiredBars; b++) {
+                    const isLastBar = (b === requiredBars - 1);
+                    const piecesInThisBar = isLastBar ? (d.totalPieces - piecesAccountedFor) : pcsPerBar;
+                    piecesAccountedFor += piecesInThisBar;
+
+                    const scrapLen = stockCap - (piecesInThisBar * d.cutLenM);
+                    
+                    const barObj = {
+                        barId: `R${d.index}_B${b}`,
+                        rowIdx: d.index,
+                        rowNo: d.no,
+                        type: d.type,
+                        cutLen: d.cutLenM,
+                        piecesProvided: piecesInThisBar,
+                        isCancelled: false,
+                        isLocked: false,
+                        scraps: []
+                    };
+
+                    if (scrapLen >= 0.01) {
+                        const scrapObj = {
+                            scrapId: `S_${barObj.barId}`,
+                            barId: barObj.barId,
+                            rowIdx: d.index,
+                            rowNo: d.no,
+                            type: d.type,
+                            initialLen: Number(scrapLen.toFixed(3)),
+                            currentLen: Number(scrapLen.toFixed(3))
+                        };
+                        barObj.scraps.push(scrapObj);
+                        globalScrapPool.push(scrapObj);
                     }
-                }
-                
-                if (remPcs > 0) {
-                    const lastBarScrap = stockCap - (remPcs * d.cutLenM);
-                    if (lastBarScrap >= 0.01) {
-                        rowResults[d.index].availableScraps.push({ 
-                            id: Math.random().toString(36).substr(2, 9), 
-                            len: Number(lastBarScrap.toFixed(3)), 
-                            sourceNo: d.no, 
-                            sourceIdx: d.index, 
-                            type: d.type 
-                        });
-                    }
+                    physicalBars.push(barObj);
                 }
             });
 
-            // ==========================================
-            // SNAPSHOT: BUILD THE SECURE GLOBAL INVENTORY
-            // ==========================================
-            let masterScrapInventory = [];
-            rowResults.forEach(res => {
-                res.availableScraps.forEach(sc => {
-                    masterScrapInventory.push(JSON.parse(JSON.stringify(sc))); 
-                });
-            });
+            const barMap = {};
+            physicalBars.forEach(b => barMap[b.barId] = b);
 
             // ==========================================
-            // STEP 2: GLOBAL OPTIMIZATION - SAFE MATCHING
+            // PHASE 2A: FORWARD PASS (Look up for scraps s < t)
             // ==========================================
             demands.forEach(target => {
                 if (target.cutLenM <= 0 || target.totalPieces <= 0) return;
-
                 const resTarget = rowResults[target.index];
                 const pcsPerBar = Math.floor(resTarget.chosenStock / target.cutLenM);
                 if (pcsPerBar <= 0) return;
 
-                while (resTarget.newBarsCount > 0) {
-                    const currentPiecesInLastBar = target.piecesInLastBar;
-                    let foundPieces = 0;
-                    let scrapIdsToConsume = [];
+                const myBars = physicalBars.filter(b => b.rowIdx === target.index).reverse();
+                
+                myBars.forEach(targetBar => {
+                    if (targetBar.isLocked || targetBar.isCancelled) return;
+                    
+                    const piecesNeeded = targetBar.piecesProvided;
+                    let piecesFound = 0;
+                    const scrapsToCommit = [];
 
-                    for (let i = 0; i < masterScrapInventory.length; i++) {
-                        const sc = masterScrapInventory[i];
-
-                        if (sc.type === target.type && 
-                            sc.len >= target.cutLenM - 0.001 && 
-                            sc.sourceIdx !== target.index && 
-                            rowResults[sc.sourceIdx].newBarsCount > 0) {
-                            
-                            const maxPcs = Math.floor(sc.len / target.cutLenM);
-                            const take = Math.min(maxPcs, currentPiecesInLastBar - foundPieces);
-
+                    for (let i = 0; i < globalScrapPool.length; i++) {
+                        const sc = globalScrapPool[i];
+                        // FORWARD ONLY: rowIdx < target.index
+                        if (sc.rowIdx < target.index && !barMap[sc.barId].isCancelled && sc.type === target.type && sc.currentLen >= target.cutLenM - 0.001) {
+                            const take = Math.min(Math.floor(sc.currentLen / target.cutLenM), piecesNeeded - piecesFound);
                             if (take > 0) {
-                                scrapIdsToConsume.push({ id: sc.id, take: take });
-                                foundPieces += take;
+                                scrapsToCommit.push({ scrapObj: sc, take: take });
+                                piecesFound += take;
                             }
-
-                            if (foundPieces === currentPiecesInLastBar) break; 
+                            if (piecesFound === piecesNeeded) break;
                         }
                     }
 
-                    if (foundPieces === currentPiecesInLastBar) {
+                    if (piecesFound === piecesNeeded) {
+                        targetBar.isCancelled = true;
                         resTarget.newBarsCount--;
-                        
-                        // 1. Remove exactly one scrap generated by this target from global pool
-                        const scrapToRemoveIdx = masterScrapInventory.findIndex(g => g.sourceIdx === target.index);
-                        if (scrapToRemoveIdx !== -1) masterScrapInventory.splice(scrapToRemoveIdx, 1);
+                        scrapsToCommit.forEach(use => {
+                            barMap[use.scrapObj.barId].isLocked = true;
+                            use.scrapObj.currentLen -= (use.take * target.cutLenM);
+                            
+                            const targetKey = `${target.cutLenM.toFixed(2)}_${use.scrapObj.rowNo}`;
+                            if (!resTarget.usedReusesMap[targetKey]) resTarget.usedReusesMap[targetKey] = { len: target.cutLenM, fromNo: use.scrapObj.rowNo, count: 0 };
+                            resTarget.usedReusesMap[targetKey].count += use.take;
 
-                        // 2. Consume the matched scraps SAFELY using IDs (immune to array shifts)
-                        scrapIdsToConsume.forEach(use => {
-                            const scIdx = masterScrapInventory.findIndex(g => g.id === use.id);
-                            if (scIdx !== -1) {
-                                const sc = masterScrapInventory[scIdx];
-                                const sourceRes = rowResults[sc.sourceIdx];
-
-                                const targetKey = `${target.cutLenM.toFixed(2)}_${sc.sourceNo}`;
-                                if (!resTarget.usedReusesMap[targetKey]) resTarget.usedReusesMap[targetKey] = { len: target.cutLenM, fromNo: sc.sourceNo, count: 0 };
-                                resTarget.usedReusesMap[targetKey].count += use.take;
-
-                                const sourceKey = `${target.cutLenM.toFixed(2)}_${target.no}`;
-                                if (!sourceRes.sentToRowsMap[sourceKey]) sourceRes.sentToRowsMap[sourceKey] = { usedLen: target.cutLenM, toNo: target.no, count: 0 };
-                                sourceRes.sentToRowsMap[sourceKey].count += use.take;
-
-                                sc.len -= (use.take * target.cutLenM);
-                                if (sc.len < 0.01) {
-                                    masterScrapInventory.splice(scIdx, 1);
-                                }
-                            }
+                            const sourceKey = `${target.cutLenM.toFixed(2)}_${target.no}`;
+                            if (!rowResults[use.scrapObj.rowIdx].sentToRowsMap[sourceKey]) rowResults[use.scrapObj.rowIdx].sentToRowsMap[sourceKey] = { usedLen: target.cutLenM, toNo: target.no, count: 0 };
+                            rowResults[use.scrapObj.rowIdx].sentToRowsMap[sourceKey].count += use.take;
                         });
-
-                        target.piecesInLastBar = pcsPerBar; 
-
-                    } else {
-                        break; 
                     }
-                }
+                });
             });
 
-            // OUTPUT FORMATTING
+            // ==========================================
+            // PHASE 2B: BACKWARD PASS (Look down for scraps s > t)
+            // ==========================================
+            demands.forEach(target => {
+                if (target.cutLenM <= 0 || target.totalPieces <= 0) return;
+                const resTarget = rowResults[target.index];
+                const pcsPerBar = Math.floor(resTarget.chosenStock / target.cutLenM);
+                if (pcsPerBar <= 0) return;
+
+                const myBars = physicalBars.filter(b => b.rowIdx === target.index).reverse();
+                
+                myBars.forEach(targetBar => {
+                    if (targetBar.isLocked || targetBar.isCancelled) return;
+                    
+                    const piecesNeeded = targetBar.piecesProvided;
+                    let piecesFound = 0;
+                    const scrapsToCommit = [];
+
+                    for (let i = 0; i < globalScrapPool.length; i++) {
+                        const sc = globalScrapPool[i];
+                        // BACKWARD ONLY: rowIdx > target.index
+                        if (sc.rowIdx > target.index && !barMap[sc.barId].isCancelled && sc.type === target.type && sc.currentLen >= target.cutLenM - 0.001) {
+                            const take = Math.min(Math.floor(sc.currentLen / target.cutLenM), piecesNeeded - piecesFound);
+                            if (take > 0) {
+                                scrapsToCommit.push({ scrapObj: sc, take: take });
+                                piecesFound += take;
+                            }
+                            if (piecesFound === piecesNeeded) break;
+                        }
+                    }
+
+                    if (piecesFound === piecesNeeded) {
+                        targetBar.isCancelled = true;
+                        resTarget.newBarsCount--;
+                        scrapsToCommit.forEach(use => {
+                            barMap[use.scrapObj.barId].isLocked = true;
+                            use.scrapObj.currentLen -= (use.take * target.cutLenM);
+                            
+                            const targetKey = `${target.cutLenM.toFixed(2)}_${use.scrapObj.rowNo}`;
+                            if (!resTarget.usedReusesMap[targetKey]) resTarget.usedReusesMap[targetKey] = { len: target.cutLenM, fromNo: use.scrapObj.rowNo, count: 0 };
+                            resTarget.usedReusesMap[targetKey].count += use.take;
+
+                            const sourceKey = `${target.cutLenM.toFixed(2)}_${target.no}`;
+                            if (!rowResults[use.scrapObj.rowIdx].sentToRowsMap[sourceKey]) rowResults[use.scrapObj.rowIdx].sentToRowsMap[sourceKey] = { usedLen: target.cutLenM, toNo: target.no, count: 0 };
+                            rowResults[use.scrapObj.rowIdx].sentToRowsMap[sourceKey].count += use.take;
+                        });
+                    }
+                });
+            });
+
+            // ==========================================
+            // PHASE 3: OUTPUT AGGREGATION
+            // ==========================================
             const finalResults = [];
             demands.forEach((demand, index) => {
                 const res = rowResults[index];
@@ -541,13 +573,17 @@
 
                 let finalScrapLenTotal = 0;
                 const scrapCounts = {};
-                
-                masterScrapInventory.forEach(sc => {
-                    if (sc.sourceIdx === index && sc.len >= 0.01) {
-                        const key = sc.len.toFixed(2);
-                        scrapCounts[key] = (scrapCounts[key] || 0) + 1;
-                        finalScrapLenTotal += sc.len;
-                    }
+
+                // Only valid (not cancelled) bars produce real offcuts
+                const myActiveBars = physicalBars.filter(b => b.rowIdx === index && !b.isCancelled);
+                myActiveBars.forEach(b => {
+                    b.scraps.forEach(sc => {
+                        if (sc.currentLen >= 0.01) {
+                            const key = sc.currentLen.toFixed(2);
+                            scrapCounts[key] = (scrapCounts[key] || 0) + 1;
+                            finalScrapLenTotal += sc.currentLen;
+                        }
+                    });
                 });
 
                 if (Object.keys(scrapCounts).length > 0) {
@@ -1002,7 +1038,7 @@
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
-            event.target.value = ''; // แก้ปัญหาโหลดไฟล์เดิมซ้ำไม่ได้
+            event.target.value = '';
 
             const reader = new FileReader();
             reader.onload = function(e) {
