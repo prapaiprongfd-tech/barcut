@@ -63,25 +63,8 @@
         input:focus, select:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         input.excel-in { background-color: #fef08a; border-color: #d97706; font-weight: 700; color: #854d0e; }
         
-        .col-type-td {
-            width: 105px !important;
-            min-width: 105px !important;
-            max-width: 105px !important;
-            padding: 2px 1px !important;
-        }
-
-        .type-select {
-            -webkit-appearance: none !important;
-            -moz-appearance: none !important;
-            appearance: none !important;
-            width: 100% !important;
-            padding: 0 4px !important;
-            font-size: 12px !important;
-            font-weight: 700 !important;
-            text-align: center !important;
-            text-align-last: center !important;
-            cursor: pointer;
-        }
+        .col-type-td { width: 105px !important; min-width: 105px !important; max-width: 105px !important; padding: 2px 1px !important; }
+        .type-select { -webkit-appearance: none !important; -moz-appearance: none !important; appearance: none !important; width: 100% !important; padding: 0 4px !important; font-size: 12px !important; font-weight: 700 !important; text-align: center !important; text-align-last: center !important; cursor: pointer; }
 
         .stock-bg-12 { background-color: #f3e8ff !important; color: #6b21a8 !important; font-weight: 700; }
         .stock-bg-10 { background-color: #ffedd5 !important; color: #c2410c !important; font-weight: 700; }
@@ -96,7 +79,6 @@
 
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
-        
         .bg-reuse-col { background-color: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 180px; }
         .bg-scrap-col { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 200px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
@@ -121,7 +103,6 @@
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .modal-card { background: white; border-radius: 12px; max-width: 550px; width: 90%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
-
         .print-only-title { display: none; }
         
         @media print { 
@@ -132,32 +113,17 @@
             .content { padding: 0; }
             #content-barcut, #content-summary { display: block !important; margin-bottom: 15px; }
             #content-shapes { display: none !important; }
-            
             thead { display: table-header-group !important; }
             tr { page-break-inside: avoid !important; }
-            
             .print-only-title { display: table-row !important; }
             .print-only-title th { background: #cbd5e1 !important; color: #000 !important; font-size: 9pt !important; text-align: left !important; padding: 6px !important; }
-
             .project-input-box { font-size: 9pt !important; margin-top: 2px; }
             .project-input-box label { color: #000 !important; font-weight: bold; }
             .project-input { border: none !important; background: transparent !important; color: #000 !important; font-weight: bold !important; padding: 0 !important; width: auto !important; }
-
-            input, select { 
-                border: none !important; 
-                background: transparent !important; 
-                appearance: none !important; 
-                -webkit-appearance: none !important;
-                font-weight: bold !important; 
-                padding: 0 !important; 
-                font-size: 7.5pt !important;
-                height: auto !important;
-                text-align: center !important;
-            }
+            input, select { border: none !important; background: transparent !important; appearance: none !important; -webkit-appearance: none !important; font-weight: bold !important; padding: 0 !important; font-size: 7.5pt !important; height: auto !important; text-align: center !important; }
             .shape-box select { display: none !important; }
             .shape-preview { border: none !important; padding: 0 !important; background: transparent !important; width: 100% !important; }
             .shape-preview svg { width: 20px !important; height: 12px !important; display: block; margin: 0 auto; }
-            
             .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
             table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; font-size: 7.5pt !important; }
             th, td { border: 1px solid #000 !important; padding: 2px 1px !important; white-space: normal !important; word-break: break-word !important; }
@@ -168,12 +134,10 @@
     </style>
 </head>
 <body>
-    <!-- LICENSE ACCESS CONTROL MODAL -->
     <div id="licenseModal" class="modal-overlay">
         <div class="modal-card">
             <h2 style="font-size:20px; font-weight:bold; color:#1e293b; margin-bottom:10px;">🔒 ยืนยันสิทธิ์การใช้งานโปรแกรม</h2>
             <p style="font-size:13px; color:#64748b; margin-bottom:20px;">กรุณากรอกชื่อและอีเมลของคุณเพื่อส่งขอสิทธิ์เข้าใช้งานโปรแกรม Barcut</p>
-            
             <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
                 <div>
                     <label style="font-size:12px; font-weight:bold; color:#334155;">ชื่อ-นามสกุล / ชื่อผู้ใช้งาน:</label>
@@ -189,9 +153,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP CONTAINER -->
     <div class="container hidden" id="mainAppContainer">
-        <!-- Header -->
         <div class="header">
             <div>
                 <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System)</h1>
@@ -219,16 +181,13 @@
             </div>
         </div>
 
-        <!-- Navigation Tabs -->
         <div class="tabs no-print">
             <button type="button" class="tab-btn active" id="tab-barcut" onclick="switchTab('barcut')">📋 ตาราง Barcut คำนวณตัดเหล็ก</button>
             <button type="button" class="tab-btn" id="tab-summary" onclick="switchTab('summary')">📦 สรุปรายการเหล็ก (BOQ Sheet)</button>
             <button type="button" class="tab-btn" id="tab-shapes" onclick="switchTab('shapes')">📐 รูปทรงเหล็กดัด (Shape Guide 1-10)</button>
         </div>
 
-        <!-- Content Area -->
         <div class="content">
-            <!-- TAB 1: BARCUT TABLE -->
             <div id="content-barcut">
                 <div class="toolbar no-print">
                     <div class="legend">
@@ -243,9 +202,7 @@
                     <table id="barcutTable">
                         <thead>
                             <tr class="print-only-title">
-                                <th colspan="20" id="printProjectHeaderTitle">
-                                    📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: - | หมวดหมู่งาน: เหล็กงานฐานราก
-                                </th>
+                                <th colspan="20" id="printProjectHeaderTitle">📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: - | หมวดหมู่งาน: เหล็กงานฐานราก</th>
                             </tr>
                             <tr>
                                 <th style="width:25px;" class="no-print">#</th>
@@ -269,24 +226,17 @@
                                 <th class="no-print"></th><th></th><th></th><th></th>
                                 <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
                                 <th>(แบบที่ 1-10)</th>
-                                <th style="min-width:48px;">A</th>
-                                <th style="min-width:48px;">B</th>
-                                <th style="min-width:48px;">C</th>
-                                <th style="min-width:48px;">D</th>
-                                <th style="min-width:48px;">E</th>
-                                <th style="min-width:48px;">F</th>
+                                <th style="min-width:48px;">A</th><th style="min-width:48px;">B</th><th style="min-width:48px;">C</th>
+                                <th style="min-width:48px;">D</th><th style="min-width:48px;">E</th><th style="min-width:48px;">F</th>
                                 <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>REUSE SUMMARY</th><th>OFFCUT SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody">
-                            <!-- Rows rendered via JS -->
-                        </tbody>
+                        <tbody id="tableBody"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- TAB 2: SUMMARY BOQ SHEET -->
             <div id="content-summary" class="hidden">
                 <div class="card">
                     <div class="card-title">
@@ -305,9 +255,7 @@
                                     <th style="text-align:center; min-width:120px; background:#fbcfe8;">สัดส่วนเศษเหลือ (% Scrap)</th>
                                 </tr>
                             </thead>
-                            <tbody id="boqTableBody">
-                                <!-- Rendered via JS -->
-                            </tbody>
+                            <tbody id="boqTableBody"></tbody>
                             <tfoot>
                                 <tr style="background:#f1f5f9; font-weight:bold; font-size:14px;">
                                     <td colspan="2" style="text-align:right;">รวมทั้งโครงการ:</td>
@@ -322,28 +270,9 @@
                 </div>
             </div>
 
-            <!-- TAB 3: SHAPE GUIDE -->
             <div id="content-shapes" class="hidden">
                 <div class="card-title">📐 รูปทรงเหล็กดัดมาตรฐาน 10 แบบ (Rebar Bending Shapes)</div>
-                <div class="grid-shapes" id="shapesContainer">
-                    <!-- Shape Cards rendered via JS -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Project Library -->
-    <div id="libraryModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
-                <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการส่วนตัว (แยกตามบัญชีผู้ใช้)</h3>
-                <button type="button" onclick="closeLibraryModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
-            </div>
-            <div id="libraryListContainer" style="max-height:350px; overflow-y:auto; margin-bottom:15px; text-align:left;">
-                <!-- Saved Projects List -->
-            </div>
-            <div style="text-align:right;">
-                <button type="button" class="btn btn-slate" onclick="closeLibraryModal()">ปิดหน้าต่าง</button>
+                <div class="grid-shapes" id="shapesContainer"></div>
             </div>
         </div>
     </div>
@@ -377,18 +306,9 @@
                         document.getElementById('mainAppContainer').classList.remove('hidden');
                         clearToInitialEmptyState();
                         renderShapes();
-                    } else if (data.status === "BLOCKED") {
-                        alert("❌ บัญชีของคุณถูกระงับสิทธิ์การใช้งาน กรุณาติดต่อโฮสท์ผู้ดูแลระบบ");
-                        localStorage.clear();
-                        location.reload();
-                    } else if (data.status === "EXPIRED") {
-                        alert("⏰ ระยะเวลาการใช้งานของคุณหมดอายุแล้ว กรุณาติดต่อโฮสท์เพื่อต่ออายุสิทธิ์");
-                        localStorage.clear();
-                        location.reload();
                     } else {
                         document.getElementById('licenseModal').classList.remove('hidden');
                         document.getElementById('mainAppContainer').classList.add('hidden');
-                        document.getElementById('licenseMessage').innerText = "⏳ คำขอสิทธิ์ของคุณกำลังรอการอนุมัติจากโฮสท์ผู้ดูแลระบบ...";
                     }
                 })
                 .catch(err => {
@@ -416,33 +336,21 @@
                 .then(data => {
                     localStorage.setItem('barcut_user_email', email);
                     localStorage.setItem('barcut_user_key', data.key);
-
-                    if (data.status === "APPROVED") {
-                        alert("✅ อนุมัติสิทธิ์เรียบร้อยแล้ว เข้าใช้งานได้ทันที!");
-                        location.reload();
-                    } else {
-                        msgBox.innerText = "⏳ ส่งคำขอเรียบร้อยแล้ว! กรุณาแจ้งโฮสท์ผู้ดูแลระบบเพื่อเปิดสิทธิ์อนุมัติ";
-                    }
+                    location.reload();
                 })
-                .catch(err => {
-                    console.error("Fetch Register Error:", err);
-                    msgBox.innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
-                });
+                .catch(err => { console.error(err); });
         }
 
         function evaluateFormula(expr) {
             if (expr === null || expr === undefined) return 0;
             if (typeof expr === 'number') return isNaN(expr) ? 0 : expr;
-            
             let str = String(expr).trim();
             if (str === '') return 0;
             if (str.startsWith('=')) str = str.substring(1);
-            
             if (!/^[0-9\.\+\-\*\/\(\)\s]+$/.test(str)) {
                 const fallback = parseFloat(str);
                 return isNaN(fallback) ? 0 : fallback;
             }
-
             try {
                 const result = new Function(`'use strict'; return (${str})`)();
                 return (typeof result === 'number' && !isNaN(result) && isFinite(result)) ? result : 0;
@@ -453,8 +361,7 @@
         }
 
         function getShapeSVG(shapeNum, width = 60, height = 30) {
-            const stroke = "#2563eb";
-            const sw = 2.5;
+            const stroke = "#2563eb"; const sw = 2.5;
             switch(parseInt(shapeNum)) {
                 case 1: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><path d="M 15,15 L 15,35 L 85,35 L 85,15" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
                 case 2: return `<svg width="${width}" height="${height}" viewBox="0 0 100 50"><line x1="10" y1="25" x2="90" y2="25" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round"/></svg>`;
@@ -472,24 +379,15 @@
         let itemsData = [];
 
         function resequenceNumbers() {
-            itemsData.forEach((item, idx) => {
-                item.no = idx + 1;
-            });
+            itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 ACCURATE 2-PASS ISOLATED ENGINE WITH ABSOLUTE ZERO PHANTOM LOOPS
+        // 🧠 STRICT DEEP-FREEZE 2-PASS OPTIMIZER ENGINE
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim();
-                const valA = evaluateFormula(item.a);
-                const valB = evaluateFormula(item.b);
-                const valC = evaluateFormula(item.c);
-                const valD = evaluateFormula(item.d);
-                const valE = evaluateFormula(item.e);
-                const valF = evaluateFormula(item.f);
-
-                const cutLenM = valA + valB + valC + valD + valE + valF;
+                const cutLenM = evaluateFormula(item.a) + evaluateFormula(item.b) + evaluateFormula(item.c) + evaluateFormula(item.d) + evaluateFormula(item.e) + evaluateFormula(item.f);
                 const totalPieces = evaluateFormula(item.setQty) * evaluateFormula(item.perSet);
                 const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
                 rowDemands.push({ id: item.id, no: item.no, type: cleanType, cutLenM, totalPieces, unitWeight, stockLen: item.stockLen, index });
@@ -505,7 +403,7 @@
                 isPerfectFit: false
             }));
 
-            // Step 1: Base Line Main Stock Allocation
+            // Step 1: Base Line Stock Allocation
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -526,7 +424,6 @@
                     const requiredBars = Math.ceil(d.totalPieces / pcsPerBar);
                     const fullBarsCount = Math.floor(d.totalPieces / pcsPerBar);
                     const remPiecesInLastBar = d.totalPieces % pcsPerBar;
-
                     const normalScrapPerBar = stockCap - (pcsPerBar * d.cutLenM);
                     let scrapList = [];
 
@@ -558,7 +455,7 @@
                 }
             });
 
-            // PASS 1: Strict Sequential Search (s < t) ONLY IF SOURCE HAD REAL MAIN BARS
+            // PASS 1: Strict Sequential Match (s < t)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -575,9 +472,8 @@
                     const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
                     if (pcsPerBar <= 0) continue;
 
-                    for (let s = 0; s < t; s++) { // STRICT SEQUENTIAL s < t
+                    for (let s = 0; s < t; s++) { // s < t STRICT
                         const source = demands[s];
-                        // SOURCE MUST HAVE GENUINELY BOUGHT MAIN BARS
                         if (rowResults[source.index].newBarsCount <= 0) continue;
 
                         const sourceScrapList = rowResults[source.index].availableScrapPieces;
@@ -602,10 +498,9 @@
                                             }
                                             rowResults[target.index].usedReusesMap[lenKeyTarget].count += pcsToTake;
 
-                                            const realCutLengthUsed = target.cutLenM;
-                                            const lenKeySource = `${realCutLengthUsed.toFixed(2)}_${target.no}`;
+                                            const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
                                             if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { usedLen: realCutLengthUsed, toNo: target.no, count: 0 };
+                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { usedLen: target.cutLenM, toNo: target.no, count: 0 };
                                             }
                                             rowResults[source.index].sentToRowsMap[lenKeySource].count += pcsToTake;
 
@@ -643,10 +538,10 @@
                 }
             });
 
-            // FREEZE PASS 1 SCRAP POOL FOR PASS 2
+            // DEEP FREEZE SNAPSHOT OF PASS 1 RESULT
             const snapshotScrapPool = JSON.parse(JSON.stringify(rowResults.map(r => r.availableScrapPieces)));
 
-            // PASS 2: GLOBAL OPTIMIZATION PASS (Run against Frozen Pass 1 Snapshot Scraps ONLY)
+            // PASS 2: GLOBAL OPTIMIZATION PASS (Run strictly against Frozen Pass 1 Snapshot ONLY)
             Object.keys(typeGroups).forEach(type => {
                 const demands = typeGroups[type];
 
@@ -654,7 +549,7 @@
                     const target = demands[t];
                     if (target.cutLenM <= 0 || target.totalPieces <= 0 || rowResults[target.index].isPerfectFit) continue;
 
-                    // Only consider targets that still need main bars after Pass 1
+                    // Skip if target already reduced to 0 bars in Pass 1
                     if (rowResults[target.index].newBarsCount <= 0) continue;
 
                     const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
@@ -689,10 +584,9 @@
                                             }
                                             rowResults[target.index].usedReusesMap[lenKeyTarget].count += pcsToTake;
 
-                                            const realCutLengthUsed = target.cutLenM;
-                                            const lenKeySource = `${realCutLengthUsed.toFixed(2)}_${target.no}`;
+                                            const lenKeySource = `${target.cutLenM.toFixed(2)}_${target.no}`;
                                             if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { usedLen: realCutLengthUsed, toNo: target.no, count: 0 };
+                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { usedLen: target.cutLenM, toNo: target.no, count: 0 };
                                             }
                                             rowResults[source.index].sentToRowsMap[lenKeySource].count += pcsToTake;
 
@@ -782,9 +676,7 @@
         }
 
         function resetCalculationsAndScraps() {
-            itemsData.forEach(item => {
-                item.stockLen = 'auto';
-            });
+            itemsData.forEach(item => { item.stockLen = 'auto'; });
             renderTable();
             alert('🔄 ล้างข้อมูลจำลองเดิม และทำการวิเคราะห์คำนวณการหมุนเวียนเศษสดใหม่เรียบร้อยแล้ว!');
         }
@@ -981,23 +873,7 @@
             const item = itemsData.find(i => i.id === id);
             if (item) {
                 const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-                
-                const newItem = {
-                    id: newId,
-                    comp: item.comp,
-                    no: itemsData.length + 1,
-                    type: item.type,
-                    stockLen: item.stockLen,
-                    setQty: item.setQty,
-                    perSet: item.perSet,
-                    shape: item.shape,
-                    a: item.a,
-                    b: item.b,
-                    c: item.c,
-                    d: item.d,
-                    e: item.e,
-                    f: item.f
-                };
+                const newItem = { id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f };
                 itemsData.push(newItem);
                 renderTable();
             }
