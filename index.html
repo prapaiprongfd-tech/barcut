@@ -33,7 +33,7 @@
         .btn-red { background: #dc2626; color: white; } .btn-red:hover { background: #b91c1c; }
         
         .tabs { background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; overflow-x: auto; }
-        .tab-btn { padding: 12px 24px; font-size: 14px; font-weight: 600; background: none; border: none; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; whitespace-nowrap; }
+        .tab-btn { padding: 12px 24px; font-size: 14px; font-weight: 600; background: none; border: none; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; white-space: nowrap; }
         .tab-btn.active { border-bottom-color: #4f46e5; color: #4f46e5; }
         .content { padding: 20px; }
         .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
@@ -84,9 +84,9 @@
         .hidden { display: none !important; }
         .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
         .card-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .grid-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .shape-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
-        .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
+        .grid-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 15px; }
+        .shape-card { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 85px; display: flex; align-items: center; justify-content: center; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .modal-card { background: white; border-radius: 12px; max-width: 650px; width: 92%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
@@ -148,7 +148,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.1 Storage & Export Upgrade</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.2 Universal Engine</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -180,6 +180,7 @@
         </div>
 
         <div class="content">
+            <!-- TAB 1: BARCUT TABLE -->
             <div id="content-barcut">
                 <div class="toolbar no-print">
                     <div class="legend">
@@ -229,6 +230,7 @@
                 </div>
             </div>
 
+            <!-- TAB 2: BOQ SUMMARY -->
             <div id="content-summary" class="hidden">
                 <div class="card">
                     <div class="card-title">
@@ -262,9 +264,15 @@
                 </div>
             </div>
 
+            <!-- TAB 3: SHAPES GUIDE -->
             <div id="content-shapes" class="hidden">
-                <div class="card-title">📐 รูปทรงเหล็กดัดมาตรฐาน 10 แบบ (Rebar Bending Shapes)</div>
-                <div class="grid-shapes" id="shapesContainer"></div>
+                <div class="card">
+                    <div class="card-title">
+                        <span>📐 รูปทรงเหล็กดัดมาตรฐาน 10 แบบ (Rebar Bending Shapes Guide)</span>
+                        <button type="button" class="btn btn-slate no-print" onclick="switchTab('barcut')">⬅️ กลับไปแก้ไขตาราง Barcut</button>
+                    </div>
+                    <div class="grid-shapes" id="shapesContainer"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -396,10 +404,10 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v9.0 LONGEST-FIRST PHYSICAL ENGINE
+        // 🧠 v9.2 LONGEST-FIRST PHYSICAL ENGINE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
-                const cleanType = String(item.type || 'DB16').trim();
+                const cleanType = String(item.type || 'DB16').trim().toUpperCase();
                 const cutLenM = evaluateFormula(item.a) + evaluateFormula(item.b) + evaluateFormula(item.c) + evaluateFormula(item.d) + evaluateFormula(item.e) + evaluateFormula(item.f);
                 const totalPieces = evaluateFormula(item.setQty) * evaluateFormula(item.perSet);
                 const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
@@ -641,7 +649,7 @@
                     return evalVal === 0 ? '' : evalVal;
                 };
 
-                const cleanType = String(item.type || 'DB16').trim();
+                const cleanType = String(item.type || 'DB16').trim().toUpperCase();
                 const typeColorClass = `type-bg-${cleanType}`;
                 const stockColorClass = calc.chosenStock === 10 ? 'stock-bg-10' : 'stock-bg-12';
 
@@ -796,7 +804,8 @@
             const item = itemsData.find(i => i.id === id);
             if (item) {
                 const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-                itemsData.push({ id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f });
+                const newItem = { id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f };
+                itemsData.push(newItem);
                 renderTable();
             }
         }
@@ -816,12 +825,12 @@
             const calcResults = calculateAllItems();
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
-                const cleanType = String(item.type || 'DB16').trim();
+                const cleanType = String(item.type || 'DB16').trim().toUpperCase();
                 const key = `${cleanType}_${calc.chosenStock}`;
                 if (!boqMap[key]) boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
-                boqMap[key].bars += calc.totalBars;
-                boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
-                boqMap[key].scrapWeight += calc.totalScrapWeight;
+                boqMap[key].bars += (calc.totalBars || 0);
+                boqMap[key].weight += (calc.totalBars || 0) * calc.chosenStock * calc.unitWeight;
+                boqMap[key].scrapWeight += (calc.totalScrapWeight || 0);
             });
 
             const tbody = document.getElementById('boqTableBody');
@@ -829,9 +838,10 @@
             tbody.innerHTML = '';
             let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
 
-            Object.keys(boqMap).sort().forEach(key => {
+            const sortedKeys = Object.keys(boqMap).sort();
+            sortedKeys.forEach(key => {
                 const data = boqMap[key];
-                if (data.bars > 0 || data.weight > 0) {
+                if (data.bars > 0 || data.weight > 0 || data.scrapWeight > 0) {
                     grandTotalBars += data.bars;
                     grandTotalWeight += data.weight;
                     grandTotalScrapWeight += data.scrapWeight;
@@ -849,11 +859,60 @@
                 }
             });
 
+            if (tbody.children.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:15px;">ยังไม่มีข้อมูลสั่งซื้อเหล็ก กรุณาระบุจำนวนในตาราง Barcut</td></tr>`;
+            }
+
             const grandPercent = grandTotalWeight > 0 ? ((grandTotalScrapWeight / grandTotalWeight) * 100).toFixed(2) : '0.00';
             document.getElementById('totalBarCount').innerText = grandTotalBars;
             document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
             document.getElementById('totalScrapWeightKg').innerText = grandTotalScrapWeight.toFixed(2);
             document.getElementById('totalScrapPercent').innerText = `${grandPercent}%`;
+        }
+
+        function renderShapes() {
+            const container = document.getElementById('shapesContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            const shapeNames = [
+                "แบบที่ 1: งอขอ 2 ด้าน",
+                "แบบที่ 2: เส้นตรง",
+                "แบบที่ 3: ฉาก L-Shape",
+                "แบบที่ 4: U-Shape (ด้าน 3 ช่วง)",
+                "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม",
+                "แบบที่ 6: เหล็กคอม้า",
+                "แบบที่ 7: เหล็กปลอกกลม",
+                "แบบที่ 8: Z-Shape",
+                "แบบที่ 9: เหล็กขาโต๊ะ",
+                "แบบที่ 10: รูปทรงพิเศษ"
+            ];
+
+            for (let i = 1; i <= 10; i++) {
+                const card = document.createElement('div');
+                card.className = "shape-card";
+                card.innerHTML = `
+                    <div style="font-weight:bold; font-size:13px; color:#1e293b; margin-bottom:4px;">${shapeNames[i-1]}</div>
+                    <div class="shape-card-img">${getShapeSVG(i, 110, 50)}</div>
+                    <div style="font-size:11px; color:#64748b; margin-top:4px;">สูตรคำนวณ: A + B + C + D + E + F</div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function switchTab(tab) {
+            ['barcut', 'summary', 'shapes'].forEach(t => {
+                const c = document.getElementById(`content-${t}`);
+                const b = document.getElementById(`tab-${t}`);
+                if (c) c.classList.add('hidden');
+                if (b) b.classList.remove('active');
+            });
+            const targetContent = document.getElementById(`content-${tab}`);
+            const targetBtn = document.getElementById(`tab-${tab}`);
+            if (targetContent) targetContent.classList.remove('hidden');
+            if (targetBtn) targetBtn.classList.add('active');
+            
+            if (tab === 'summary') renderSummaryBOQ();
+            if (tab === 'shapes') renderShapes();
         }
 
         // ==========================================
@@ -903,7 +962,7 @@
                             const listCount = (work && Array.isArray(work.itemsData)) ? work.itemsData.length : 0;
                             const safeC = encodeURIComponent(catName);
                             catHtml += `
-                                <div style="display:flex; justify-content:space-between; align-items:center; background:white; border:1px solid #e2e8f0; padding:8px 10px; border-radius:6px; margin-top:6px;">
+                                <div style="display:flex; justify-space-between; align-items:center; background:white; border:1px solid #e2e8f0; padding:8px 10px; border-radius:6px; margin-top:6px;">
                                     <div style="display:flex; align-items:center; gap:6px;">
                                         <span style="font-weight:600; color:#2563eb; font-size:13px;">📌 ${catName}</span>
                                         <button onclick="renameCategory('${safeP}', '${safeC}')" class="lib-btn lib-btn-edit" title="เปลี่ยนชื่อหมวดหมู่">✏️</button>
@@ -1014,9 +1073,6 @@
             }
         }
 
-        // ==========================================
-        // 💾 ADVANCED FILE EXPORT (Drive Selectable)
-        // ==========================================
         async function exportLibraryBackup() {
             try {
                 const library = getAllSavedProjects();
@@ -1058,6 +1114,161 @@
             reader.readAsText(file);
         }
 
+        // ==========================================
+        // 📥 UNIVERSAL SMART EXCEL IMPORT ENGINE
+        // ==========================================
+        function importFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            event.target.value = '';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // เลือกชีตแรกที่มีข้อมูล
+                    let chosenSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    for (let sName of workbook.SheetNames) {
+                        if (sName.toLowerCase().includes('barcut') || sName.includes('ตัดเหล็ก')) {
+                            chosenSheet = workbook.Sheets[sName];
+                            break;
+                        }
+                    }
+
+                    const jsonRows = XLSX.utils.sheet_to_json(chosenSheet, { header: 1 });
+                    if (!jsonRows || jsonRows.length === 0) {
+                        alert('ไม่พบข้อมูลในไฟล์ Excel ที่เลือก');
+                        return;
+                    }
+
+                    let parsedItems = [];
+                    let headerColMap = null;
+
+                    for (let r = 0; r < jsonRows.length; r++) {
+                        const row = jsonRows[r];
+                        if (!row || row.length === 0) continue;
+
+                        // ตรวจสอบชื่อโครงการ/หมวดหมู่งานจากหัวเรื่อง (ถ้ามี)
+                        const rowStrAll = row.join(' ');
+                        if (rowStrAll.includes('รายงานรายการสั่งตัดเหล็กเสริม') || rowStrAll.includes('โครงการ:')) {
+                            const pMatch = rowStrAll.match(/โครงการ:\s*([^|]+)/);
+                            const cMatch = rowStrAll.match(/หมวดหมู่งาน:\s*([^|\n]+)/);
+                            if (pMatch && pMatch[1]) document.getElementById('projectName').value = pMatch[1].trim();
+                            if (cMatch && cMatch[1]) document.getElementById('workCategory').value = cMatch[1].trim();
+                        }
+
+                        // ตรวจหาแถวหัวตาราง (Header Row) แบบอัจฉริยะ รองรับทั้งภาษาไทยและอังกฤษ
+                        if (!headerColMap) {
+                            const rowLower = row.map(cell => String(cell || '').trim().toLowerCase());
+                            const hasComp = rowLower.some(c => c.includes('component') || c.includes('ชิ้นงาน') || c.includes('ชื่อคาน') || c.includes('เบอร์คาน'));
+                            const hasType = rowLower.some(c => c.includes('type') || c.includes('ขนาด') || c.includes('เหล็ก'));
+                            const hasCut = rowLower.some(c => c.includes('cut') || c.includes('ยาวตัด') || c.includes('a') || c.includes('shape') || c.includes('รูปทรง'));
+
+                            if ((hasComp && hasType) || (hasComp && hasCut) || rowLower.includes('#')) {
+                                headerColMap = {};
+                                rowLower.forEach((colText, idx) => {
+                                    if (colText.includes('component') || colText.includes('ชิ้นงาน') || colText.includes('ชื่อคาน')) headerColMap.comp = idx;
+                                    else if (colText === 'no.' || colText === 'no' || colText === 'ลำดับ' || colText === 'ที่') headerColMap.no = idx;
+                                    else if (colText.includes('type') || colText === 'ขนาด' || colText === 'ชนิดเหล็ก') headerColMap.type = idx;
+                                    else if (colText.includes('ความยาว') || colText.includes('stock')) headerColMap.stock = idx;
+                                    else if (colText === 'ชุด' || colText === 'set') headerColMap.setQty = idx;
+                                    else if (colText.includes('ต่อชุด') || colText.includes('per set')) headerColMap.perSet = idx;
+                                    else if (colText.includes('shape') || colText.includes('รูปทรง')) headerColMap.shape = idx;
+                                    else if (colText === 'a') headerColMap.a = idx;
+                                    else if (colText === 'b') headerColMap.b = idx;
+                                    else if (colText === 'c') headerColMap.c = idx;
+                                    else if (colText === 'd') headerColMap.d = idx;
+                                    else if (colText === 'e') headerColMap.e = idx;
+                                    else if (colText === 'f') headerColMap.f = idx;
+                                });
+                                continue;
+                            }
+                        }
+
+                        // ตรวจหาและอ่านแถวข้อมูลชิ้นงาน
+                        if (headerColMap) {
+                            const rawComp = headerColMap.comp !== undefined ? row[headerColMap.comp] : row[1];
+                            const rawType = headerColMap.type !== undefined ? row[headerColMap.type] : row[3];
+                            
+                            // ถ้าแถวนี้มีข้อมูลชิ้นงานหรือมีขนาดเหล็กระบุอยู่
+                            if (rawComp || rawType) {
+                                const comp = String(rawComp || `ชิ้นงาน ${parsedItems.length + 1}`).trim();
+                                if (comp.toLowerCase().includes('component') || comp === 'รวม' || comp.includes('รวมทั้งโครงการ')) continue;
+
+                                let cleanType = String(rawType || 'DB16').trim().toUpperCase();
+                                if (!cleanType.startsWith('DB') && !cleanType.startsWith('RB')) {
+                                    const m = cleanType.match(/(DB|RB)\d+/);
+                                    if (m) cleanType = m[0];
+                                    else cleanType = 'DB16';
+                                }
+
+                                const no = headerColMap.no !== undefined && row[headerColMap.no] ? parseInt(row[headerColMap.no]) : (parsedItems.length + 1);
+                                const setQty = headerColMap.setQty !== undefined ? String(row[headerColMap.setQty] ?? "") : String(row[5] ?? "");
+                                const perSet = headerColMap.perSet !== undefined ? String(row[headerColMap.perSet] ?? "") : String(row[6] ?? "");
+                                
+                                let shape = 2;
+                                const rawShape = headerColMap.shape !== undefined ? String(row[headerColMap.shape] || "") : String(row[8] || "");
+                                const shapeMatch = rawShape.match(/\d+/);
+                                if (shapeMatch) shape = parseInt(shapeMatch[0]);
+
+                                const a = headerColMap.a !== undefined ? String(row[headerColMap.a] ?? "") : String(row[9] ?? "");
+                                const b = headerColMap.b !== undefined ? String(row[headerColMap.b] ?? "") : String(row[10] ?? "");
+                                const c = headerColMap.c !== undefined ? String(row[headerColMap.c] ?? "") : String(row[11] ?? "");
+                                const d = headerColMap.d !== undefined ? String(row[headerColMap.d] ?? "") : String(row[12] ?? "");
+                                const e = headerColMap.e !== undefined ? String(row[headerColMap.e] ?? "") : String(row[13] ?? "");
+                                const f = headerColMap.f !== undefined ? String(row[headerColMap.f] ?? "") : String(row[14] ?? "");
+
+                                parsedItems.push({
+                                    id: parsedItems.length + 1,
+                                    comp, no, type: cleanType, stockLen: 'auto', setQty, perSet, shape, a, b, c, d, e, f
+                                });
+                            }
+                        } else {
+                            // กรณีไฟล์ไม่มีหัวตารางตรงชื่อ: สแกนตรวจหาแถวที่มีชื่อเหล็ก (DB.. หรือ RB..) อัตโนมัติ
+                            const typeCellIdx = row.findIndex(c => /^(DB|RB)\d+/i.test(String(c || '').trim()));
+                            if (typeCellIdx !== -1) {
+                                const cleanType = String(row[typeCellIdx]).trim().toUpperCase();
+                                const comp = String(row[typeCellIdx - 1] || row[0] || `ชิ้นงาน ${parsedItems.length + 1}`).trim();
+                                parsedItems.push({
+                                    id: parsedItems.length + 1,
+                                    comp,
+                                    no: parsedItems.length + 1,
+                                    type: cleanType,
+                                    stockLen: 'auto',
+                                    setQty: String(row[typeCellIdx + 2] ?? "1"),
+                                    perSet: String(row[typeCellIdx + 3] ?? "1"),
+                                    shape: 2,
+                                    a: String(row[typeCellIdx + 5] ?? ""),
+                                    b: String(row[typeCellIdx + 6] ?? ""),
+                                    c: String(row[typeCellIdx + 7] ?? ""),
+                                    d: String(row[typeCellIdx + 8] ?? ""),
+                                    e: String(row[typeCellIdx + 9] ?? ""),
+                                    f: String(row[typeCellIdx + 10] ?? "")
+                                });
+                            }
+                        }
+                    }
+
+                    if (parsedItems.length > 0) {
+                        itemsData = parsedItems;
+                        renderTable();
+                        alert(`📥 นำเข้าข้อมูลและสั่งคำนวณใหม่สดเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
+                    } else {
+                        alert('⚠️ ไม่สามารถค้นหาข้อมูลรายการเหล็กในไฟล์นี้ได้ กรุณาตรวจสอบว่ามีคอลัมน์ COMPONENT และ TYPE');
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ==========================================
+        // 💾 ADVANCED EXCEL EXPORT
+        // ==========================================
         async function exportToExcel() {
             if (typeof XLSX === 'undefined') { alert('กำลังโหลดไลบรารี Excel...'); return; }
 
@@ -1071,7 +1282,7 @@
 
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
-                const cleanType = String(item.type || 'DB16').trim();
+                const cleanType = String(item.type || 'DB16').trim().toUpperCase();
                 const cleanReuse = String(calc.reuseDetails).replace(/<br>|\|/g, ' ');
                 const cleanScrap = String(calc.scrapDetails).replace(/<br>|\|/g, ' ');
                 barcutRows.push([
@@ -1088,12 +1299,12 @@
             const boqMap = {};
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
-                const cleanType = String(item.type || 'DB16').trim();
+                const cleanType = String(item.type || 'DB16').trim().toUpperCase();
                 const key = `${cleanType}_${calc.chosenStock}`;
                 if (!boqMap[key]) boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
-                boqMap[key].bars += calc.totalBars;
-                boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
-                boqMap[key].scrapWeight += calc.totalScrapWeight;
+                boqMap[key].bars += (calc.totalBars || 0);
+                boqMap[key].weight += (calc.totalBars || 0) * calc.chosenStock * calc.unitWeight;
+                boqMap[key].scrapWeight += (calc.totalScrapWeight || 0);
             });
 
             let grandBars = 0, grandWt = 0, grandScrapWt = 0;
@@ -1112,7 +1323,6 @@
             const wsBOQ = XLSX.utils.aoa_to_sheet(boqRows);
             XLSX.utils.book_append_sheet(wb, wsBOQ, "สรุปสั่งซื้อ BOQ");
 
-            // 💾 Export via File Picker
             const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             const blob = new Blob([wbout], { type: 'application/octet-stream' });
             const defaultName = `Barcut_${projName.replace(/\s+/g, '_')}_${categoryName.replace(/\s+/g, '_')}.xlsx`;
@@ -1131,7 +1341,24 @@
             const a = document.createElement('a'); a.href = url; a.download = defaultName; a.click(); URL.revokeObjectURL(url);
         }
 
-        checkLicenseOnLoad();
+        function printCompleteReport() {
+            const summaryDiv = document.getElementById('content-summary');
+            const wasHidden = summaryDiv.classList.contains('hidden');
+            summaryDiv.classList.remove('hidden');
+
+            renderSummaryBOQ();
+            window.print();
+
+            if (wasHidden && !document.getElementById('tab-summary').classList.contains('active')) {
+                summaryDiv.classList.add('hidden');
+            }
+        }
+
+        // เริ่มต้นทำงานทันทีเมื่อโหลดหน้าเว็บเสร็จ
+        window.addEventListener('DOMContentLoaded', () => {
+            renderShapes();
+            checkLicenseOnLoad();
+        });
     </script>
 </body>
 </html>
