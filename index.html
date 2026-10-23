@@ -477,7 +477,7 @@
             });
         }
 
-        // 🧠 STRICT EXACT-MATCH OPTIMIZER (NO PHANTOM SCRAPS)
+        // 🧠 STRICT ZERO-PHANTOM OPTIMIZER ENGINE WITH EXACT OFF-CUT SYNC
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -565,7 +565,7 @@
                 }
             });
 
-            // Pass 2: GLOBAL UNLOCKED MATCHING WITH ACCURATE DUAL RECORDING
+            // Pass 2: GLOBAL MATCHING WITH CYCLIC BLOCKING AND EXACT CUT LENGTH RECORDING
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -586,6 +586,11 @@
                         if (s === t) continue;
 
                         const source = demands[s];
+                        
+                        // Prevent Cyclic Mutual Reuse Loops (If source already used scrap from target, skip)
+                        const sourceUsedFromTarget = rowResults[source.index].usedReusesMap[`${source.cutLenM.toFixed(2)}_${target.no}`];
+                        if (sourceUsedFromTarget) continue;
+
                         const sourceScrapList = rowResults[source.index].availableScrapPieces;
 
                         if (sourceScrapList && sourceScrapList.length > 0) {
@@ -599,6 +604,7 @@
                                         const currentBars = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
                                         const nextBars = Math.ceil((rowResults[target.index].remPiecesNeed - pcsCanCut) / pcsPerBar);
 
+                                        // REUSE IF IT REDUCES MAIN BARS OR MEETS NEED FULLY
                                         if (nextBars < currentBars || (rowResults[target.index].remPiecesNeed <= pcsCanCut)) {
                                             // Exact Record for Target
                                             const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
@@ -607,13 +613,13 @@
                                             }
                                             rowResults[target.index].usedReusesMap[lenKeyTarget].count += pcsCanCut;
 
-                                            // Exact Record for Source with Real Cut Length USED by Target
-                                            const realUsedLength = (pcsCanCut * target.cutLenM);
-                                            const lenKeySource = `${realUsedLength.toFixed(2)}_${target.no}`;
+                                            // Record ON SOURCE: Exact piece cut length used by target (NOT stock difference)
+                                            const realCutLengthUsed = target.cutLenM;
+                                            const lenKeySource = `${realCutLengthUsed.toFixed(2)}_${target.no}`;
                                             if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { usedLen: realUsedLength, toNo: target.no, count: 0 };
+                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { usedLen: realCutLengthUsed, toNo: target.no, count: 0 };
                                             }
-                                            rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
+                                            rowResults[source.index].sentToRowsMap[lenKeySource].count += pcsCanCut;
 
                                             rowResults[target.index].remPiecesNeed -= pcsCanCut;
                                             rowResults[target.index].newBarsCount = Math.max(0, nextBars);
@@ -633,8 +639,8 @@
                                             }
                                             rowResults[target.index].availableScrapPieces = newScrapList;
 
-                                            const newRem = offcutItem.len - realUsedLength;
-                                            rowResults[source.index].totalScrapLen -= realUsedLength;
+                                            const newRem = offcutItem.len - (pcsCanCut * target.cutLenM);
+                                            rowResults[source.index].totalScrapLen -= (pcsCanCut * target.cutLenM);
 
                                             if (newRem >= 0.01) {
                                                 sourceScrapList[p].len = Number(newRem.toFixed(3));
@@ -652,7 +658,7 @@
                 }
             });
 
-            // Pass 3: String Output Formatting
+            // Pass 3: Strict Output String Formatting
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
