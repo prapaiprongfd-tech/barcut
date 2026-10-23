@@ -477,7 +477,7 @@
             });
         }
 
-        // 🧠 STRICT ZERO-PHANTOM OPTIMIZER ENGINE WITH EXACT OFF-CUT SYNC
+        // 🧠 STRICT SEQUENTIAL REAL-SCRAP OPTIMIZER ENGINE (PASS 1 -> PASS 2 -> PASS 3)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -506,7 +506,7 @@
                 isPerfectFit: false
             }));
 
-            // Pass 1: Baseline Main Stock Calculation
+            // Step 1: Calculate 100% Demand Satisfaction on Main Bars First
             rowDemands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
@@ -565,7 +565,7 @@
                 }
             });
 
-            // Pass 2: GLOBAL MATCHING WITH CYCLIC BLOCKING AND EXACT CUT LENGTH RECORDING
+            // Step 2: Strict Sequential Offcut Matching (Target ONLY uses real scraps from EARLIER rows s < t)
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -582,15 +582,9 @@
                     const pcsPerBar = Math.floor(rowResults[target.index].chosenStock / target.cutLenM);
                     if (pcsPerBar <= 0) continue;
 
-                    for (let s = 0; s < demands.length; s++) {
-                        if (s === t) continue;
-
+                    // ONLY USE SCRAPS CREATED IN EARLIER ROWS (s < t)
+                    for (let s = 0; s < t; s++) {
                         const source = demands[s];
-                        
-                        // Prevent Cyclic Mutual Reuse Loops (If source already used scrap from target, skip)
-                        const sourceUsedFromTarget = rowResults[source.index].usedReusesMap[`${source.cutLenM.toFixed(2)}_${target.no}`];
-                        if (sourceUsedFromTarget) continue;
-
                         const sourceScrapList = rowResults[source.index].availableScrapPieces;
 
                         if (sourceScrapList && sourceScrapList.length > 0) {
@@ -604,16 +598,16 @@
                                         const currentBars = Math.ceil(rowResults[target.index].remPiecesNeed / pcsPerBar);
                                         const nextBars = Math.ceil((rowResults[target.index].remPiecesNeed - pcsCanCut) / pcsPerBar);
 
-                                        // REUSE IF IT REDUCES MAIN BARS OR MEETS NEED FULLY
+                                        // Step 3: ONLY REDUCE MAIN BARS WHEN SCRAP ELIMINATES A FULL MAIN BAR
                                         if (nextBars < currentBars || (rowResults[target.index].remPiecesNeed <= pcsCanCut)) {
-                                            // Exact Record for Target
+                                            // Record on Target
                                             const lenKeyTarget = `${target.cutLenM.toFixed(2)}_${source.no}`;
                                             if (!rowResults[target.index].usedReusesMap[lenKeyTarget]) {
                                                 rowResults[target.index].usedReusesMap[lenKeyTarget] = { len: target.cutLenM, fromNo: source.no, count: 0 };
                                             }
                                             rowResults[target.index].usedReusesMap[lenKeyTarget].count += pcsCanCut;
 
-                                            // Record ON SOURCE: Exact piece cut length used by target (NOT stock difference)
+                                            // Record ON SOURCE: Real Piece Length used
                                             const realCutLengthUsed = target.cutLenM;
                                             const lenKeySource = `${realCutLengthUsed.toFixed(2)}_${target.no}`;
                                             if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
@@ -624,7 +618,7 @@
                                             rowResults[target.index].remPiecesNeed -= pcsCanCut;
                                             rowResults[target.index].newBarsCount = Math.max(0, nextBars);
 
-                                            // Recalculate Target's own scrap pool
+                                            // Recalculate Target's own scrap pool based on remaining pieces on main bars
                                             const normalScrap = rowResults[target.index].chosenStock - (pcsPerBar * target.cutLenM);
                                             const remPcs = rowResults[target.index].remPiecesNeed % pcsPerBar;
                                             const fullBars = Math.floor(rowResults[target.index].remPiecesNeed / pcsPerBar);
@@ -658,7 +652,7 @@
                 }
             });
 
-            // Pass 3: Strict Output String Formatting
+            // Output Formatting
             const finalResults = [];
             itemsData.forEach((item, index) => {
                 const demand = rowDemands[index];
@@ -1012,7 +1006,7 @@
             if (!container) return;
             container.innerHTML = '';
             const shapeNames = [
-                "แบบที่ 1: งอขอ 2 ด้าน", "แบบที่ 2: เส้นตรง", "แบบที่ 3: ฉาก L-Shape",
+                "แบบที่ 1: งอขอ 2 ด้าน", "แบบที่ 2: ฉาก L-Shape",
                 "แบบที่ 4: U-Shape / ด้าน 3 ช่วง", "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม", "แบบที่ 6: เหล็กคอม้า",
                 "แบบที่ 7: เหล็กปลอกกลม", "แบบที่ 8: Z-Shape", "แบบที่ 9: เหล็กขาโต๊ะ", "แบบที่ 10: รูปทรงพิเศษ"
             ];
