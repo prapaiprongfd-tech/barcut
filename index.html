@@ -477,7 +477,7 @@
             });
         }
 
-        // 🧠 2-PASS ENGINE: PASS 1 (SEQUENTIAL LOCAL) -> LOCK PASS 1 -> PASS 2 (GLOBAL OPTIMIZATION)
+        // 🧠 ACCURATE 2-PASS OPTIMIZER ENGINE WITH SNAPSHOT ISOLATION
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
