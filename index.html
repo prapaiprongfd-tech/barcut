@@ -89,7 +89,12 @@
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-card { background: white; border-radius: 12px; max-width: 650px; width: 92%; padding: 22px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
+        .modal-card { background: white; border-radius: 12px; max-width: 650px; width: 92%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
+        
+        .lib-btn { background: none; border: none; cursor: pointer; font-size: 13px; font-weight: bold; padding: 2px 6px; border-radius: 4px; transition: 0.2s; }
+        .lib-btn-edit { color: #d97706; } .lib-btn-edit:hover { background: #fef3c7; }
+        .lib-btn-del { color: #dc2626; } .lib-btn-del:hover { background: #fee2e2; }
+
         .print-only-title { display: none; }
         
         @media print { 
@@ -143,7 +148,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.0 Longest-First Physical Engine</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.1 Storage & Export Upgrade</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -264,11 +269,11 @@
         </div>
     </div>
 
-    <!-- MODAL PROJECT LIBRARY (REVISED & ROBUST) -->
+    <!-- MODAL PROJECT LIBRARY -->
     <div id="libraryModal" class="modal-overlay hidden">
         <div class="modal-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
-                <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการส่วนตัว (จัดเก็บในเครื่องของคุณ)</h3>
+                <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 ระบบคลังโครงการส่วนตัว</h3>
                 <button type="button" onclick="closeLibraryModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
             </div>
             
@@ -276,8 +281,9 @@
             
             <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; padding-top:12px; flex-wrap:wrap; gap:8px;">
                 <div style="display:flex; gap:6px;">
-                    <button type="button" class="btn btn-teal" style="font-size:12px; padding:6px 10px;" onclick="exportLibraryBackup()">📤 สำรองข้อมูลคลัง (.json)</button>
-                    <button type="button" class="btn btn-orange" style="font-size:12px; padding:6px 10px;" onclick="document.getElementById('restoreLibraryInput').click()">📥 กู้คืนคลังจากไฟล์</button>
+                    <button type="button" class="btn btn-blue" style="font-size:12px; padding:6px 10px;" onclick="addNewProjectToLibrary()">➕ เพิ่มงานใหม่</button>
+                    <button type="button" class="btn btn-teal" style="font-size:12px; padding:6px 10px;" onclick="exportLibraryBackup()">📤 สำรองคลัง (.json)</button>
+                    <button type="button" class="btn btn-orange" style="font-size:12px; padding:6px 10px;" onclick="document.getElementById('restoreLibraryInput').click()">📥 นำเข้าคลัง</button>
                     <input type="file" id="restoreLibraryInput" class="hidden" accept=".json" onchange="importLibraryBackup(event)">
                 </div>
                 <button type="button" class="btn btn-slate" style="font-size:12px;" onclick="closeLibraryModal()">ปิดหน้าต่าง</button>
@@ -398,23 +404,13 @@
                 const totalPieces = evaluateFormula(item.setQty) * evaluateFormula(item.perSet);
                 const unitWeight = REBAR_WEIGHTS[cleanType] || 1.578;
                 return {
-                    id: item.id,
-                    no: item.no,
-                    type: cleanType,
-                    cutLenM: Number(cutLenM.toFixed(3)),
-                    totalPieces: Math.round(totalPieces),
-                    unitWeight,
-                    stockLen: item.stockLen,
-                    index
+                    id: item.id, no: item.no, type: cleanType, cutLenM: Number(cutLenM.toFixed(3)),
+                    totalPieces: Math.round(totalPieces), unitWeight, stockLen: item.stockLen, index
                 };
             });
 
             const rowResults = itemsData.map(() => ({
-                usedReusesMap: {},
-                sentToRowsMap: {},
-                newBarsCount: 0,
-                chosenStock: 12,
-                availableScraps: []
+                usedReusesMap: {}, sentToRowsMap: {}, newBarsCount: 0, chosenStock: 12, availableScraps: []
             }));
 
             const typeGroups = {};
@@ -427,9 +423,7 @@
                 const group = typeGroups[type];
 
                 group.sort((a, b) => {
-                    if (Math.abs(b.cutLenM - a.cutLenM) > 0.0001) {
-                        return b.cutLenM - a.cutLenM;
-                    }
+                    if (Math.abs(b.cutLenM - a.cutLenM) > 0.0001) return b.cutLenM - a.cutLenM;
                     return a.index - b.index;
                 });
 
@@ -529,24 +523,13 @@
 
                             for (let b = 0; b < fullBarsCount; b++) {
                                 if (normalScrap >= 0.01) {
-                                    scrapPool.push({
-                                        id: `${d.no}_FB_${b}_${Math.random()}`,
-                                        len: normalScrap,
-                                        sourceNo: d.no,
-                                        sourceIndex: d.index
-                                    });
+                                    scrapPool.push({ id: `${d.no}_FB_${b}_${Math.random()}`, len: normalScrap, sourceNo: d.no, sourceIndex: d.index });
                                 }
                             }
-
                             if (remPcsLastBar > 0) {
                                 const lastScrap = Number((stockCap - (remPcsLastBar * d.cutLenM)).toFixed(3));
                                 if (lastScrap >= 0.01) {
-                                    scrapPool.push({
-                                        id: `${d.no}_LB_${Math.random()}`,
-                                        len: lastScrap,
-                                        sourceNo: d.no,
-                                        sourceIndex: d.index
-                                    });
+                                    scrapPool.push({ id: `${d.no}_LB_${Math.random()}`, len: lastScrap, sourceNo: d.no, sourceIndex: d.index });
                                 }
                             }
                         }
@@ -558,40 +541,26 @@
 
                         for (let b = 0; b < fullBarsCount; b++) {
                             if (normalScrap >= 0.01) {
-                                scrapPool.push({
-                                    id: `${d.no}_FB_${b}_${Math.random()}`,
-                                    len: normalScrap,
-                                    sourceNo: d.no,
-                                    sourceIndex: d.index
-                                });
+                                scrapPool.push({ id: `${d.no}_FB_${b}_${Math.random()}`, len: normalScrap, sourceNo: d.no, sourceIndex: d.index });
                             }
                         }
-
                         if (remPcsLastBar > 0) {
                             const lastScrap = Number((stockCap - (remPcsLastBar * d.cutLenM)).toFixed(3));
                             if (lastScrap >= 0.01) {
-                                scrapPool.push({
-                                    id: `${d.no}_LB_${Math.random()}`,
-                                    len: lastScrap,
-                                    sourceNo: d.no,
-                                    sourceIndex: d.index
-                                });
+                                scrapPool.push({ id: `${d.no}_LB_${Math.random()}`, len: lastScrap, sourceNo: d.no, sourceIndex: d.index });
                             }
                         }
                     }
                 });
 
                 scrapPool.forEach(sc => {
-                    if (sc.len >= 0.01) {
-                        rowResults[sc.sourceIndex].availableScraps.push(sc);
-                    }
+                    if (sc.len >= 0.01) rowResults[sc.sourceIndex].availableScraps.push(sc);
                 });
             });
 
             const finalResults = [];
             demands.forEach((demand, index) => {
                 const res = rowResults[index];
-
                 let reuseTextArr = [];
                 Object.values(res.usedReusesMap).forEach(reuse => {
                     reuseTextArr.push(`♻️ นำเศษ ${reuse.len.toFixed(2)}m ${reuse.count} ท่อน จาก No.${reuse.fromNo}`);
@@ -629,14 +598,8 @@
                 const totalScrapWeight = Math.max(0, finalScrapLenTotal) * demand.unitWeight;
 
                 finalResults.push({
-                    cutLenM: demand.cutLenM,
-                    totalPieces: demand.totalPieces,
-                    chosenStock: res.chosenStock,
-                    totalBars: res.newBarsCount,
-                    reuseDetails,
-                    scrapDetails,
-                    totalScrapWeight,
-                    unitWeight: demand.unitWeight
+                    cutLenM: demand.cutLenM, totalPieces: demand.totalPieces, chosenStock: res.chosenStock,
+                    totalBars: res.newBarsCount, reuseDetails, scrapDetails, totalScrapWeight, unitWeight: demand.unitWeight
                 });
             });
 
@@ -660,15 +623,11 @@
             const tbody = document.getElementById('tableBody');
             if (!tbody) return;
             tbody.innerHTML = '';
-
             const calcResults = calculateAllItems();
-
             const projName = document.getElementById('projectName').value || 'โครงการไม่ระบุ';
             const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
             const printTitleElem = document.getElementById('printProjectHeaderTitle');
-            if (printTitleElem) {
-                printTitleElem.innerHTML = `📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`;
-            }
+            if (printTitleElem) printTitleElem.innerHTML = `📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`;
 
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
@@ -735,16 +694,13 @@
                 `;
                 tbody.appendChild(tr);
             });
-
             renderSummaryBOQ();
         }
 
         function refreshCalculationsOnly() {
             const calcResults = calculateAllItems();
-
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
-                
                 const totalPcsElem = document.getElementById(`calc_totalPieces_${item.id}`);
                 const cutLenElem = document.getElementById(`calc_cutLen_${item.id}`);
                 const totalBarsElem = document.getElementById(`calc_totalBars_${item.id}`);
@@ -759,7 +715,6 @@
                 if (scrapDetailsElem) scrapDetailsElem.innerText = calc.scrapDetails;
                 if (scrapWtElem) scrapWtElem.innerText = calc.totalScrapWeight.toFixed(2);
             });
-
             renderSummaryBOQ();
         }
 
@@ -787,16 +742,13 @@
                 event.preventDefault();
                 event.target.blur();
                 const fieldIdx = INPUT_FIELDS_ORDER.indexOf(currentField);
-                
                 if (fieldIdx >= 0 && fieldIdx < INPUT_FIELDS_ORDER.length - 1) {
-                    const nextField = INPUT_FIELDS_ORDER[fieldIdx + 1];
-                    const nextElem = document.getElementById(`input_${id}_${nextField}`);
+                    const nextElem = document.getElementById(`input_${id}_${INPUT_FIELDS_ORDER[fieldIdx + 1]}`);
                     if (nextElem) nextElem.focus();
                 } else {
                     const itemIdx = itemsData.findIndex(i => i.id === id);
                     if (itemIdx >= 0 && itemIdx < itemsData.length - 1) {
-                        const nextRowItem = itemsData[itemIdx + 1];
-                        const nextElem = document.getElementById(`input_${nextRowItem.id}_${INPUT_FIELDS_ORDER[0]}`);
+                        const nextElem = document.getElementById(`input_${itemsData[itemIdx + 1].id}_${INPUT_FIELDS_ORDER[0]}`);
                         if (nextElem) nextElem.focus();
                     }
                 }
@@ -811,11 +763,8 @@
                     const shapePreviewElem = document.getElementById(`shape_preview_${id}`);
                     if (shapePreviewElem) shapePreviewElem.innerHTML = getShapeSVG(value, 28, 18);
                 }
-                if (field === 'type' || field === 'stockLen') {
-                    renderTable();
-                } else {
-                    refreshCalculationsOnly();
-                }
+                if (field === 'type' || field === 'stockLen') renderTable();
+                else refreshCalculationsOnly();
             }
         }
 
@@ -847,8 +796,7 @@
             const item = itemsData.find(i => i.id === id);
             if (item) {
                 const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-                const newItem = { id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f };
-                itemsData.push(newItem);
+                itemsData.push({ id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f });
                 renderTable();
             }
         }
@@ -859,24 +807,18 @@
         }
 
         function clearToInitialEmptyState() {
-            itemsData = [
-                { id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }
-            ];
+            itemsData = [{ id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }];
             renderTable();
         }
 
         function renderSummaryBOQ() {
             const boqMap = {};
             const calcResults = calculateAllItems();
-
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
                 const cleanType = String(item.type || 'DB16').trim();
                 const key = `${cleanType}_${calc.chosenStock}`;
-
-                if (!boqMap[key]) {
-                    boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
-                }
+                if (!boqMap[key]) boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
                 boqMap[key].bars += calc.totalBars;
                 boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
                 boqMap[key].scrapWeight += calc.totalScrapWeight;
@@ -885,10 +827,7 @@
             const tbody = document.getElementById('boqTableBody');
             if (!tbody) return;
             tbody.innerHTML = '';
-
-            let grandTotalBars = 0;
-            let grandTotalWeight = 0;
-            let grandTotalScrapWeight = 0;
+            let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
 
             Object.keys(boqMap).sort().forEach(key => {
                 const data = boqMap[key];
@@ -896,13 +835,10 @@
                     grandTotalBars += data.bars;
                     grandTotalWeight += data.weight;
                     grandTotalScrapWeight += data.scrapWeight;
-
                     const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
-                    const typeColorClass = `type-bg-${data.type}`;
-
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td class="${typeColorClass}">${data.type}</td>
+                        <td class="type-bg-${data.type}">${data.type}</td>
                         <td style="text-align:center; font-weight:600; color:#b45309;">${data.length}.0 เมตร</td>
                         <td style="text-align:center; font-weight:bold; color:#047857;">${data.bars}</td>
                         <td style="text-align:right; font-weight:600;">${data.weight.toFixed(2)}</td>
@@ -914,146 +850,35 @@
             });
 
             const grandPercent = grandTotalWeight > 0 ? ((grandTotalScrapWeight / grandTotalWeight) * 100).toFixed(2) : '0.00';
-
             document.getElementById('totalBarCount').innerText = grandTotalBars;
             document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
             document.getElementById('totalScrapWeightKg').innerText = grandTotalScrapWeight.toFixed(2);
             document.getElementById('totalScrapPercent').innerText = `${grandPercent}%`;
         }
 
-        function renderShapes() {
-            const container = document.getElementById('shapesContainer');
-            if (!container) return;
-            container.innerHTML = '';
-            const shapeNames = [
-                "แบบที่ 1: งอขอ 2 ด้าน", "แบบที่ 2: ฉาก L-Shape",
-                "แบบที่ 4: U-Shape / ด้าน 3 ช่วง", "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม", "แบบที่ 6: เหล็กคอม้า",
-                "แบบที่ 7: เหล็กปลอกกลม", "แบบที่ 8: Z-Shape", "แบบที่ 9: เหล็กขาโต๊ะ", "แบบที่ 10: รูปทรงพิเศษ"
-            ];
-
-            for (let i = 1; i <= 10; i++) {
-                const card = document.createElement('div');
-                card.className = "shape-card";
-                card.innerHTML = `
-                    <div style="font-weight:bold; font-size:13px; color:#1e293b;">${shapeNames[i-1]}</div>
-                    <div class="shape-card-img">${getShapeSVG(i, 110, 50)}</div>
-                    <div style="font-size:11px; color:#64748b;">สูตร: A + B + C + D + E + F</div>
-                `;
-                container.appendChild(card);
-            }
-        }
-
-        function switchTab(tab) {
-            ['barcut', 'summary', 'shapes'].forEach(t => {
-                document.getElementById(`content-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('active');
-            });
-            document.getElementById(`content-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            
-            if (tab === 'summary') renderSummaryBOQ();
-        }
-
         // ==========================================
-        // 📂 ROBUST PROJECT LIBRARY MANAGEMENT SYSTEM
+        // 📂 ADVANCED LIBRARY & FILESYSTEM SYSTEM 
         // ==========================================
         const MASTER_LIB_KEY = 'barcut_projects_master';
 
         function getAllSavedProjects() {
-            const merged = {};
-            const keysToScan = [MASTER_LIB_KEY, 'barcut_library_guest'];
-            
-            const userEmail = localStorage.getItem('barcut_user_email');
-            if (userEmail) keysToScan.push(`barcut_library_${userEmail}`);
-
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && (k.startsWith('barcut_library_') || k === MASTER_LIB_KEY)) {
-                    if (!keysToScan.includes(k)) keysToScan.push(k);
-                }
-            }
-
-            keysToScan.forEach(k => {
-                try {
-                    const raw = localStorage.getItem(k);
-                    if (!raw) return;
-                    const data = JSON.parse(raw);
-                    if (data && typeof data === 'object') {
-                        Object.keys(data).forEach(pName => {
-                            if (!merged[pName]) merged[pName] = {};
-                            const pData = data[pName];
-                            if (Array.isArray(pData)) {
-                                merged[pName]['รายการหลัก'] = {
-                                    projectName: pName,
-                                    categoryName: 'รายการหลัก',
-                                    savedAt: 'ก่อนหน้านี้',
-                                    itemsData: pData
-                                };
-                            } else if (pData && typeof pData === 'object') {
-                                Object.keys(pData).forEach(catName => {
-                                    const work = pData[catName];
-                                    if (work && Array.isArray(work.itemsData)) {
-                                        merged[pName][catName] = work;
-                                    } else if (Array.isArray(work)) {
-                                        merged[pName][catName] = {
-                                            projectName: pName,
-                                            categoryName: catName,
-                                            savedAt: 'ก่อนหน้านี้',
-                                            itemsData: work
-                                        };
-                                    }
-                                });
-                            }
-                        });
-                    }
-                } catch(e) {
-                    console.warn('Error reading library key', k, e);
-                }
-            });
-
-            return merged;
+            let lib = {};
+            try { lib = JSON.parse(localStorage.getItem(MASTER_LIB_KEY) || '{}'); } catch(e) {}
+            return lib;
         }
 
         function saveProjectToLibrary() {
             try {
-                const projInput = document.getElementById('projectName');
-                const catInput = document.getElementById('workCategory');
-                const projName = (projInput && projInput.value.trim()) ? projInput.value.trim() : 'โครงการไม่ระบุชื่อ';
-                const categoryName = (catInput && catInput.value.trim()) ? catInput.value.trim() : 'หมวดหมู่งานทั่วไป';
-                
-                if (!itemsData || itemsData.length === 0) {
-                    alert('⚠️ ไม่มีรายการในตารางให้บันทึก');
-                    return;
-                }
+                const projName = document.getElementById('projectName').value.trim() || 'โครงการไม่ระบุชื่อ';
+                const catName = document.getElementById('workCategory').value.trim() || 'หมวดหมู่งานทั่วไป';
+                if (!itemsData || itemsData.length === 0) { alert('⚠️ ไม่มีรายการในตารางให้บันทึก'); return; }
 
-                let library = {};
-                try {
-                    library = JSON.parse(localStorage.getItem(MASTER_LIB_KEY) || '{}');
-                } catch(e) {
-                    library = {};
-                }
-
-                if (!library[projName] || typeof library[projName] !== 'object' || Array.isArray(library[projName])) {
-                    library[projName] = {};
-                }
-
-                library[projName][categoryName] = {
-                    projectName: projName,
-                    categoryName: categoryName,
-                    savedAt: new Date().toLocaleString('th-TH'),
-                    itemsData: JSON.parse(JSON.stringify(itemsData))
-                };
-
-                localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(library));
-
-                const userEmail = localStorage.getItem('barcut_user_email') || 'guest';
-                localStorage.setItem(`barcut_library_${userEmail}`, JSON.stringify(library));
-
-                alert(`💾 บันทึกงาน "${categoryName}" ในโครงการ "${projName}" ลงคลังเรียบร้อยแล้ว!`);
-            } catch (err) {
-                console.error('Save project error:', err);
-                alert('เกิดข้อผิดพลาดในการบันทึกงาน: ' + err.message);
-            }
+                let lib = getAllSavedProjects();
+                if (!lib[projName]) lib[projName] = {};
+                lib[projName][catName] = { projectName: projName, categoryName: catName, savedAt: new Date().toLocaleString('th-TH'), itemsData: JSON.parse(JSON.stringify(itemsData)) };
+                localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
+                alert(`💾 บันทึกงาน "${catName}" ลงคลังเรียบร้อยแล้ว!`);
+            } catch (err) { alert('เกิดข้อผิดพลาดในการบันทึก: ' + err.message); }
         }
 
         function openLibraryModal() {
@@ -1061,137 +886,157 @@
                 const modal = document.getElementById('libraryModal');
                 const container = document.getElementById('libraryListContainer');
                 const library = getAllSavedProjects();
-
                 container.innerHTML = '';
                 const projNames = Object.keys(library);
 
                 if (projNames.length === 0) {
-                    container.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px; font-weight:600;">📭 ยังไม่มีงานที่บันทึกไว้ในคลังของคุณ</p>`;
+                    container.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px; font-weight:600;">📭 ยังไม่มีงานที่บันทึกไว้ในคลัง</p>`;
                 } else {
                     projNames.forEach(pName => {
                         const projBox = document.createElement('div');
                         projBox.style.cssText = "border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:12px; background:#f8fafc;";
+                        const safeP = encodeURIComponent(pName);
                         
-                        let categoriesHtml = '';
-                        const categories = library[pName];
-                        Object.keys(categories).forEach(catName => {
-                            const work = categories[catName];
+                        let catHtml = '';
+                        Object.keys(library[pName]).forEach(catName => {
+                            const work = library[pName][catName];
                             const listCount = (work && Array.isArray(work.itemsData)) ? work.itemsData.length : 0;
-                            const timeStr = (work && work.savedAt) ? work.savedAt : '-';
-                            const safeP = encodeURIComponent(pName);
                             const safeC = encodeURIComponent(catName);
-
-                            categoriesHtml += `
+                            catHtml += `
                                 <div style="display:flex; justify-content:space-between; align-items:center; background:white; border:1px solid #e2e8f0; padding:8px 10px; border-radius:6px; margin-top:6px;">
-                                    <div>
-                                        <span style="font-weight:600; color:#2563eb; font-size:13px;">📌 หมวดหมู่งาน: ${catName}</span>
-                                        <span style="font-size:11px; color:#64748b; margin-left:8px;">(${listCount} รายการ - บันทึกเมื่อ: ${timeStr})</span>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <span style="font-weight:600; color:#2563eb; font-size:13px;">📌 ${catName}</span>
+                                        <button onclick="renameCategory('${safeP}', '${safeC}')" class="lib-btn lib-btn-edit" title="เปลี่ยนชื่อหมวดหมู่">✏️</button>
+                                        <span style="font-size:11px; color:#64748b; margin-left:4px;">(${listCount} รายการ)</span>
                                     </div>
                                     <div style="display:flex; gap:6px;">
-                                        <button type="button" class="btn btn-indigo" style="padding:4px 10px; font-size:11px;" data-proj="${safeP}" data-cat="${safeC}" onclick="loadProjectFromLibrarySafe(this)">📂 เปิดทำต่อ</button>
-                                        <button type="button" class="btn btn-red" style="padding:4px 8px; font-size:11px;" data-proj="${safeP}" data-cat="${safeC}" onclick="deleteProjectFromLibrarySafe(this)">🗑️ ลบ</button>
+                                        <button type="button" class="btn btn-indigo" style="padding:4px 10px; font-size:11px;" onclick="loadProjectFromLibrary('${safeP}', '${safeC}')">📂 เปิด</button>
+                                        <button type="button" class="btn btn-red" style="padding:4px 8px; font-size:11px;" onclick="deleteCategoryFromLibrary('${safeP}', '${safeC}')">❌</button>
                                     </div>
                                 </div>
                             `;
                         });
 
                         projBox.innerHTML = `
-                            <div style="font-weight:bold; color:#0f172a; font-size:14px; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
-                                🏢 โครงการ: ${pName}
+                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+                                <div style="font-weight:bold; color:#0f172a; font-size:14px; display:flex; align-items:center; gap:6px;">
+                                    🏢 ${pName}
+                                    <button onclick="renameProject('${safeP}')" class="lib-btn lib-btn-edit" title="เปลี่ยนชื่อโครงการ">✏️</button>
+                                </div>
+                                <button onclick="deleteEntireProject('${safeP}')" class="lib-btn lib-btn-del" title="ลบโครงการนี้ทิ้ง">🗑️ ลบโครงการ</button>
                             </div>
-                            ${categoriesHtml}
+                            ${catHtml}
                         `;
                         container.appendChild(projBox);
                     });
                 }
-
                 modal.classList.remove('hidden');
-            } catch(err) {
-                console.error('Error opening library modal:', err);
-                alert('เกิดข้อผิดพลาดในการเปิดคลังโครงการ: ' + err.message);
-            }
+            } catch(err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
         }
 
-        function closeLibraryModal() {
-            document.getElementById('libraryModal').classList.add('hidden');
-        }
+        function closeLibraryModal() { document.getElementById('libraryModal').classList.add('hidden'); }
 
-        function loadProjectFromLibrarySafe(btn) {
-            const pName = decodeURIComponent(btn.getAttribute('data-proj'));
-            const catName = decodeURIComponent(btn.getAttribute('data-cat'));
-            loadProjectFromLibrary(pName, catName);
-        }
-
-        function loadProjectFromLibrary(pName, catName) {
-            try {
-                const library = getAllSavedProjects();
-                if (library[pName] && library[pName][catName]) {
-                    const target = library[pName][catName];
-                    itemsData = JSON.parse(JSON.stringify(target.itemsData || []));
-                    document.getElementById('projectName').value = target.projectName || pName;
-                    document.getElementById('workCategory').value = target.categoryName || catName;
-                    renderTable();
-                    closeLibraryModal();
-                    alert(`📂 เปิดงาน "${catName}" ในโครงการ "${pName}" เรียบร้อยแล้ว!`);
-                } else {
-                    alert('ไม่พบข้อมูลรายการที่เลือก');
-                }
-            } catch(err) {
-                console.error('Load project error:', err);
-                alert('เกิดข้อผิดพลาดในการโหลดงาน: ' + err.message);
-            }
-        }
-
-        function deleteProjectFromLibrarySafe(btn) {
-            const pName = decodeURIComponent(btn.getAttribute('data-proj'));
-            const catName = decodeURIComponent(btn.getAttribute('data-cat'));
-            deleteProjectFromLibrary(pName, catName);
-        }
-
-        function deleteProjectFromLibrary(pName, catName) {
-            if (confirm(`คุณต้องการลบงาน "${catName}" ในโครงการ "${pName}" ใช่หรือไม่?`)) {
-                const keys = [MASTER_LIB_KEY, 'barcut_library_guest'];
-                const userEmail = localStorage.getItem('barcut_user_email');
-                if (userEmail) keys.push(`barcut_library_${userEmail}`);
-
-                for (let i = 0; i < localStorage.length; i++) {
-                    const k = localStorage.key(i);
-                    if (k && (k.startsWith('barcut_library_') || k === MASTER_LIB_KEY)) {
-                        if (!keys.includes(k)) keys.push(k);
-                    }
-                }
-
-                keys.forEach(k => {
-                    try {
-                        const lib = JSON.parse(localStorage.getItem(k) || '{}');
-                        if (lib[pName] && lib[pName][catName]) {
-                            delete lib[pName][catName];
-                            if (Object.keys(lib[pName]).length === 0) {
-                                delete lib[pName];
-                            }
-                            localStorage.setItem(k, JSON.stringify(lib));
-                        }
-                    } catch(e) {}
-                });
-
+        function renameProject(safeP) {
+            const oldName = decodeURIComponent(safeP);
+            const newName = prompt("กรอกชื่อโครงการใหม่:", oldName);
+            if (!newName || newName.trim() === "" || newName === oldName) return;
+            let lib = getAllSavedProjects();
+            if (lib[oldName]) {
+                lib[newName] = lib[oldName];
+                delete lib[oldName];
+                Object.keys(lib[newName]).forEach(c => lib[newName][c].projectName = newName);
+                localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
                 openLibraryModal();
             }
         }
 
-        function exportLibraryBackup() {
+        function renameCategory(safeP, safeC) {
+            const pName = decodeURIComponent(safeP);
+            const oldCat = decodeURIComponent(safeC);
+            const newCat = prompt("กรอกชื่อหมวดหมู่งานใหม่:", oldCat);
+            if (!newCat || newCat.trim() === "" || newCat === oldCat) return;
+            let lib = getAllSavedProjects();
+            if (lib[pName] && lib[pName][oldCat]) {
+                lib[pName][newCat] = lib[pName][oldCat];
+                delete lib[pName][oldCat];
+                lib[pName][newCat].categoryName = newCat;
+                localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
+                openLibraryModal();
+            }
+        }
+
+        function deleteEntireProject(safeP) {
+            const pName = decodeURIComponent(safeP);
+            if (confirm(`⚠️ คุณต้องการลบโครงการ "${pName}" และงานทั้งหมดทิ้งใช่หรือไม่?`)) {
+                let lib = getAllSavedProjects();
+                delete lib[pName];
+                localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
+                openLibraryModal();
+            }
+        }
+
+        function deleteCategoryFromLibrary(safeP, safeC) {
+            const pName = decodeURIComponent(safeP);
+            const catName = decodeURIComponent(safeC);
+            if (confirm(`ลบงาน "${catName}" ใช่หรือไม่?`)) {
+                let lib = getAllSavedProjects();
+                if (lib[pName] && lib[pName][catName]) {
+                    delete lib[pName][catName];
+                    if (Object.keys(lib[pName]).length === 0) delete lib[pName];
+                    localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
+                    openLibraryModal();
+                }
+            }
+        }
+
+        function addNewProjectToLibrary() {
+            const pName = prompt("ตั้งชื่อโครงการใหม่:");
+            if (!pName || pName.trim() === "") return;
+            const catName = prompt("ตั้งชื่อหมวดหมู่งาน:") || "ทั่วไป";
+            let lib = getAllSavedProjects();
+            if (!lib[pName]) lib[pName] = {};
+            lib[pName][catName] = { projectName: pName, categoryName: catName, savedAt: new Date().toLocaleString('th-TH'), itemsData: [] };
+            localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
+            openLibraryModal();
+        }
+
+        function loadProjectFromLibrary(safeP, safeC) {
+            const pName = decodeURIComponent(safeP);
+            const catName = decodeURIComponent(safeC);
+            let lib = getAllSavedProjects();
+            if (lib[pName] && lib[pName][catName]) {
+                const target = lib[pName][catName];
+                itemsData = JSON.parse(JSON.stringify(target.itemsData || []));
+                document.getElementById('projectName').value = target.projectName || pName;
+                document.getElementById('workCategory').value = target.categoryName || catName;
+                renderTable();
+                closeLibraryModal();
+            }
+        }
+
+        // ==========================================
+        // 💾 ADVANCED FILE EXPORT (Drive Selectable)
+        // ==========================================
+        async function exportLibraryBackup() {
             try {
                 const library = getAllSavedProjects();
                 const jsonStr = JSON.stringify(library, null, 2);
                 const blob = new Blob([jsonStr], { type: 'application/json' });
+                const defaultName = `Barcut_Backup_${new Date().toISOString().slice(0,10)}.json`;
+
+                if (window.showSaveFilePicker) {
+                    try {
+                        const handle = await window.showSaveFilePicker({ suggestedName: defaultName, types: [{ description: 'JSON Backup', accept: { 'application/json': ['.json'] } }] });
+                        const writable = await handle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        alert('✅ สำรองคลังข้อมูลสำเร็จ');
+                        return;
+                    } catch (err) { if (err.name === 'AbortError') return; }
+                }
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Barcut_Library_Backup_${new Date().toISOString().slice(0,10)}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-            } catch(e) {
-                alert('เกิดข้อผิดพลาดในการส่งออกไฟล์สำรอง: ' + e.message);
-            }
+                const a = document.createElement('a'); a.href = url; a.download = defaultName; a.click(); URL.revokeObjectURL(url);
+            } catch(e) { alert('เกิดข้อผิดพลาดในการส่งออก: ' + e.message); }
         }
 
         function importLibraryBackup(event) {
@@ -1207,104 +1052,14 @@
                         localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(merged));
                         alert('📥 กู้คืนข้อมูลคลังโครงการสำเร็จแล้ว!');
                         openLibraryModal();
-                    } else {
-                        alert('รูปแบบไฟล์สำรองไม่ถูกต้อง');
-                    }
-                } catch(err) {
-                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์สำรอง: ' + err.message);
-                }
+                    } else { alert('รูปแบบไฟล์ไม่ถูกต้อง'); }
+                } catch(err) { alert('เกิดข้อผิดพลาดในการอ่านไฟล์: ' + err.message); }
             };
             reader.readAsText(file);
         }
 
-        function importFromExcel(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            event.target.value = '';
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                    if (!jsonRows || jsonRows.length === 0) {
-                        alert('ไม่พบข้อมูลในไฟล์ Excel ที่เลือก');
-                        return;
-                    }
-
-                    let parsedItems = [];
-                    let startReading = false;
-
-                    for (let r = 0; r < jsonRows.length; r++) {
-                        const row = jsonRows[r];
-                        if (!row || row.length === 0) continue;
-
-                        if (row[0] && String(row[0]).includes('รายงานรายการสั่งตัดเหล็กเสริม')) {
-                            const titleStr = String(row[0]);
-                            const projMatch = titleStr.match(/โครงการ:\s*([^|]+)/);
-                            const catMatch = titleStr.match(/หมวดหมู่งาน:\s*(.+)/);
-                            if (projMatch && projMatch[1]) document.getElementById('projectName').value = projMatch[1].trim();
-                            if (catMatch && catMatch[1]) document.getElementById('workCategory').value = catMatch[1].trim();
-                        }
-
-                        if (row[1] === 'Component' || row[0] === '#') {
-                            startReading = true;
-                            continue;
-                        }
-
-                        if (startReading && row[1] && row[2]) {
-                            const comp = String(row[1] || 'ชิ้นงาน');
-                            const no = parseInt(row[2]) || (parsedItems.length + 1);
-                            const type = String(row[3] || 'DB16').trim();
-                            const stockLen = 'auto';
-
-                            const setQty = String(row[5] ?? "");
-                            const perSet = String(row[6] ?? "");
-                            
-                            let shape = 1;
-                            if (row[8]) {
-                                const shapeMatch = String(row[8]).match(/\d+/);
-                                if (shapeMatch) shape = parseInt(shapeMatch[0]);
-                            }
-
-                            const a = String(row[9] ?? "");
-                            const b = String(row[10] ?? "");
-                            const c = String(row[11] ?? "");
-                            const d = String(row[12] ?? "");
-                            const e = String(row[13] ?? "");
-                            const f = String(row[14] ?? "");
-
-                            parsedItems.push({
-                                id: parsedItems.length + 1,
-                                comp, no, type, stockLen, setQty, perSet, shape, a, b, c, d, e, f
-                            });
-                        }
-                    }
-
-                    if (parsedItems.length > 0) {
-                        itemsData = parsedItems;
-                        renderTable();
-                        alert(`📥 นำเข้าข้อมูลและสั่งคำนวณใหม่สดเรียบร้อยแล้ว (${parsedItems.length} รายการ)`);
-                    } else {
-                        alert('รูปแบบตารางในไฟล์ Excel ไม่ถูกต้อง กรุณใช้ไฟล์ที่ส่งออกจากระบบนี้');
-                    }
-                } catch(err) {
-                    console.error(err);
-                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel กรุณาตรวจสอบรูปแบบไฟล์');
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function exportToExcel() {
-            if (typeof XLSX === 'undefined') {
-                alert('กำลังโหลดไลบรารี Excel กรุณารอครู่หนึ่งแล้วกดใหม่อีกครั้ง');
-                return;
-            }
+        async function exportToExcel() {
+            if (typeof XLSX === 'undefined') { alert('กำลังโหลดไลบรารี Excel...'); return; }
 
             const projName = document.getElementById('projectName').value || 'โครงการไม่ระบุ';
             const categoryName = document.getElementById('workCategory').value || 'หมวดหมู่งานเหล็ก';
@@ -1312,11 +1067,7 @@
             const calcResults = calculateAllItems();
 
             const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (m)", "B (m)", "C (m)", "D (m)", "E (m)", "F (m)", "Cut Length (m)", "Total Bars", "Reuse Summary", "Offcut Summary", "Scrap Weight (kg)"];
-            const barcutRows = [
-                [`📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`],
-                [],
-                barcutHeader
-            ];
+            const barcutRows = [[`📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`], [], barcutHeader];
 
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
@@ -1324,83 +1075,60 @@
                 const cleanReuse = String(calc.reuseDetails).replace(/<br>|\|/g, ' ');
                 const cleanScrap = String(calc.scrapDetails).replace(/<br>|\|/g, ' ');
                 barcutRows.push([
-                    index + 1,
-                    item.comp,
-                    item.no,
-                    cleanType,
-                    calc.chosenStock,
-                    evaluateFormula(item.setQty),
-                    evaluateFormula(item.perSet),
-                    calc.totalPieces,
-                    `แบบที่ ${item.shape}`,
-                    evaluateFormula(item.a), evaluateFormula(item.b), evaluateFormula(item.c), 
-                    evaluateFormula(item.d), evaluateFormula(item.e), evaluateFormula(item.f),
-                    calc.cutLenM.toFixed(3),
-                    calc.totalBars,
-                    cleanReuse,
-                    cleanScrap,
-                    calc.totalScrapWeight.toFixed(2)
+                    index + 1, item.comp, item.no, cleanType, calc.chosenStock, evaluateFormula(item.setQty), evaluateFormula(item.perSet), calc.totalPieces,
+                    `แบบที่ ${item.shape}`, evaluateFormula(item.a), evaluateFormula(item.b), evaluateFormula(item.c), evaluateFormula(item.d), evaluateFormula(item.e), evaluateFormula(item.f),
+                    calc.cutLenM.toFixed(3), calc.totalBars, cleanReuse, cleanScrap, calc.totalScrapWeight.toFixed(2)
                 ]);
             });
 
             const wsBarcut = XLSX.utils.aoa_to_sheet(barcutRows);
-            XLSX.utils.book_append_sheet(wb, wsBarcut, "ตาราง Barcut คำนวณตัดเหล็ก");
+            XLSX.utils.book_append_sheet(wb, wsBarcut, "ตาราง Barcut");
 
-            const boqHeader = ["ขนาดเหล็ก", "ความยาวท่อน (ม.)", "จำนวนสั่งซื้อ (ท่อน)", "น้ำหนักสั่งซื้อ (kg)", "น้ำหนักเศษเหลือ (kg)", "สัดส่วนเศษเหลือ (% Scrap)"];
-            const boqRows = [
-                [`📌 สรุปรายการสั่งซื้อเหล็ก | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`],
-                [],
-                boqHeader
-            ];
-
+            const boqRows = [[`📌 สรุปรายการสั่งซื้อเหล็ก | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`], [], ["ขนาดเหล็ก", "ความยาวท่อน (ม.)", "จำนวนสั่งซื้อ (ท่อน)", "น้ำหนักสั่งซื้อ (kg)", "น้ำหนักเศษเหลือ (kg)", "สัดส่วนเศษเหลือ (% Scrap)"]];
             const boqMap = {};
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
                 const cleanType = String(item.type || 'DB16').trim();
                 const key = `${cleanType}_${calc.chosenStock}`;
-
-                if (!boqMap[key]) {
-                    boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
-                }
+                if (!boqMap[key]) boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
                 boqMap[key].bars += calc.totalBars;
                 boqMap[key].weight += calc.totalBars * calc.chosenStock * calc.unitWeight;
                 boqMap[key].scrapWeight += calc.totalScrapWeight;
             });
 
-            let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
-
+            let grandBars = 0, grandWt = 0, grandScrapWt = 0;
             Object.keys(boqMap).sort().forEach(key => {
                 const data = boqMap[key];
                 if (data.bars > 0 || data.weight > 0) {
-                    grandTotalBars += data.bars;
-                    grandTotalWeight += data.weight;
-                    grandTotalScrapWeight += data.scrapWeight;
+                    grandBars += data.bars; grandWt += data.weight; grandScrapWt += data.scrapWeight;
                     const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
                     boqRows.push([data.type, `${data.length}.0`, data.bars, data.weight.toFixed(2), data.scrapWeight.toFixed(2), `${percent}%`]);
                 }
             });
 
-            const grandPercent = grandTotalWeight > 0 ? ((grandTotalScrapWeight / grandTotalWeight) * 100).toFixed(2) : '0.00';
-            boqRows.push(["รวมทั้งโครงการ", "-", grandTotalBars, grandTotalWeight.toFixed(2), grandTotalScrapWeight.toFixed(2), `${grandPercent}%`]);
+            const grandPct = grandWt > 0 ? ((grandScrapWt / grandWt) * 100).toFixed(2) : '0.00';
+            boqRows.push(["รวมทั้งโครงการ", "-", grandBars, grandWt.toFixed(2), grandScrapWt.toFixed(2), `${grandPct}%`]);
 
             const wsBOQ = XLSX.utils.aoa_to_sheet(boqRows);
-            XLSX.utils.book_append_sheet(wb, wsBOQ, "สรุปรายการสั่งซื้อ BOQ");
+            XLSX.utils.book_append_sheet(wb, wsBOQ, "สรุปสั่งซื้อ BOQ");
 
-            XLSX.writeFile(wb, `Barcut_${projName.replace(/\s+/g, '_')}_${categoryName.replace(/\s+/g, '_')}.xlsx`);
-        }
+            // 💾 Export via File Picker
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const defaultName = `Barcut_${projName.replace(/\s+/g, '_')}_${categoryName.replace(/\s+/g, '_')}.xlsx`;
 
-        function printCompleteReport() {
-            const summaryDiv = document.getElementById('content-summary');
-            const wasHidden = summaryDiv.classList.contains('hidden');
-            summaryDiv.classList.remove('hidden');
-
-            renderSummaryBOQ();
-
-            window.print();
-
-            if (wasHidden && !document.getElementById('tab-summary').classList.contains('active')) {
-                summaryDiv.classList.add('hidden');
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({ suggestedName: defaultName, types: [{ description: 'Excel File', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }] });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    alert('✅ บันทึกไฟล์ Excel สำเร็จ');
+                    return;
+                } catch (err) { if (err.name === 'AbortError') return; }
             }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = defaultName; a.click(); URL.revokeObjectURL(url);
         }
 
         checkLicenseOnLoad();
