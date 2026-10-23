@@ -89,7 +89,7 @@
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 80px; display: flex; align-items: center; justify-content: center; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-card { background: white; border-radius: 12px; max-width: 550px; width: 90%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
+        .modal-card { background: white; border-radius: 12px; max-width: 650px; width: 92%; padding: 22px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
         .print-only-title { display: none; }
         
         @media print { 
@@ -264,6 +264,27 @@
         </div>
     </div>
 
+    <!-- MODAL PROJECT LIBRARY (REVISED & ROBUST) -->
+    <div id="libraryModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="font-size:16px; font-weight:bold; color:#0f172a;">📂 คลังโครงการส่วนตัว (จัดเก็บในเครื่องของคุณ)</h3>
+                <button type="button" onclick="closeLibraryModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
+            </div>
+            
+            <div id="libraryListContainer" style="max-height:360px; overflow-y:auto; margin-bottom:15px; text-align:left;"></div>
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; padding-top:12px; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="btn btn-teal" style="font-size:12px; padding:6px 10px;" onclick="exportLibraryBackup()">📤 สำรองข้อมูลคลัง (.json)</button>
+                    <button type="button" class="btn btn-orange" style="font-size:12px; padding:6px 10px;" onclick="document.getElementById('restoreLibraryInput').click()">📥 กู้คืนคลังจากไฟล์</button>
+                    <input type="file" id="restoreLibraryInput" class="hidden" accept=".json" onchange="importLibraryBackup(event)">
+                </div>
+                <button type="button" class="btn btn-slate" style="font-size:12px;" onclick="closeLibraryModal()">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_Sv88tt3blqnXzJs-_HimgWQMlQN7vgqwtxjXafByua4A-5qn3uffWFzrGhYicmmH/exec";
 
@@ -370,7 +391,6 @@
         }
 
         // 🧠 v9.0 LONGEST-FIRST PHYSICAL ENGINE
-        // ตัดท่อนที่ยาวที่สุดก่อนให้พอก่อน -> นำเศษที่เหลือมาให้ท่อนสั้น -> ถ้าลดเหล็กใหม่ได้ค่อยหยิบมาใช้
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim();
@@ -397,19 +417,15 @@
                 availableScraps: []
             }));
 
-            // แยกกลุ่มตามขนาดเหล็ก (เช่น DB25, DB16, DB12, RB09)
             const typeGroups = {};
             demands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
                 typeGroups[d.type].push(d);
             });
 
-            // ประมวลผลทีละกลุ่มขนาดเหล็กอย่างอิสระ
             Object.keys(typeGroups).forEach(type => {
                 const group = typeGroups[type];
 
-                // ⭐ เรียงลำดับความยาวจาก "มากที่สุด -> ไปหาน้อยที่สุด"
-                // ถ้าความยาวเท่ากัน ให้คงลำดับแถวเดิมไว้
                 group.sort((a, b) => {
                     if (Math.abs(b.cutLenM - a.cutLenM) > 0.0001) {
                         return b.cutLenM - a.cutLenM;
@@ -417,13 +433,11 @@
                     return a.index - b.index;
                 });
 
-                // กองเศษเหล็กจริงสำหรับขนาดเหล็กนี้
                 const scrapPool = [];
 
                 group.forEach(d => {
                     if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
 
-                    // 1. กำหนดความยาวสต็อก 10ม. หรือ 12ม.
                     let stockCap = 12;
                     if (d.stockLen === '10') stockCap = 10;
                     else if (d.stockLen === '12') stockCap = 12;
@@ -442,12 +456,8 @@
                         return;
                     }
 
-                    // จำนวนเส้นที่ต้องเบิกถ้าตัดจากเหล็กใหม่ทั้งหมด
                     const baseBars = Math.ceil(d.totalPieces / pcsPerBar);
-
-                    // 2. ตรวจสอบว่าในกองเศษ มีเศษที่ท่อนยาวกว่าเพิ่งตัดทิ้งไว้หรือไม่
-                    // กฎเหล็ก: จะหยิบเศษมาใช้ ก็ต่อเมื่อจำนวนเศษพอที่จะ "ลดการเบิกเหล็กเส้นใหม่ได้ 1 เส้นขึ้นไปเท่านั้น"
-                    let bestK = 0; // จำนวนเส้นหลักที่ประหยัดได้
+                    let bestK = 0;
                     let bestAllocation = null;
 
                     for (let k = baseBars; k >= 1; k--) {
@@ -455,12 +465,10 @@
                         const pcsFromBars = barsToBuy * pcsPerBar;
                         const pcsNeededFromScrap = d.totalPieces - pcsFromBars;
 
-                        // จำลองการหยิบเศษในกอง
                         const simPool = scrapPool.map(s => ({ ...s }));
                         let pcsGot = 0;
                         const allocation = [];
 
-                        // เลือกเศษที่ยาวพอและมีความยาวพอดีที่สุด (Best-Fit)
                         const suitableScraps = simPool
                             .filter(s => s.len >= d.cutLenM - 0.001)
                             .sort((a, b) => a.len - b.len);
@@ -479,13 +487,11 @@
                         if (pcsGot >= pcsNeededFromScrap) {
                             bestK = k;
                             bestAllocation = allocation;
-                            break; // เจอจำนวนที่ประหยัดเหล็กได้สูงสุดแล้ว
+                            break;
                         }
                     }
 
-                    // 3. ปรับปรุงยอดเบิกและบันทึกการส่งต่อเศษจริง
                     if (bestK > 0 && bestAllocation) {
-                        // ลดการเบิกเหล็กใหม่ได้สำเร็จ
                         rowResults[d.index].newBarsCount = baseBars - bestK;
                         let pcsTakenFromScrap = 0;
 
@@ -495,14 +501,12 @@
                             if (realScrap) {
                                 realScrap.len = Number((realScrap.len - (alloc.take * d.cutLenM)).toFixed(3));
 
-                                // บันทึกในช่อง REUSE ของรายการปัจจุบัน
                                 const targetKey = `${d.cutLenM.toFixed(2)}_${alloc.sourceNo}`;
                                 if (!rowResults[d.index].usedReusesMap[targetKey]) {
                                     rowResults[d.index].usedReusesMap[targetKey] = { len: d.cutLenM, fromNo: alloc.sourceNo, count: 0 };
                                 }
                                 rowResults[d.index].usedReusesMap[targetKey].count += alloc.take;
 
-                                // บันทึกในช่อง OFFCUT ของรายการต้นทางที่ให้เศษมา
                                 const sourceKey = `${d.cutLenM.toFixed(2)}_${d.no}`;
                                 if (!rowResults[alloc.sourceIndex].sentToRowsMap[sourceKey]) {
                                     rowResults[alloc.sourceIndex].sentToRowsMap[sourceKey] = { usedLen: d.cutLenM, toNo: d.no, count: 0 };
@@ -511,12 +515,10 @@
                             }
                         });
 
-                        // นำเศษที่ถูกตัดใช้จนหมดออกจากกอง
                         for (let i = scrapPool.length - 1; i >= 0; i--) {
                             if (scrapPool[i].len < 0.01) scrapPool.splice(i, 1);
                         }
 
-                        // ท่อนที่ยังต้องตัดจากเหล็กเส้นใหม่ที่ซื้อมาจริง
                         const pcsFromBoughtBars = d.totalPieces - pcsTakenFromScrap;
                         const boughtBars = baseBars - bestK;
 
@@ -549,7 +551,6 @@
                             }
                         }
                     } else {
-                        // 🛑 ถ้าเศษในกองไม่พอที่จะลดเหล็กใหม่ได้: ไม่หยิบเศษมาใช้ ให้เบิกเต็มจำนวน
                         rowResults[d.index].newBarsCount = baseBars;
                         const fullBarsCount = Math.floor(d.totalPieces / pcsPerBar);
                         const remPcsLastBar = d.totalPieces % pcsPerBar;
@@ -580,7 +581,6 @@
                     }
                 });
 
-                // เศษชิ้นใดที่ยังเหลืออยู่ในกอง จะถูกส่งคืนเข้าช่อง OFFCUT ของเจ้าของแถวนั้นๆ
                 scrapPool.forEach(sc => {
                     if (sc.len >= 0.01) {
                         rowResults[sc.sourceIndex].availableScraps.push(sc);
@@ -588,7 +588,6 @@
                 });
             });
 
-            // 4. แสดงผลลัพธ์กลับสู่ตารางตามลำดับแถวเดิม 1, 2, 3...
             const finalResults = [];
             demands.forEach((demand, index) => {
                 const res = rowResults[index];
@@ -955,111 +954,267 @@
             if (tab === 'summary') renderSummaryBOQ();
         }
 
-        function getUserLibraryKey() {
-            const userEmail = localStorage.getItem('barcut_user_email') || 'guest';
-            return `barcut_library_${userEmail}`;
+        // ==========================================
+        // 📂 ROBUST PROJECT LIBRARY MANAGEMENT SYSTEM
+        // ==========================================
+        const MASTER_LIB_KEY = 'barcut_projects_master';
+
+        function getAllSavedProjects() {
+            const merged = {};
+            const keysToScan = [MASTER_LIB_KEY, 'barcut_library_guest'];
+            
+            const userEmail = localStorage.getItem('barcut_user_email');
+            if (userEmail) keysToScan.push(`barcut_library_${userEmail}`);
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && (k.startsWith('barcut_library_') || k === MASTER_LIB_KEY)) {
+                    if (!keysToScan.includes(k)) keysToScan.push(k);
+                }
+            }
+
+            keysToScan.forEach(k => {
+                try {
+                    const raw = localStorage.getItem(k);
+                    if (!raw) return;
+                    const data = JSON.parse(raw);
+                    if (data && typeof data === 'object') {
+                        Object.keys(data).forEach(pName => {
+                            if (!merged[pName]) merged[pName] = {};
+                            const pData = data[pName];
+                            if (Array.isArray(pData)) {
+                                merged[pName]['รายการหลัก'] = {
+                                    projectName: pName,
+                                    categoryName: 'รายการหลัก',
+                                    savedAt: 'ก่อนหน้านี้',
+                                    itemsData: pData
+                                };
+                            } else if (pData && typeof pData === 'object') {
+                                Object.keys(pData).forEach(catName => {
+                                    const work = pData[catName];
+                                    if (work && Array.isArray(work.itemsData)) {
+                                        merged[pName][catName] = work;
+                                    } else if (Array.isArray(work)) {
+                                        merged[pName][catName] = {
+                                            projectName: pName,
+                                            categoryName: catName,
+                                            savedAt: 'ก่อนหน้านี้',
+                                            itemsData: work
+                                        };
+                                    }
+                                });
+                            }
+                        });
+                    }
+                } catch(e) {
+                    console.warn('Error reading library key', k, e);
+                }
+            });
+
+            return merged;
         }
 
         function saveProjectToLibrary() {
-            const projName = document.getElementById('projectName').value.trim() || 'โครงการไม่ระบุชื่อ';
-            const categoryName = document.getElementById('workCategory').value.trim() || 'หมวดหมู่งานทั่วไป';
-            
-            const storageKey = getUserLibraryKey();
-            const library = JSON.parse(localStorage.getItem(storageKey) || '{}');
-            
-            if (!library[projName]) {
-                library[projName] = {};
+            try {
+                const projInput = document.getElementById('projectName');
+                const catInput = document.getElementById('workCategory');
+                const projName = (projInput && projInput.value.trim()) ? projInput.value.trim() : 'โครงการไม่ระบุชื่อ';
+                const categoryName = (catInput && catInput.value.trim()) ? catInput.value.trim() : 'หมวดหมู่งานทั่วไป';
+                
+                if (!itemsData || itemsData.length === 0) {
+                    alert('⚠️ ไม่มีรายการในตารางให้บันทึก');
+                    return;
+                }
+
+                let library = {};
+                try {
+                    library = JSON.parse(localStorage.getItem(MASTER_LIB_KEY) || '{}');
+                } catch(e) {
+                    library = {};
+                }
+
+                if (!library[projName] || typeof library[projName] !== 'object' || Array.isArray(library[projName])) {
+                    library[projName] = {};
+                }
+
+                library[projName][categoryName] = {
+                    projectName: projName,
+                    categoryName: categoryName,
+                    savedAt: new Date().toLocaleString('th-TH'),
+                    itemsData: JSON.parse(JSON.stringify(itemsData))
+                };
+
+                localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(library));
+
+                const userEmail = localStorage.getItem('barcut_user_email') || 'guest';
+                localStorage.setItem(`barcut_library_${userEmail}`, JSON.stringify(library));
+
+                alert(`💾 บันทึกงาน "${categoryName}" ในโครงการ "${projName}" ลงคลังเรียบร้อยแล้ว!`);
+            } catch (err) {
+                console.error('Save project error:', err);
+                alert('เกิดข้อผิดพลาดในการบันทึกงาน: ' + err.message);
             }
-
-            library[projName][categoryName] = {
-                projectName: projName,
-                categoryName: categoryName,
-                savedAt: new Date().toLocaleString('th-TH'),
-                itemsData: itemsData
-            };
-
-            localStorage.setItem(storageKey, JSON.stringify(library));
-            alert(`💾 บันทึกงาน "${categoryName}" ในโครงการ "${projName}" ลงคลังส่วนตัวเรียบร้อยแล้ว!`);
         }
 
         function openLibraryModal() {
-            const modal = document.getElementById('libraryModal');
-            const container = document.getElementById('libraryListContainer');
-            const storageKey = getUserLibraryKey();
-            const library = JSON.parse(localStorage.getItem(storageKey) || '{}');
-            
-            container.innerHTML = '';
-            const projNames = Object.keys(library);
+            try {
+                const modal = document.getElementById('libraryModal');
+                const container = document.getElementById('libraryListContainer');
+                const library = getAllSavedProjects();
 
-            if (projNames.length === 0) {
-                container.innerHTML = `<p style="text-align:center; color:#64748b; padding:20px;">ยังไม่มีงานที่บันทึกไว้ในคลังของคุณ</p>`;
-            } else {
-                projNames.forEach(pName => {
-                    const projBox = document.createElement('div');
-                    projBox.style.cssText = "border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:12px; background:#f8fafc;";
-                    
-                    let categoriesHtml = '';
-                    const categories = library[pName];
-                    Object.keys(categories).forEach(catName => {
-                        const work = categories[catName];
-                        categoriesHtml += `
-                            <div style="display:flex; justify-space-between; align-items:center; background:white; border:1px solid #e2e8f0; padding:8px 10px; border-radius:6px; margin-top:6px;">
-                                <div>
-                                    <span style="font-weight:600; color:#2563eb; font-size:13px;">📌 หมวดหมู่งาน: ${work.categoryName}</span>
-                                    <span style="font-size:11px; color:#64748b; margin-left:8px;">(${work.itemsData.length} รายการ - บันทึกเมื่อ: ${work.savedAt})</span>
+                container.innerHTML = '';
+                const projNames = Object.keys(library);
+
+                if (projNames.length === 0) {
+                    container.innerHTML = `<p style="text-align:center; color:#64748b; padding:25px; font-weight:600;">📭 ยังไม่มีงานที่บันทึกไว้ในคลังของคุณ</p>`;
+                } else {
+                    projNames.forEach(pName => {
+                        const projBox = document.createElement('div');
+                        projBox.style.cssText = "border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:12px; background:#f8fafc;";
+                        
+                        let categoriesHtml = '';
+                        const categories = library[pName];
+                        Object.keys(categories).forEach(catName => {
+                            const work = categories[catName];
+                            const listCount = (work && Array.isArray(work.itemsData)) ? work.itemsData.length : 0;
+                            const timeStr = (work && work.savedAt) ? work.savedAt : '-';
+                            const safeP = encodeURIComponent(pName);
+                            const safeC = encodeURIComponent(catName);
+
+                            categoriesHtml += `
+                                <div style="display:flex; justify-content:space-between; align-items:center; background:white; border:1px solid #e2e8f0; padding:8px 10px; border-radius:6px; margin-top:6px;">
+                                    <div>
+                                        <span style="font-weight:600; color:#2563eb; font-size:13px;">📌 หมวดหมู่งาน: ${catName}</span>
+                                        <span style="font-size:11px; color:#64748b; margin-left:8px;">(${listCount} รายการ - บันทึกเมื่อ: ${timeStr})</span>
+                                    </div>
+                                    <div style="display:flex; gap:6px;">
+                                        <button type="button" class="btn btn-indigo" style="padding:4px 10px; font-size:11px;" data-proj="${safeP}" data-cat="${safeC}" onclick="loadProjectFromLibrarySafe(this)">📂 เปิดทำต่อ</button>
+                                        <button type="button" class="btn btn-red" style="padding:4px 8px; font-size:11px;" data-proj="${safeP}" data-cat="${safeC}" onclick="deleteProjectFromLibrarySafe(this)">🗑️ ลบ</button>
+                                    </div>
                                 </div>
-                                <div style="display:flex; gap:4px;">
-                                    <button type="button" class="btn btn-indigo" style="padding:3px 8px; font-size:11px;" onclick="loadProjectFromLibrary('${pName}', '${work.categoryName}')">📂 เปิดทำต่อ</button>
-                                    <button type="button" class="btn btn-del" style="font-size:13px;" onclick="deleteProjectFromLibrary('${pName}', '${work.categoryName}')">❌</button>
-                                </div>
+                            `;
+                        });
+
+                        projBox.innerHTML = `
+                            <div style="font-weight:bold; color:#0f172a; font-size:14px; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+                                🏢 โครงการ: ${pName}
                             </div>
+                            ${categoriesHtml}
                         `;
+                        container.appendChild(projBox);
                     });
+                }
 
-                    projBox.innerHTML = `
-                        <div style="font-weight:bold; color:#0f172a; font-size:15px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">
-                            🏢 โครงการ: ${pName}
-                        </div>
-                        ${categoriesHtml}
-                    `;
-                    container.appendChild(projBox);
-                });
+                modal.classList.remove('hidden');
+            } catch(err) {
+                console.error('Error opening library modal:', err);
+                alert('เกิดข้อผิดพลาดในการเปิดคลังโครงการ: ' + err.message);
             }
-
-            modal.classList.remove('hidden');
         }
 
         function closeLibraryModal() {
             document.getElementById('libraryModal').classList.add('hidden');
         }
 
+        function loadProjectFromLibrarySafe(btn) {
+            const pName = decodeURIComponent(btn.getAttribute('data-proj'));
+            const catName = decodeURIComponent(btn.getAttribute('data-cat'));
+            loadProjectFromLibrary(pName, catName);
+        }
+
         function loadProjectFromLibrary(pName, catName) {
-            const storageKey = getUserLibraryKey();
-            const library = JSON.parse(localStorage.getItem(storageKey) || '{}');
-            if (library[pName] && library[pName][catName]) {
-                const target = library[pName][catName];
-                itemsData = target.itemsData;
-                document.getElementById('projectName').value = target.projectName;
-                document.getElementById('workCategory').value = target.categoryName;
-                renderTable();
-                closeLibraryModal();
-                alert(`📂 เปิดงาน "${catName}" ในโครงการ "${pName}" เรียบร้อยแล้ว!`);
+            try {
+                const library = getAllSavedProjects();
+                if (library[pName] && library[pName][catName]) {
+                    const target = library[pName][catName];
+                    itemsData = JSON.parse(JSON.stringify(target.itemsData || []));
+                    document.getElementById('projectName').value = target.projectName || pName;
+                    document.getElementById('workCategory').value = target.categoryName || catName;
+                    renderTable();
+                    closeLibraryModal();
+                    alert(`📂 เปิดงาน "${catName}" ในโครงการ "${pName}" เรียบร้อยแล้ว!`);
+                } else {
+                    alert('ไม่พบข้อมูลรายการที่เลือก');
+                }
+            } catch(err) {
+                console.error('Load project error:', err);
+                alert('เกิดข้อผิดพลาดในการโหลดงาน: ' + err.message);
             }
+        }
+
+        function deleteProjectFromLibrarySafe(btn) {
+            const pName = decodeURIComponent(btn.getAttribute('data-proj'));
+            const catName = decodeURIComponent(btn.getAttribute('data-cat'));
+            deleteProjectFromLibrary(pName, catName);
         }
 
         function deleteProjectFromLibrary(pName, catName) {
             if (confirm(`คุณต้องการลบงาน "${catName}" ในโครงการ "${pName}" ใช่หรือไม่?`)) {
-                const storageKey = getUserLibraryKey();
-                const library = JSON.parse(localStorage.getItem(storageKey) || '{}');
-                if (library[pName] && library[pName][catName]) {
-                    delete library[pName][catName];
-                    if (Object.keys(library[pName]).length === 0) {
-                        delete library[pName];
+                const keys = [MASTER_LIB_KEY, 'barcut_library_guest'];
+                const userEmail = localStorage.getItem('barcut_user_email');
+                if (userEmail) keys.push(`barcut_library_${userEmail}`);
+
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && (k.startsWith('barcut_library_') || k === MASTER_LIB_KEY)) {
+                        if (!keys.includes(k)) keys.push(k);
                     }
-                    localStorage.setItem(storageKey, JSON.stringify(library));
-                    openLibraryModal();
                 }
+
+                keys.forEach(k => {
+                    try {
+                        const lib = JSON.parse(localStorage.getItem(k) || '{}');
+                        if (lib[pName] && lib[pName][catName]) {
+                            delete lib[pName][catName];
+                            if (Object.keys(lib[pName]).length === 0) {
+                                delete lib[pName];
+                            }
+                            localStorage.setItem(k, JSON.stringify(lib));
+                        }
+                    } catch(e) {}
+                });
+
+                openLibraryModal();
             }
+        }
+
+        function exportLibraryBackup() {
+            try {
+                const library = getAllSavedProjects();
+                const jsonStr = JSON.stringify(library, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Barcut_Library_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch(e) {
+                alert('เกิดข้อผิดพลาดในการส่งออกไฟล์สำรอง: ' + e.message);
+            }
+        }
+
+        function importLibraryBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && typeof imported === 'object') {
+                        const current = getAllSavedProjects();
+                        const merged = { ...current, ...imported };
+                        localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(merged));
+                        alert('📥 กู้คืนข้อมูลคลังโครงการสำเร็จแล้ว!');
+                        openLibraryModal();
+                    } else {
+                        alert('รูปแบบไฟล์สำรองไม่ถูกต้อง');
+                    }
+                } catch(err) {
+                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์สำรอง: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
         }
 
         function importFromExcel(event) {
