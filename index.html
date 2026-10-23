@@ -12,7 +12,7 @@
         .container { max-width: 1750px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
         .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; display: flex; align-items: center; }
-        .version-badge { font-size: 12px; background: #dc2626; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .version-badge { font-size: 12px; background: #10b981; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .project-input-group { display: flex; align-items: center; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
         .project-input-box { display: flex; align-items: center; gap: 6px; }
@@ -143,7 +143,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v5.0 Physical Engine</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v6.0 Stable Engine</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -369,7 +369,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 THE V5.0 PHYSICAL ENGINE - STRICT LINEAR ALLOCATION
+        // 🧠 v6.0 STABLE ENGINE - NO ARRAY SHIFTS, ID-BASED MATCHING
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim();
@@ -388,7 +388,7 @@
             }));
 
             // ==========================================
-            // STEP 1: CALCULATE PURE BAR REQUIREMENTS (IGNORE SCRAPS)
+            // STEP 1: EVERY ROW BUYS ITS OWN FULL BARS
             // ==========================================
             demands.forEach(d => {
                 if (d.cutLenM <= 0 || d.totalPieces <= 0) return;
@@ -415,7 +415,6 @@
                 rowResults[d.index].newBarsCount = requiredBars;
                 d.piecesInLastBar = remPcs === 0 ? pcsPerBar : remPcs;
 
-                // Generate raw scraps for this row
                 const fullBars = Math.floor(d.totalPieces / pcsPerBar);
                 for (let i = 0; i < fullBars; i++) {
                     if (normalScrap >= 0.01) {
@@ -444,17 +443,17 @@
             });
 
             // ==========================================
-            // STEP 2: BUILD THE MASTER SCRAP INVENTORY
+            // SNAPSHOT: BUILD THE SECURE GLOBAL INVENTORY
             // ==========================================
             let masterScrapInventory = [];
             rowResults.forEach(res => {
                 res.availableScraps.forEach(sc => {
-                    masterScrapInventory.push(JSON.parse(JSON.stringify(sc))); // Deep copy
+                    masterScrapInventory.push(JSON.parse(JSON.stringify(sc))); 
                 });
             });
 
             // ==========================================
-            // STEP 3: STRICT SEQUENTIAL ALLOCATION (NO LOOPS ALLOWED)
+            // STEP 2: GLOBAL OPTIMIZATION - SAFE MATCHING
             // ==========================================
             demands.forEach(target => {
                 if (target.cutLenM <= 0 || target.totalPieces <= 0) return;
@@ -463,22 +462,14 @@
                 const pcsPerBar = Math.floor(resTarget.chosenStock / target.cutLenM);
                 if (pcsPerBar <= 0) return;
 
-                // Only attempt to reduce bars if we bought at least one
                 while (resTarget.newBarsCount > 0) {
-                    // How many pieces does the "last" bar currently provide?
                     const currentPiecesInLastBar = target.piecesInLastBar;
                     let foundPieces = 0;
                     let scrapIdsToConsume = [];
 
-                    // Scan the master inventory for matching scraps
                     for (let i = 0; i < masterScrapInventory.length; i++) {
                         const sc = masterScrapInventory[i];
 
-                        // THE GOLDEN RULES OF REUSE:
-                        // 1. Same Type.
-                        // 2. Long enough.
-                        // 3. You CANNOT use your own scrap (sourceIdx !== target.index).
-                        // 4. The source MUST HAVE BOUGHT BARS (newBarsCount > 0).
                         if (sc.type === target.type && 
                             sc.len >= target.cutLenM - 0.001 && 
                             sc.sourceIdx !== target.index && 
@@ -488,7 +479,7 @@
                             const take = Math.min(maxPcs, currentPiecesInLastBar - foundPieces);
 
                             if (take > 0) {
-                                scrapIdsToConsume.push({ idx: i, take: take });
+                                scrapIdsToConsume.push({ id: sc.id, take: take });
                                 foundPieces += take;
                             }
 
@@ -496,58 +487,44 @@
                         }
                     }
 
-                    // ONLY IF WE FOUND ENOUGH TO COMPLETELY REPLACE THE BAR
                     if (foundPieces === currentPiecesInLastBar) {
-                        // 1. Reduce target's bar count
                         resTarget.newBarsCount--;
                         
-                        // 2. We are no longer generating the scrap from the bar we just canceled.
-                        // We must remove ONE instance of scrap generated by THIS target from the master inventory.
-                        for (let g = masterScrapInventory.length - 1; g >= 0; g--) {
-                            if (masterScrapInventory[g].sourceIdx === target.index) {
-                                masterScrapInventory.splice(g, 1);
-                                break; // Only remove the one scrap associated with the canceled bar
-                            }
-                        }
+                        // 1. Remove exactly one scrap generated by this target from global pool
+                        const scrapToRemoveIdx = masterScrapInventory.findIndex(g => g.sourceIdx === target.index);
+                        if (scrapToRemoveIdx !== -1) masterScrapInventory.splice(scrapToRemoveIdx, 1);
 
-                        // 3. Process the consumed scraps
-                        // Sort descending so splicing doesn't mess up indexes
-                        scrapIdsToConsume.sort((a, b) => b.idx - a.idx);
-
+                        // 2. Consume the matched scraps SAFELY using IDs (immune to array shifts)
                         scrapIdsToConsume.forEach(use => {
-                            const sc = masterScrapInventory[use.idx];
-                            const sourceRes = rowResults[sc.sourceIdx];
+                            const scIdx = masterScrapInventory.findIndex(g => g.id === use.id);
+                            if (scIdx !== -1) {
+                                const sc = masterScrapInventory[scIdx];
+                                const sourceRes = rowResults[sc.sourceIdx];
 
-                            // Target logs Reuse
-                            const targetKey = `${target.cutLenM.toFixed(2)}_${sc.sourceNo}`;
-                            if (!resTarget.usedReusesMap[targetKey]) resTarget.usedReusesMap[targetKey] = { len: target.cutLenM, fromNo: sc.sourceNo, count: 0 };
-                            resTarget.usedReusesMap[targetKey].count += use.take;
+                                const targetKey = `${target.cutLenM.toFixed(2)}_${sc.sourceNo}`;
+                                if (!resTarget.usedReusesMap[targetKey]) resTarget.usedReusesMap[targetKey] = { len: target.cutLenM, fromNo: sc.sourceNo, count: 0 };
+                                resTarget.usedReusesMap[targetKey].count += use.take;
 
-                            // Source logs Offcut Given
-                            const sourceKey = `${target.cutLenM.toFixed(2)}_${target.no}`;
-                            if (!sourceRes.sentToRowsMap[sourceKey]) sourceRes.sentToRowsMap[sourceKey] = { usedLen: target.cutLenM, toNo: target.no, count: 0 };
-                            sourceRes.sentToRowsMap[sourceKey].count += use.take;
+                                const sourceKey = `${target.cutLenM.toFixed(2)}_${target.no}`;
+                                if (!sourceRes.sentToRowsMap[sourceKey]) sourceRes.sentToRowsMap[sourceKey] = { usedLen: target.cutLenM, toNo: target.no, count: 0 };
+                                sourceRes.sentToRowsMap[sourceKey].count += use.take;
 
-                            // Shrink the scrap in inventory
-                            sc.len -= (use.take * target.cutLenM);
-                            if (sc.len < 0.01) {
-                                masterScrapInventory.splice(use.idx, 1);
+                                sc.len -= (use.take * target.cutLenM);
+                                if (sc.len < 0.01) {
+                                    masterScrapInventory.splice(scIdx, 1);
+                                }
                             }
                         });
 
-                        // Update pieces for the next iteration (if any bars left)
                         target.piecesInLastBar = pcsPerBar; 
 
                     } else {
-                        // Could not find enough scraps to replace a full bar. Stop trying for this row.
                         break; 
                     }
                 }
             });
 
-            // ==========================================
             // OUTPUT FORMATTING
-            // ==========================================
             const finalResults = [];
             demands.forEach((demand, index) => {
                 const res = rowResults[index];
@@ -565,7 +542,6 @@
                 let finalScrapLenTotal = 0;
                 const scrapCounts = {};
                 
-                // Only tally scraps belonging to THIS row that are STILL in the master inventory
                 masterScrapInventory.forEach(sc => {
                     if (sc.sourceIdx === index && sc.len >= 0.01) {
                         const key = sc.len.toFixed(2);
@@ -1026,6 +1002,7 @@
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
+            event.target.value = ''; // แก้ปัญหาโหลดไฟล์เดิมซ้ำไม่ได้
 
             const reader = new FileReader();
             reader.onload = function(e) {
