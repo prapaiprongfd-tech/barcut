@@ -477,7 +477,7 @@
             });
         }
 
-        // 🧠 STRICT REAL-PIECE MATCHING ENGINE (PREVENTS PHANTOM SCRAPS)
+        // 🧠 STRICT EXACT-MATCH OPTIMIZER (NO PHANTOM SCRAPS)
         function calculateAllItems() {
             const rowDemands = [];
             itemsData.forEach((item, index) => {
@@ -565,7 +565,7 @@
                 }
             });
 
-            // Pass 2: Global Off-Cut Matching
+            // Pass 2: GLOBAL UNLOCKED MATCHING WITH ACCURATE DUAL RECORDING
             const typeGroups = {};
             rowDemands.forEach(d => {
                 if (!typeGroups[d.type]) typeGroups[d.type] = [];
@@ -607,10 +607,11 @@
                                             }
                                             rowResults[target.index].usedReusesMap[lenKeyTarget].count += pcsCanCut;
 
-                                            // Exact Record for Source with Real Offcut Piece Length
-                                            const lenKeySource = `${offcutItem.len.toFixed(2)}_${target.no}`;
+                                            // Exact Record for Source with Real Cut Length USED by Target
+                                            const realUsedLength = (pcsCanCut * target.cutLenM);
+                                            const lenKeySource = `${realUsedLength.toFixed(2)}_${target.no}`;
                                             if (!rowResults[source.index].sentToRowsMap[lenKeySource]) {
-                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { offcutLen: offcutItem.len, toNo: target.no, count: 0 };
+                                                rowResults[source.index].sentToRowsMap[lenKeySource] = { usedLen: realUsedLength, toNo: target.no, count: 0 };
                                             }
                                             rowResults[source.index].sentToRowsMap[lenKeySource].count += 1;
 
@@ -632,8 +633,8 @@
                                             }
                                             rowResults[target.index].availableScrapPieces = newScrapList;
 
-                                            const newRem = offcutItem.len - (pcsCanCut * target.cutLenM);
-                                            rowResults[source.index].totalScrapLen -= (pcsCanCut * target.cutLenM);
+                                            const newRem = offcutItem.len - realUsedLength;
+                                            rowResults[source.index].totalScrapLen -= realUsedLength;
 
                                             if (newRem >= 0.01) {
                                                 sourceScrapList[p].len = Number(newRem.toFixed(3));
@@ -664,7 +665,7 @@
 
                 let offcutTextArr = [];
                 Object.values(res.sentToRowsMap).forEach(sent => {
-                    offcutTextArr.push(`เศษ ${sent.offcutLen.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
+                    offcutTextArr.push(`เศษ ${sent.usedLen.toFixed(2)}m ${sent.count} ท่อน (นำไปใช้ใน No.${sent.toNo})`);
                 });
 
                 if (res.availableScrapPieces.length > 0) {
