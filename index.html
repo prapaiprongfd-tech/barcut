@@ -12,7 +12,7 @@
         .container { max-width: 1750px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
         .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; display: flex; align-items: center; }
-        .version-badge { font-size: 12px; background: #059669; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .version-badge { font-size: 12px; background: #2563eb; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .project-input-group { display: flex; align-items: center; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
         .project-input-box { display: flex; align-items: center; gap: 6px; }
@@ -36,13 +36,13 @@
         .tab-btn { padding: 12px 24px; font-size: 14px; font-weight: 600; background: none; border: none; border-bottom: 3px solid transparent; color: #64748b; cursor: pointer; white-space: nowrap; }
         .tab-btn.active { border-bottom-color: #4f46e5; color: #4f46e5; }
         .content { padding: 20px; }
-        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
-        .legend { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 12px; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px; }
+        .legend { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
         .table-responsive { overflow-x: auto; border: 1px solid #cbd5e1; border-radius: 8px; }
         
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-        th, td { border: 1px solid #cbd5e1; padding: 6px 3px; vertical-align: middle; white-space: nowrap; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 3px; vertical-align: middle; }
         thead th { background: #e2e8f0; color: #334155; font-size: 11px; font-weight: 700; text-transform: uppercase; text-align: center; }
         thead tr.sub-header th { background: #f1f5f9; font-size: 10px; color: #64748b; }
         
@@ -64,11 +64,11 @@
         .type-bg-DB32 { background-color: #ffedd5 !important; color: #9a3412 !important; font-weight: 700; }
         .type-bg-RB06, .type-bg-RB09 { background-color: #f1f5f9 !important; color: #334155 !important; font-weight: 700; }
 
-        .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; }
-        .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; }
+        .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; white-space: nowrap !important; }
+        .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; white-space: nowrap !important; }
         .bg-reuse-col { background-color: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 180px; }
         .bg-scrap-col { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 200px; }
-        .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; }
+        .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; white-space: nowrap !important; }
         
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 135px; }
         .shape-preview { background: white; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 28px; flex-shrink: 0; }
@@ -97,31 +97,67 @@
 
         .print-only-title { display: none; }
         
+        /* ======================================================== */
+        /* 🖨️ ADVANCED PRINT LAYOUT - NO WRAP FOR NUMBERS & HEADERS */
+        /* ======================================================== */
         @media print { 
-            @page { size: A4 landscape; margin: 5mm; }
+            @page { size: A4 landscape; margin: 4mm; }
             .no-print, .tabs, .toolbar, .header { display: none !important; } 
-            body { padding: 0; background: white; font-size: 7pt !important; color: #000; zoom: 82%; } 
+            body { padding: 0; background: white; font-size: 7pt !important; color: #000; } 
             .container { border: none; box-shadow: none; max-width: 100% !important; width: 100% !important; } 
             .content { padding: 0; }
-            #content-barcut, #content-summary { display: block !important; margin-bottom: 15px; }
+            #content-barcut, #content-summary { display: block !important; margin-bottom: 12px; }
             #content-shapes { display: none !important; }
+            
             thead { display: table-header-group !important; }
             tr { page-break-inside: avoid !important; }
+            
             .print-only-title { display: table-row !important; }
-            .print-only-title th { background: #cbd5e1 !important; color: #000 !important; font-size: 9pt !important; text-align: left !important; padding: 6px !important; }
-            .project-input-box { font-size: 9pt !important; margin-top: 2px; }
-            .project-input-box label { color: #000 !important; font-weight: bold; }
-            .project-input { border: none !important; background: transparent !important; color: #000 !important; font-weight: bold !important; padding: 0 !important; width: auto !important; }
-            input, select { border: none !important; background: transparent !important; appearance: none !important; -webkit-appearance: none !important; font-weight: bold !important; padding: 0 !important; font-size: 7.5pt !important; height: auto !important; text-align: center !important; }
+            .print-only-title th { background: #cbd5e1 !important; color: #000 !important; font-size: 8.5pt !important; text-align: left !important; padding: 5px 6px !important; }
+            
+            .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
+            table { width: 100% !important; border-collapse: collapse !important; font-size: 7pt !important; }
+            th, td { border: 1px solid #000 !important; padding: 2.5px 2px !important; text-align: center; }
+
+            /* หัวตารางทั้งหมดห้ามขึ้นบรรทัดใหม่ ยกเว้นคำอธิบายยาว */
+            thead th:not(.col-reuse):not(.col-offcut):not(.col-comp) {
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+                font-size: 6.5pt !important;
+            }
+
+            /* เซลล์ตัวเลข, มิติ, โค้ดทั้งหมด ต้องอยู่แถวเดียวกัน ห้ามตกแถว */
+            td:not(.col-comp):not(.bg-reuse-col):not(.bg-scrap-col) {
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+            }
+
+            /* อนุญาตให้ตัดบรรทัดเฉพาะคอลัมน์ข้อความอธิบาย */
+            td.col-comp, th.col-comp,
+            td.bg-reuse-col, th.col-reuse,
+            td.bg-scrap-col, th.col-offcut {
+                white-space: normal !important;
+                word-break: break-word !important;
+                text-align: left !important;
+            }
+
+            input, select { 
+                border: none !important; 
+                background: transparent !important; 
+                appearance: none !important; 
+                -webkit-appearance: none !important;
+                font-weight: bold !important; 
+                padding: 0 !important; 
+                font-size: 7pt !important;
+                height: auto !important;
+                text-align: center !important;
+            }
             .shape-box select { display: none !important; }
             .shape-preview { border: none !important; padding: 0 !important; background: transparent !important; width: 100% !important; }
             .shape-preview svg { width: 20px !important; height: 12px !important; display: block; margin: 0 auto; }
-            .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
-            table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; font-size: 7.5pt !important; }
-            th, td { border: 1px solid #000 !important; padding: 2px 1px !important; white-space: normal !important; word-break: break-word !important; }
-            thead th { background-color: #f1f5f9 !important; color: #000 !important; font-size: 7pt !important; }
-            .card { border: 1px solid #000 !important; padding: 8px !important; margin-top: 10px; page-break-inside: avoid; }
-            .card-title { border-bottom: 1px solid #000 !important; font-size: 9pt !important; margin-bottom: 6px; }
+            
+            .card { border: 1px solid #000 !important; padding: 6px !important; margin-top: 8px; page-break-inside: avoid; }
+            .card-title { border-bottom: 1px solid #000 !important; font-size: 8.5pt !important; margin-bottom: 4px; }
         }
     </style>
 </head>
@@ -148,7 +184,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.2 Universal Engine</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.3 Stock Lock & Print Layout Engine</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -183,12 +219,15 @@
             <!-- TAB 1: BARCUT TABLE -->
             <div id="content-barcut">
                 <div class="toolbar no-print">
-                    <div class="legend">
-                        <span><strong class="dot" style="background:#fef08a; border:1px solid #d97706;"></strong> ช่องคีย์ข้อมูล (หน่วยเป็นเมตร - รองรับการบวกลบคูณหาร เช่น 2+0.5)</span>
-                        <span><strong class="dot" style="background:#e0e7ff; border:1px solid #818cf8;"></strong> คำนวณอัตโนมัติ</span>
-                        <span><strong class="dot" style="background:#fef3c7; border:1px solid #d97706;"></strong> หมุนเวียนใช้เศษเหล็ก (Global Best-Fit)</span>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:12px; font-weight:bold; color:#1e293b;">⚡ ล็อกสต็อกทั้งโครงการ:</span>
+                        <button type="button" class="btn btn-purple" style="padding:5px 11px; font-size:12px;" onclick="setAllStockLength('auto')" title="ตั้งความยาวสต็อกเป็น Auto ทุกรายการ">⚡ Auto ทั้งหมด</button>
+                        <button type="button" class="btn btn-orange" style="padding:5px 11px; font-size:12px;" onclick="setAllStockLength('10')" title="ล็อกความยาวสต็อก 10.0 เมตรทุกรายการ">🔒 ล็อก 10.0 ม. ทั้งหมด</button>
+                        <button type="button" class="btn btn-teal" style="padding:5px 11px; font-size:12px;" onclick="setAllStockLength('12')" title="ล็อกความยาวสต็อก 12.0 เมตรทุกรายการ">🔒 ล็อก 12.0 ม. ทั้งหมด</button>
                     </div>
-                    <button type="button" class="btn btn-blue" onclick="addRow()">➕ เพิ่มรายการ</button>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <button type="button" class="btn btn-blue" onclick="addRow()">➕ เพิ่มรายการ</button>
+                    </div>
                 </div>
 
                 <div class="table-responsive">
@@ -199,29 +238,29 @@
                             </tr>
                             <tr>
                                 <th style="width:25px;" class="no-print">#</th>
-                                <th style="min-width:130px;">COMPONENT</th>
-                                <th style="width:35px;">NO.</th>
-                                <th style="width:105px; min-width:105px;">TYPE</th>
-                                <th style="min-width:130px; background:#fef3c7;">ความยาวสต็อก</th>
-                                <th style="width:40px;">ชุด</th>
-                                <th style="width:40px;">ต่อชุด</th>
-                                <th style="width:45px; background:#e0e7ff;">รวมชิ้น</th>
-                                <th style="min-width:135px;">รูปทรง (SHAPE)</th>
+                                <th style="min-width:115px;" class="col-comp">COMPONENT</th>
+                                <th style="width:30px;">NO.</th>
+                                <th style="width:80px;">TYPE</th>
+                                <th style="min-width:110px; background:#fef3c7;">ความยาวสต็อก</th>
+                                <th style="width:35px;">ชุด</th>
+                                <th style="width:35px;">ต่อชุด</th>
+                                <th style="min-width:55px; background:#e0e7ff;">รวมชิ้น</th>
+                                <th style="min-width:110px;">รูปทรง (SHAPE)</th>
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
-                                <th style="width:80px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
-                                <th style="width:70px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="min-width:180px; background:#fef3c7;">การนำเศษเหล็กมาใช้ (REUSE SUMMARY)</th>
-                                <th style="min-width:200px; background:#fce7f3;">รายละเอียดเศษเหลือ (OFFCUT SUMMARY)</th>
-                                <th style="width:75px; background:#fbcfe8;">น.น. เศษ (KG)</th>
-                                <th style="width:100px;" class="no-print">จัดการ</th>
+                                <th style="min-width:75px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
+                                <th style="min-width:65px; background:#d1fae5;">จำนวนท่อนหลัก</th>
+                                <th style="min-width:180px; background:#fef3c7;" class="col-reuse">การนำเศษเหล็กมาใช้ (REUSE SUMMARY)</th>
+                                <th style="min-width:200px; background:#fce7f3;" class="col-offcut">รายละเอียดเศษเหลือ (OFFCUT SUMMARY)</th>
+                                <th style="min-width:65px; background:#fbcfe8;">น.น. เศษ (KG)</th>
+                                <th style="width:90px;" class="no-print">จัดการ</th>
                             </tr>
                             <tr class="sub-header">
-                                <th class="no-print"></th><th></th><th></th><th></th>
+                                <th class="no-print"></th><th class="col-comp"></th><th></th><th></th>
                                 <th>10M / 12M</th><th></th><th></th><th>TOTAL</th>
                                 <th>(แบบที่ 1-10)</th>
-                                <th style="min-width:48px;">A</th><th style="min-width:48px;">B</th><th style="min-width:48px;">C</th>
-                                <th style="min-width:48px;">D</th><th style="min-width:48px;">E</th><th style="min-width:48px;">F</th>
-                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th>REUSE SUMMARY</th><th>OFFCUT SUMMARY</th><th>SCRAP WT.</th>
+                                <th style="min-width:44px;">A</th><th style="min-width:44px;">B</th><th style="min-width:44px;">C</th>
+                                <th style="min-width:44px;">D</th><th style="min-width:44px;">E</th><th style="min-width:44px;">F</th>
+                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th class="col-reuse">REUSE SUMMARY</th><th class="col-offcut">OFFCUT SUMMARY</th><th>SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
                         </thead>
@@ -404,7 +443,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v9.2 LONGEST-FIRST PHYSICAL ENGINE
+        // 🧠 v9.3 LONGEST-FIRST PHYSICAL ENGINE WITH STRICT REUSE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim().toUpperCase();
@@ -430,6 +469,7 @@
             Object.keys(typeGroups).forEach(type => {
                 const group = typeGroups[type];
 
+                // ตัดท่อนที่ยาวที่สุดก่อนเสมอ
                 group.sort((a, b) => {
                     if (Math.abs(b.cutLenM - a.cutLenM) > 0.0001) return b.cutLenM - a.cutLenM;
                     return a.index - b.index;
@@ -462,6 +502,7 @@
                     let bestK = 0;
                     let bestAllocation = null;
 
+                    // ตรวจสอบว่าในกองเศษ มีเศษพอที่จะลดเหล็กเส้นใหม่ได้ 1 เส้นเต็มๆ หรือไม่
                     for (let k = baseBars; k >= 1; k--) {
                         const barsToBuy = baseBars - k;
                         const pcsFromBars = barsToBuy * pcsPerBar;
@@ -614,16 +655,28 @@
             return finalResults;
         }
 
-        function optimizeFullProject() {
-            itemsData.forEach(item => { item.stockLen = 'auto'; });
+        // ==========================================
+        // 🔒 GLOBAL STOCK LENGTH LOCKING SYSTEM
+        // ==========================================
+        function setAllStockLength(val) {
+            if (!itemsData || itemsData.length === 0) {
+                alert('⚠️ ยังไม่มีรายการในตาราง');
+                return;
+            }
+            itemsData.forEach(item => {
+                item.stockLen = val;
+            });
             renderTable();
-            alert('⚡ คำนวณจับคู่ความยาวสต็อก AUTO แบบ Zero-Waste ทั้งโครงการเรียบร้อยแล้ว!');
+            const label = val === 'auto' ? 'Auto (คำนวณอัตโนมัติ)' : `${val}.0 เมตร (ล็อกตายตัว)`;
+            alert(`🔒 ปรับเปลี่ยนและล็อกความยาวสต็อกเป็น: ${label} ทุกรายการเรียบร้อยแล้ว`);
+        }
+
+        function optimizeFullProject() {
+            setAllStockLength('auto');
         }
 
         function resetCalculationsAndScraps() {
-            itemsData.forEach(item => { item.stockLen = 'auto'; });
-            renderTable();
-            alert('🔄 ล้างข้อมูลคำนวณใหม่ และจำลองเศษเข้ากองกลางเรียบร้อยแล้ว!');
+            setAllStockLength('auto');
         }
 
         function renderTable() {
@@ -655,7 +708,7 @@
 
                 tr.innerHTML = `
                     <td style="text-align:center; font-weight:bold; color:#64748b;" class="no-print">${index + 1}</td>
-                    <td><input type="text" id="input_${item.id}_comp" value="${item.comp || ''}" oninput="updateItemData(${item.id}, 'comp', this.value)" onkeydown="handleEnterKey(event, ${item.id}, 'comp')" style="text-align:left; padding-left:6px;"></td>
+                    <td class="col-comp"><input type="text" id="input_${item.id}_comp" value="${item.comp || ''}" oninput="updateItemData(${item.id}, 'comp', this.value)" onkeydown="handleEnterKey(event, ${item.id}, 'comp')" style="text-align:left; padding-left:6px;"></td>
                     <td style="text-align:center;"><input type="text" value="${item.no}" readonly style="background:#f1f5f9; cursor:default;"></td>
                     <td class="col-type-td">
                         <select onchange="updateItemData(${item.id}, 'type', this.value)" class="${typeColorClass} type-select">
@@ -663,7 +716,7 @@
                         </select>
                     </td>
                     <td>
-                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" class="${stockColorClass}" style="min-width:115px;">
+                        <select onchange="updateItemData(${item.id}, 'stockLen', this.value)" class="${stockColorClass}" style="min-width:110px;">
                             <option value="auto" ${item.stockLen === 'auto' ? 'selected' : ''}>⚡ Auto (${calc.chosenStock}m)</option>
                             <option value="10" ${item.stockLen === '10' ? 'selected' : ''}>10.0 เมตร</option>
                             <option value="12" ${item.stockLen === '12' ? 'selected' : ''}>12.0 เมตร</option>
@@ -804,8 +857,7 @@
             const item = itemsData.find(i => i.id === id);
             if (item) {
                 const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-                const newItem = { id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f };
-                itemsData.push(newItem);
+                itemsData.push({ id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f });
                 renderTable();
             }
         }
@@ -916,7 +968,7 @@
         }
 
         // ==========================================
-        // 📂 ADVANCED LIBRARY & FILESYSTEM SYSTEM 
+        // 📂 ADVANCED LIBRARY SYSTEM
         // ==========================================
         const MASTER_LIB_KEY = 'barcut_projects_master';
 
@@ -1128,7 +1180,6 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // เลือกชีตแรกที่มีข้อมูล
                     let chosenSheet = workbook.Sheets[workbook.SheetNames[0]];
                     for (let sName of workbook.SheetNames) {
                         if (sName.toLowerCase().includes('barcut') || sName.includes('ตัดเหล็ก')) {
@@ -1150,7 +1201,6 @@
                         const row = jsonRows[r];
                         if (!row || row.length === 0) continue;
 
-                        // ตรวจสอบชื่อโครงการ/หมวดหมู่งานจากหัวเรื่อง (ถ้ามี)
                         const rowStrAll = row.join(' ');
                         if (rowStrAll.includes('รายงานรายการสั่งตัดเหล็กเสริม') || rowStrAll.includes('โครงการ:')) {
                             const pMatch = rowStrAll.match(/โครงการ:\s*([^|]+)/);
@@ -1159,7 +1209,6 @@
                             if (cMatch && cMatch[1]) document.getElementById('workCategory').value = cMatch[1].trim();
                         }
 
-                        // ตรวจหาแถวหัวตาราง (Header Row) แบบอัจฉริยะ รองรับทั้งภาษาไทยและอังกฤษ
                         if (!headerColMap) {
                             const rowLower = row.map(cell => String(cell || '').trim().toLowerCase());
                             const hasComp = rowLower.some(c => c.includes('component') || c.includes('ชิ้นงาน') || c.includes('ชื่อคาน') || c.includes('เบอร์คาน'));
@@ -1187,12 +1236,10 @@
                             }
                         }
 
-                        // ตรวจหาและอ่านแถวข้อมูลชิ้นงาน
                         if (headerColMap) {
                             const rawComp = headerColMap.comp !== undefined ? row[headerColMap.comp] : row[1];
                             const rawType = headerColMap.type !== undefined ? row[headerColMap.type] : row[3];
                             
-                            // ถ้าแถวนี้มีข้อมูลชิ้นงานหรือมีขนาดเหล็กระบุอยู่
                             if (rawComp || rawType) {
                                 const comp = String(rawComp || `ชิ้นงาน ${parsedItems.length + 1}`).trim();
                                 if (comp.toLowerCase().includes('component') || comp === 'รวม' || comp.includes('รวมทั้งโครงการ')) continue;
@@ -1226,7 +1273,6 @@
                                 });
                             }
                         } else {
-                            // กรณีไฟล์ไม่มีหัวตารางตรงชื่อ: สแกนตรวจหาแถวที่มีชื่อเหล็ก (DB.. หรือ RB..) อัตโนมัติ
                             const typeCellIdx = row.findIndex(c => /^(DB|RB)\d+/i.test(String(c || '').trim()));
                             if (typeCellIdx !== -1) {
                                 const cleanType = String(row[typeCellIdx]).trim().toUpperCase();
@@ -1354,7 +1400,6 @@
             }
         }
 
-        // เริ่มต้นทำงานทันทีเมื่อโหลดหน้าเว็บเสร็จ
         window.addEventListener('DOMContentLoaded', () => {
             renderShapes();
             checkLicenseOnLoad();
