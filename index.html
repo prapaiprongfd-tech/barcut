@@ -12,7 +12,7 @@
         .container { max-width: 1750px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
         .header { background: #1e293b; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; font-weight: 700; color: #f59e0b; display: flex; align-items: center; }
-        .version-badge { font-size: 12px; background: #2563eb; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .version-badge { font-size: 12px; background: #059669; color: white; padding: 3px 8px; border-radius: 6px; margin-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .project-input-group { display: flex; align-items: center; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
         .project-input-box { display: flex; align-items: center; gap: 6px; }
@@ -66,8 +66,8 @@
 
         .bg-calc { background-color: #e0e7ff; font-weight: 700; color: #1e3a8a; text-align: center; white-space: nowrap !important; }
         .bg-total { background-color: #d1fae5; font-weight: 700; color: #065f46; text-align: center; white-space: nowrap !important; }
-        .bg-reuse-col { background-color: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 180px; }
-        .bg-scrap-col { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 200px; }
+        .bg-reuse-col { background-color: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 170px; }
+        .bg-scrap-col { background-color: #fce7f3; color: #831843; font-size: 12px; font-weight: 600; padding: 6px 8px; white-space: normal; min-width: 190px; }
         .bg-scrap-wt { background-color: #fbcfe8; color: #9d174d; font-weight: 700; text-align: center; white-space: nowrap !important; }
         
         .shape-box { display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 135px; }
@@ -98,47 +98,82 @@
         .print-only-title { display: none; }
         
         /* ======================================================== */
-        /* 🖨️ ADVANCED PRINT LAYOUT - NO WRAP FOR NUMBERS & HEADERS */
+        /* 🖨️ ADVANCED PRINT LAYOUT - FITS ALL COLUMNS HORIZONTALLY  */
         /* ======================================================== */
         @media print { 
-            @page { size: A4 landscape; margin: 4mm; }
+            @page { size: A4 landscape; margin: 3mm 4mm; }
             .no-print, .tabs, .toolbar, .header { display: none !important; } 
-            body { padding: 0; background: white; font-size: 7pt !important; color: #000; } 
-            .container { border: none; box-shadow: none; max-width: 100% !important; width: 100% !important; } 
-            .content { padding: 0; }
-            #content-barcut, #content-summary { display: block !important; margin-bottom: 12px; }
+            body { padding: 0 !important; margin: 0 !important; background: white !important; font-size: 6.5pt !important; color: #000; zoom: 83%; } 
+            .container { border: none !important; box-shadow: none !important; max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; } 
+            .content { padding: 0 !important; }
+            #content-barcut, #content-summary { display: block !important; margin-bottom: 8px; width: 100% !important; }
             #content-shapes { display: none !important; }
             
             thead { display: table-header-group !important; }
             tr { page-break-inside: avoid !important; }
             
             .print-only-title { display: table-row !important; }
-            .print-only-title th { background: #cbd5e1 !important; color: #000 !important; font-size: 8.5pt !important; text-align: left !important; padding: 5px 6px !important; }
+            .print-only-title th { background: #cbd5e1 !important; color: #000 !important; font-size: 8pt !important; text-align: left !important; padding: 4px 6px !important; }
             
-            .table-responsive { border: none; overflow: visible !important; width: 100% !important; }
-            table { width: 100% !important; border-collapse: collapse !important; font-size: 7pt !important; }
-            th, td { border: 1px solid #000 !important; padding: 2.5px 2px !important; text-align: center; }
+            .table-responsive { border: none !important; overflow: visible !important; width: 100% !important; }
+            table { width: 100% !important; border-collapse: collapse !important; table-layout: auto !important; font-size: 6.5pt !important; }
+            
+            /* ล้าง min-width และตั้งค่าเซลล์ทั้งหมดให้อยู่ในหน้าพิมพ์แนวนอนพอดี */
+            th, td { 
+                border: 1px solid #000 !important; 
+                padding: 2px 1px !important; 
+                min-width: 0 !important; 
+                text-align: center; 
+            }
 
-            /* หัวตารางทั้งหมดห้ามขึ้นบรรทัดใหม่ ยกเว้นคำอธิบายยาว */
+            /* หัวตารางตัวเลขและมิติห้ามขึ้นบรรทัดใหม่ */
             thead th:not(.col-reuse):not(.col-offcut):not(.col-comp) {
                 white-space: nowrap !important;
                 word-break: keep-all !important;
-                font-size: 6.5pt !important;
+                font-size: 6pt !important;
+                padding: 2px 1px !important;
             }
 
-            /* เซลล์ตัวเลข, มิติ, โค้ดทั้งหมด ต้องอยู่แถวเดียวกัน ห้ามตกแถว */
+            /* เซลล์ตัวเลข มิติ และจำนวน อยู่แถวเดียวกันไม่ตกบรรทัด */
             td:not(.col-comp):not(.bg-reuse-col):not(.bg-scrap-col) {
                 white-space: nowrap !important;
                 word-break: keep-all !important;
             }
 
-            /* อนุญาตให้ตัดบรรทัดเฉพาะคอลัมน์ข้อความอธิบาย */
-            td.col-comp, th.col-comp,
-            td.bg-reuse-col, th.col-reuse,
+            /* คอลัมน์คำอธิบายชิ้นงานให้ตัดคำได้ */
+            td.col-comp, th.col-comp {
+                white-space: normal !important;
+                word-break: break-word !important;
+                text-align: left !important;
+                max-width: 80px !important;
+            }
+
+            /* คอลัมน์ REUSE SUMMARY ให้ตัดคำสวยงามและจำกัดความกว้างพิมพ์ */
+            td.bg-reuse-col, th.col-reuse {
+                white-space: normal !important;
+                word-break: break-word !important;
+                text-align: left !important;
+                max-width: 140px !important;
+                font-size: 5.8pt !important;
+                padding: 2px 2px !important;
+            }
+
+            /* คอลัมน์ OFFCUT SUMMARY ให้ตัดคำสวยงามและจำกัดความกว้างพิมพ์ */
             td.bg-scrap-col, th.col-offcut {
                 white-space: normal !important;
                 word-break: break-word !important;
                 text-align: left !important;
+                max-width: 155px !important;
+                font-size: 5.8pt !important;
+                padding: 2px 2px !important;
+            }
+
+            /* ช่อง น.น. เศษ (KG) แสดงผลชัดเจน */
+            .bg-scrap-wt, th.col-scrap-wt {
+                white-space: nowrap !important;
+                font-weight: bold !important;
+                font-size: 6.5pt !important;
+                width: 45px !important;
             }
 
             input, select { 
@@ -148,16 +183,16 @@
                 -webkit-appearance: none !important;
                 font-weight: bold !important; 
                 padding: 0 !important; 
-                font-size: 7pt !important;
+                font-size: 6.5pt !important;
                 height: auto !important;
                 text-align: center !important;
             }
             .shape-box select { display: none !important; }
             .shape-preview { border: none !important; padding: 0 !important; background: transparent !important; width: 100% !important; }
-            .shape-preview svg { width: 20px !important; height: 12px !important; display: block; margin: 0 auto; }
+            .shape-preview svg { width: 18px !important; height: 10px !important; display: block; margin: 0 auto; }
             
-            .card { border: 1px solid #000 !important; padding: 6px !important; margin-top: 8px; page-break-inside: avoid; }
-            .card-title { border-bottom: 1px solid #000 !important; font-size: 8.5pt !important; margin-bottom: 4px; }
+            .card { border: 1px solid #000 !important; padding: 5px !important; margin-top: 6px; page-break-inside: avoid; }
+            .card-title { border-bottom: 1px solid #000 !important; font-size: 8pt !important; margin-bottom: 3px; }
         }
     </style>
 </head>
@@ -184,7 +219,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.3 Stock Lock & Print Layout Engine</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.4 Print Optimization Engine</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -249,9 +284,9 @@
                                 <th colspan="6" style="background:#fef9c3;">ระยะดัดงอแต่ละช่วง (ม.)</th>
                                 <th style="min-width:75px; background:#e0e7ff;">ยาวตัด/เส้น (ม.)</th>
                                 <th style="min-width:65px; background:#d1fae5;">จำนวนท่อนหลัก</th>
-                                <th style="min-width:180px; background:#fef3c7;" class="col-reuse">การนำเศษเหล็กมาใช้ (REUSE SUMMARY)</th>
-                                <th style="min-width:200px; background:#fce7f3;" class="col-offcut">รายละเอียดเศษเหลือ (OFFCUT SUMMARY)</th>
-                                <th style="min-width:65px; background:#fbcfe8;">น.น. เศษ (KG)</th>
+                                <th style="min-width:170px; background:#fef3c7;" class="col-reuse">การนำเศษเหล็กมาใช้ (REUSE SUMMARY)</th>
+                                <th style="min-width:190px; background:#fce7f3;" class="col-offcut">รายละเอียดเศษเหลือ (OFFCUT SUMMARY)</th>
+                                <th style="min-width:65px; background:#fbcfe8;" class="col-scrap-wt">น.น. เศษ (KG)</th>
                                 <th style="width:90px;" class="no-print">จัดการ</th>
                             </tr>
                             <tr class="sub-header">
@@ -260,7 +295,7 @@
                                 <th>(แบบที่ 1-10)</th>
                                 <th style="min-width:44px;">A</th><th style="min-width:44px;">B</th><th style="min-width:44px;">C</th>
                                 <th style="min-width:44px;">D</th><th style="min-width:44px;">E</th><th style="min-width:44px;">F</th>
-                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th class="col-reuse">REUSE SUMMARY</th><th class="col-offcut">OFFCUT SUMMARY</th><th>SCRAP WT.</th>
+                                <th>CUT LENGTH</th><th>∑TOTAL BAR</th><th class="col-reuse">REUSE SUMMARY</th><th class="col-offcut">OFFCUT SUMMARY</th><th class="col-scrap-wt">SCRAP WT.</th>
                                 <th class="no-print"></th>
                             </tr>
                         </thead>
@@ -443,7 +478,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v9.3 LONGEST-FIRST PHYSICAL ENGINE WITH STRICT REUSE
+        // 🧠 v9.4 LONGEST-FIRST PHYSICAL ENGINE WITH STRICT REUSE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim().toUpperCase();
@@ -469,7 +504,6 @@
             Object.keys(typeGroups).forEach(type => {
                 const group = typeGroups[type];
 
-                // ตัดท่อนที่ยาวที่สุดก่อนเสมอ
                 group.sort((a, b) => {
                     if (Math.abs(b.cutLenM - a.cutLenM) > 0.0001) return b.cutLenM - a.cutLenM;
                     return a.index - b.index;
@@ -502,7 +536,6 @@
                     let bestK = 0;
                     let bestAllocation = null;
 
-                    // ตรวจสอบว่าในกองเศษ มีเศษพอที่จะลดเหล็กเส้นใหม่ได้ 1 เส้นเต็มๆ หรือไม่
                     for (let k = baseBars; k >= 1; k--) {
                         const barsToBuy = baseBars - k;
                         const pcsFromBars = barsToBuy * pcsPerBar;
@@ -857,7 +890,8 @@
             const item = itemsData.find(i => i.id === id);
             if (item) {
                 const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-                itemsData.push({ id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f });
+                const newItem = { id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f };
+                itemsData.push(newItem);
                 renderTable();
             }
         }
@@ -1029,7 +1063,7 @@
                         });
 
                         projBox.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+                            <div style="display:flex; justify-space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
                                 <div style="font-weight:bold; color:#0f172a; font-size:14px; display:flex; align-items:center; gap:6px;">
                                     🏢 ${pName}
                                     <button onclick="renameProject('${safeP}')" class="lib-btn lib-btn-edit" title="เปลี่ยนชื่อโครงการ">✏️</button>
