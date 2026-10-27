@@ -96,7 +96,6 @@
         .lib-btn-edit { color: #d97706; } .lib-btn-edit:hover { background: #fef3c7; }
         .lib-btn-del { color: #dc2626; } .lib-btn-del:hover { background: #fee2e2; }
 
-        /* แถบคั่นระบุช่วงงาน */
         .workgroup-divider-row td {
             background: #1e293b !important;
             color: #fde047 !important;
@@ -110,9 +109,6 @@
 
         .print-only-title { display: none; }
         
-        /* ======================================================== */
-        /* 🖨️ ADVANCED PRINT LAYOUT - FITS ALL COLUMNS HORIZONTALLY  */
-        /* ======================================================== */
         @media print { 
             @page { size: A4 landscape; margin: 3mm 4mm; }
             .no-print, .tabs, .toolbar, .header { display: none !important; } 
@@ -214,18 +210,18 @@
     <div id="licenseModal" class="modal-overlay">
         <div class="modal-card">
             <h2 style="font-size:20px; font-weight:bold; color:#1e293b; margin-bottom:10px;">🔒 ยืนยันสิทธิ์การใช้งานโปรแกรม</h2>
-            <p style="font-size:13px; color:#64748b; margin-bottom:20px;">กรุณากรอกชื่อและอีเมลของคุณเพื่อส่งขอสิทธิ์เข้าใช้งานโปรแกรม Barcut</p>
+            <p style="font-size:13px; color:#64748b; margin-bottom:20px;">กรุณากรอกชื่อและอีเมลของคุณเพื่อเข้าใช้งานโปรแกรม Barcut</p>
             <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
                 <div>
                     <label style="font-size:12px; font-weight:bold; color:#334155;">ชื่อ-นามสกุล / ชื่อผู้ใช้งาน:</label>
-                    <input type="text" id="licenseName" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น สมชาย ใจดี">
+                    <input type="text" id="licenseName" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น แอม">
                 </div>
                 <div>
                     <label style="font-size:12px; font-weight:bold; color:#334155;">อีเมลผู้ใช้งาน (Email):</label>
-                    <input type="email" id="licenseEmail" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น user@gmail.com">
+                    <input type="email" id="licenseEmail" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น prapaipron.gfd@gmail.com">
                 </div>
                 <div id="licenseMessage" style="font-size:12px; font-weight:bold; color:#ea580c; text-align:center; min-height:18px;"></div>
-                <button type="button" class="btn btn-indigo" style="width:100%; justify-content:center; padding:10px; font-size:14px; margin-top:5px;" onclick="submitLicenseRequest()">🚀 ส่งขอสิทธิ์ / เข้าใช้งาน</button>
+                <button type="button" class="btn btn-indigo" style="width:100%; justify-content:center; padding:10px; font-size:14px; margin-top:5px;" onclick="submitLicenseRequest()">🚀 เข้าใช้งานโปรแกรม</button>
             </div>
         </div>
     </div>
@@ -233,7 +229,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.0 Project Work Combiner Engine</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.1 Access Unlocked</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -390,7 +386,7 @@
         </div>
     </div>
 
-    <!-- MODAL 2: MERGE PROJECT WORKS (NEW FEATURE) -->
+    <!-- MODAL 2: MERGE PROJECT WORKS -->
     <div id="mergeWorksModal" class="modal-overlay hidden">
         <div class="modal-card" style="max-width: 620px;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
@@ -476,57 +472,58 @@
             return parseFloat(lenA || 0) - parseFloat(lenB || 0);
         }
 
+        // ==========================================
+        // 🔒 AUTHENTICATION & INSTANT ACCESS ENGINE
+        // ==========================================
         function checkLicenseOnLoad() {
             const savedEmail = localStorage.getItem('barcut_user_email');
             const savedKey = localStorage.getItem('barcut_user_key');
 
-            if (!savedEmail || !savedKey) {
-                document.getElementById('licenseModal').classList.remove('hidden');
-                document.getElementById('mainAppContainer').classList.add('hidden');
+            // หากเคยลงทะเบียนแล้ว ให้ปลดล็อกเข้าสู่หน้าโปรแกรมทันที 100%
+            if (savedEmail && savedKey) {
+                document.getElementById('licenseModal').classList.add('hidden');
+                document.getElementById('mainAppContainer').classList.remove('hidden');
+                clearToInitialEmptyState();
+                renderShapes();
                 return;
             }
 
-            fetch(`${GOOGLE_SCRIPT_URL}?action=check&email=${encodeURIComponent(savedEmail)}&key=${encodeURIComponent(savedKey)}`, { redirect: "follow" })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "APPROVED") {
-                        document.getElementById('licenseModal').classList.add('hidden');
-                        document.getElementById('mainAppContainer').classList.remove('hidden');
-                        clearToInitialEmptyState();
-                        renderShapes();
-                    } else {
-                        document.getElementById('licenseModal').classList.remove('hidden');
-                        document.getElementById('mainAppContainer').classList.add('hidden');
-                    }
-                })
-                .catch(err => {
-                    document.getElementById('licenseModal').classList.add('hidden');
-                    document.getElementById('mainAppContainer').classList.remove('hidden');
-                    clearToInitialEmptyState();
-                    renderShapes();
-                });
+            // หากยังไม่เคยกรอก แสดงหน้าต่างยืนยันสิทธิ์
+            document.getElementById('licenseModal').classList.remove('hidden');
+            document.getElementById('mainAppContainer').classList.add('hidden');
         }
 
         function submitLicenseRequest() {
-            const name = document.getElementById('licenseName').value.trim();
-            const email = document.getElementById('licenseEmail').value.trim();
+            const nameInput = document.getElementById('licenseName');
+            const emailInput = document.getElementById('licenseEmail');
             const msgBox = document.getElementById('licenseMessage');
 
+            const name = nameInput ? nameInput.value.trim() : '';
+            const email = emailInput ? emailInput.value.trim() : '';
+
             if (!name || !email) {
-                msgBox.innerText = "⚠️ กรุณากรอกชื่อและอีเมลให้ครบถ้วน";
+                if (msgBox) msgBox.innerText = "⚠️ กรุณากรอกชื่อและอีเมลให้ครบถ้วน";
                 return;
             }
 
-            msgBox.innerText = "🔄 กำลังส่งข้อมูลขออนุมัติไปยังโฮสท์...";
+            // บันทึกสิทธิ์ลงเครื่องทันที เพื่อไม่ให้ติดค้าง
+            localStorage.setItem('barcut_user_email', email);
+            localStorage.setItem('barcut_user_name', name);
+            localStorage.setItem('barcut_user_key', 'APPROVED_USER');
 
-            fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`, { redirect: "follow" })
-                .then(res => res.json())
-                .then(data => {
-                    localStorage.setItem('barcut_user_email', email);
-                    localStorage.setItem('barcut_user_key', data.key);
-                    location.reload();
-                })
-                .catch(err => { console.error(err); });
+            // ปลดล็อกหน้าจอทันที
+            document.getElementById('licenseModal').classList.add('hidden');
+            document.getElementById('mainAppContainer').classList.remove('hidden');
+            clearToInitialEmptyState();
+            renderShapes();
+
+            // ส่งข้อมูลแจ้งเตือนไปยัง Google Apps Script เบื้องหลังแบบเงียบ (ไม่ทำให้ระบบค้าง)
+            try {
+                fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`, { 
+                    method: 'GET',
+                    mode: 'no-cors' 
+                }).catch(() => {});
+            } catch(e) {}
         }
 
         function evaluateFormula(expr) {
@@ -570,7 +567,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v10.0 LONGEST-FIRST PHYSICAL ENGINE
+        // 🧠 v10.1 LONGEST-FIRST PHYSICAL ENGINE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim().toUpperCase();
@@ -795,7 +792,7 @@
         function resetCalculationsAndScraps() { setAllStockLength('auto'); }
 
         // ==========================================
-        // 📋 RENDER TABLE (WITH WORK GROUP DIVIDERS)
+        // 📋 RENDER TABLE
         // ==========================================
         function renderTable() {
             resequenceNumbers();
@@ -808,7 +805,6 @@
             const printTitleElem = document.getElementById('printProjectHeaderTitle');
             if (printTitleElem) printTitleElem.innerHTML = `📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`;
 
-            // คำนวณช่วงลำดับของแต่ละหมวดหมู่งาน (Work Group Range)
             const groupRanges = {};
             itemsData.forEach(item => {
                 const grp = item.workGroup || '';
@@ -824,7 +820,6 @@
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
 
-                // ถ้าเปลี่ยนหมวดหมู่งาน ให้แทรกแถบคั่นบอกช่วงลำดับชัดเจน
                 if (item.workGroup && item.workGroup !== currentGroup) {
                     currentGroup = item.workGroup;
                     const r = groupRanges[currentGroup];
@@ -1035,7 +1030,6 @@
                 boqMap[key].scrapWeight += (calc.totalScrapWeight || 0);
             });
 
-            // ตรวจสอบและแสดงข้อความงานที่นำมารวมกัน (ถ้ามี)
             const combinedInfoDiv = document.getElementById('boqCombinedInfo');
             const uniqueGroups = [...new Set(itemsData.map(i => i.workGroup).filter(Boolean))];
             if (combinedInfoDiv) {
@@ -1185,7 +1179,7 @@
                         });
 
                         projBox.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+                            <div style="display:flex; justify-space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
                                 <div style="font-weight:bold; color:#0f172a; font-size:14px; display:flex; align-items:center; gap:6px;">
                                     🏢 ${pName}
                                     <button onclick="renameProject('${safeP}')" class="lib-btn lib-btn-edit" title="เปลี่ยนชื่อโครงการ">✏️</button>
@@ -1283,7 +1277,7 @@
         }
 
         // ========================================================
-        // 🔗 NEW FEATURE: MERGE PROJECT WORKS SYSTEM
+        // 🔗 MERGE PROJECT WORKS SYSTEM
         // ========================================================
         function openMergeWorksModal() {
             const modal = document.getElementById('mergeWorksModal');
@@ -1371,7 +1365,7 @@
                     const copiedItems = JSON.parse(JSON.stringify(work.itemsData));
                     copiedItems.forEach(item => {
                         item.no = currentNo++;
-                        item.workGroup = catName; // ผูกชื่องานเข้ากับชิ้นงานเพื่อแยกแถบ
+                        item.workGroup = catName;
                         mergedItems.push(item);
                     });
                 }
@@ -1391,7 +1385,6 @@
             alert(`🔗 รวมข้อมูลสำเร็จแล้ว!\n- โครงการ: ${selectedProj}\n- หมวดหมู่งาน: ${mergedCatNames.join(', ')}\n- รวมทั้งหมด: ${mergedItems.length} รายการ`);
         }
 
-        // นำเข้าไฟล์ Excel หลายไฟล์พร้อมกัน (Multi-File Import)
         function importMultipleExcelFiles(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
@@ -1402,7 +1395,7 @@
             const importedWorks = [];
 
             Array.from(files).forEach((file, fIdx) => {
-                const workName = file.name.replace(/\.[^/.]+$/, ""); // ตัดนามสกุลไฟล์ออก นำมาเป็นชื่องาน
+                const workName = file.name.replace(/\.[^/.]+$/, "");
                 importedWorks.push(workName);
 
                 const reader = new FileReader();
@@ -1550,9 +1543,6 @@
             reader.readAsText(file);
         }
 
-        // ==========================================
-        // 📥 UNIVERSAL SMART EXCEL IMPORT ENGINE (SINGLE FILE)
-        // ==========================================
         function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1590,7 +1580,7 @@
                             const pMatch = rowStrAll.match(/โครงการ:\s*([^|]+)/);
                             const cMatch = rowStrAll.match(/หมวดหมู่งาน:\s*([^|\n]+)/);
                             if (pMatch && pMatch[1]) document.getElementById('projectName').value = pMatch[1].trim();
-                            if (cMatch && cMatch[1]) document.getElementById('workCategory').value = cMatch[1].trim();
+                            if (catMatch && catMatch[1]) document.getElementById('workCategory').value = catMatch[1].trim();
                         }
 
                         if (!headerColMap) {
@@ -1656,6 +1646,28 @@
                                     workGroup: ''
                                 });
                             }
+                        } else {
+                            const typeCellIdx = row.findIndex(c => /^(DB|RB)\d+/i.test(String(c || '').trim()));
+                            if (typeCellIdx !== -1) {
+                                const cleanType = String(row[typeCellIdx]).trim().toUpperCase();
+                                const comp = String(row[typeCellIdx - 1] || row[0] || `ชิ้นงาน ${parsedItems.length + 1}`).trim();
+                                parsedItems.push({
+                                    id: parsedItems.length + 1,
+                                    comp,
+                                    no: parsedItems.length + 1,
+                                    type: cleanType,
+                                    stockLen: 'auto',
+                                    setQty: String(row[typeCellIdx + 2] ?? "1"),
+                                    perSet: String(row[typeCellIdx + 3] ?? "1"),
+                                    shape: 2,
+                                    a: String(row[typeCellIdx + 5] ?? ""),
+                                    b: String(row[typeCellIdx + 6] ?? ""),
+                                    c: String(row[typeCellIdx + 7] ?? ""),
+                                    d: String(row[typeCellIdx + 8] ?? ""),
+                                    e: String(row[typeCellIdx + 9] ?? ""),
+                                    f: String(row[typeCellIdx + 10] ?? "")
+                                });
+                            }
                         }
                     }
 
@@ -1674,9 +1686,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // ==========================================
-        // 💾 ADVANCED EXCEL EXPORT (WITH WORK DIVIDERS)
-        // ==========================================
         async function exportToExcel() {
             if (typeof XLSX === 'undefined') { alert('กำลังโหลดไลบรารี Excel...'); return; }
 
@@ -1741,4 +1750,51 @@
                 if (data.bars > 0 || data.weight > 0) {
                     grandBars += data.bars; grandWt += data.weight; grandScrapWt += data.scrapWeight;
                     const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
-                    boqRows.push(
+                    boqRows.push([data.type, `${data.length}.0`, data.bars, data.weight.toFixed(2), data.scrapWeight.toFixed(2), `${percent}%`]);
+                }
+            });
+
+            const grandPct = grandWt > 0 ? ((grandScrapWt / grandWt) * 100).toFixed(2) : '0.00';
+            boqRows.push(["รวมทั้งโครงการ", "-", grandBars, grandWt.toFixed(2), grandScrapWt.toFixed(2), `${grandPct}%`]);
+
+            const wsBOQ = XLSX.utils.aoa_to_sheet(boqRows);
+            XLSX.utils.book_append_sheet(wb, wsBOQ, "สรุปสั่งซื้อ BOQ");
+
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+            const defaultName = `Barcut_${projName.replace(/\s+/g, '_')}_${categoryName.replace(/\s+/g, '_')}.xlsx`;
+
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({ suggestedName: defaultName, types: [{ description: 'Excel File', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }] });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    alert('✅ บันทึกไฟล์ Excel สำเร็จ');
+                    return;
+                } catch (err) { if (err.name === 'AbortError') return; }
+            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = defaultName; a.click(); URL.revokeObjectURL(url);
+        }
+
+        function printCompleteReport() {
+            const summaryDiv = document.getElementById('content-summary');
+            const wasHidden = summaryDiv.classList.contains('hidden');
+            summaryDiv.classList.remove('hidden');
+
+            renderSummaryBOQ();
+            window.print();
+
+            if (wasHidden && !document.getElementById('tab-summary').classList.contains('active')) {
+                summaryDiv.classList.add('hidden');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderShapes();
+            checkLicenseOnLoad();
+        });
+    </script>
+</body>
+</html>
