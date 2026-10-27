@@ -89,7 +89,7 @@
         .shape-card { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 85px; display: flex; align-items: center; justify-content: center; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .modal-card { background: white; border-radius: 12px; max-width: 680px; width: 92%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
         
         .lib-btn { background: none; border: none; cursor: pointer; font-size: 13px; font-weight: bold; padding: 2px 6px; border-radius: 4px; transition: 0.2s; }
@@ -207,21 +207,22 @@
     </style>
 </head>
 <body>
+    <!-- MODAL ยืนยันสิทธิ์การใช้งานโปรแกรม -->
     <div id="licenseModal" class="modal-overlay">
-        <div class="modal-card">
-            <h2 style="font-size:20px; font-weight:bold; color:#1e293b; margin-bottom:10px;">🔒 ยืนยันสิทธิ์การใช้งานโปรแกรม</h2>
-            <p style="font-size:13px; color:#64748b; margin-bottom:20px;">กรุณากรอกชื่อและอีเมลของคุณเพื่อเข้าใช้งานโปรแกรม Barcut</p>
+        <div class="modal-card" style="max-width:480px;">
+            <h2 style="font-size:20px; font-weight:bold; color:#1e293b; margin-bottom:8px;">🔒 ยืนยันสิทธิ์การใช้งานโปรแกรม</h2>
+            <p style="font-size:13px; color:#64748b; margin-bottom:18px;">กรุณากรอกชื่อและอีเมลของคุณเพื่อขออนุมัติเข้าใช้งานโปรแกรม Barcut</p>
             <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
                 <div>
                     <label style="font-size:12px; font-weight:bold; color:#334155;">ชื่อ-นามสกุล / ชื่อผู้ใช้งาน:</label>
-                    <input type="text" id="licenseName" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น แอม">
+                    <input type="text" id="licenseName" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น สมชาย ใจดี">
                 </div>
                 <div>
                     <label style="font-size:12px; font-weight:bold; color:#334155;">อีเมลผู้ใช้งาน (Email):</label>
-                    <input type="email" id="licenseEmail" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น prapaipron.gfd@gmail.com">
+                    <input type="email" id="licenseEmail" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น user@gmail.com">
                 </div>
-                <div id="licenseMessage" style="font-size:12px; font-weight:bold; color:#ea580c; text-align:center; min-height:18px;"></div>
-                <button type="button" class="btn btn-indigo" style="width:100%; justify-content:center; padding:10px; font-size:14px; margin-top:5px;" onclick="submitLicenseRequest()">🚀 เข้าใช้งานโปรแกรม</button>
+                <div id="licenseMessage" style="font-size:12px; font-weight:bold; color:#ea580c; text-align:center; min-height:20px;"></div>
+                <button type="button" id="submitLicenseBtn" class="btn btn-indigo" style="width:100%; justify-content:center; padding:10px; font-size:14px; margin-top:4px;" onclick="submitLicenseRequest()">🚀 ส่งขอสิทธิ์ / ตรวจสอบสิทธิ์</button>
             </div>
         </div>
     </div>
@@ -229,7 +230,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.1 Access Unlocked</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.2 Admin Bypass & Strict Approval</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -428,6 +429,9 @@
 
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_Sv88tt3blqnXzJs-_HimgWQMlQN7vgqwtxjXafByua4A-5qn3uffWFzrGhYicmmH/exec";
+        
+        // 👑 อีเมลเจ้าของระบบ (Admin Bypass ปลดล็อกผ่านตลอดกาล 100%)
+        const ADMIN_EMAIL = "prapaipron.gfd@gmail.com";
 
         const REBAR_WEIGHTS = {
             'RB06': 0.222, 'RB6': 0.222,
@@ -473,14 +477,14 @@
         }
 
         // ==========================================
-        // 🔒 AUTHENTICATION & INSTANT ACCESS ENGINE
+        // 🔒 STRICT LICENSE & APPROVAL SYSTEM
         // ==========================================
         function checkLicenseOnLoad() {
-            const savedEmail = localStorage.getItem('barcut_user_email');
+            const savedEmail = (localStorage.getItem('barcut_user_email') || '').trim().toLowerCase();
             const savedKey = localStorage.getItem('barcut_user_key');
 
-            // หากเคยลงทะเบียนแล้ว ให้ปลดล็อกเข้าสู่หน้าโปรแกรมทันที 100%
-            if (savedEmail && savedKey) {
+            // 1. ถ้าเป็นอีเมลเจ้าของระบบ -> ปลดล็อกเข้าใช้งานทันที 100%
+            if (savedEmail === ADMIN_EMAIL.toLowerCase()) {
                 document.getElementById('licenseModal').classList.add('hidden');
                 document.getElementById('mainAppContainer').classList.remove('hidden');
                 clearToInitialEmptyState();
@@ -488,7 +492,34 @@
                 return;
             }
 
-            // หากยังไม่เคยกรอก แสดงหน้าต่างยืนยันสิทธิ์
+            // 2. ถ้าเป็นบุคคลอื่นที่เคยลงทะเบียนไว้ -> ตรวจสอบสถานะกับ Google Sheet
+            if (savedEmail && savedKey) {
+                fetch(`${GOOGLE_SCRIPT_URL}?action=check&email=${encodeURIComponent(savedEmail)}&key=${encodeURIComponent(savedKey)}`, { redirect: "follow" })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === "APPROVED") {
+                            // ได้รับการอนุมัติแล้ว -> ปลดล็อกเข้าใช้งาน
+                            document.getElementById('licenseModal').classList.add('hidden');
+                            document.getElementById('mainAppContainer').classList.remove('hidden');
+                            clearToInitialEmptyState();
+                            renderShapes();
+                        } else {
+                            // ยังไม่ได้รับการอนุมัติ (PENDING)
+                            document.getElementById('licenseModal').classList.remove('hidden');
+                            document.getElementById('mainAppContainer').classList.add('hidden');
+                            document.getElementById('licenseEmail').value = savedEmail;
+                            document.getElementById('licenseName').value = localStorage.getItem('barcut_user_name') || '';
+                            document.getElementById('licenseMessage').innerHTML = '<span style="color:#ea580c; line-height:1.4; display:block;">⏳ สิทธิ์ของคุณอยู่ระหว่าง <b>รอเจ้าของโครงการอนุมัติ</b><br>กรุณาติดต่อคุณแอม (ผู้ดูแลระบบ) เพื่อเปิดสิทธิ์การใช้งาน</span>';
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById('licenseModal').classList.remove('hidden');
+                        document.getElementById('mainAppContainer').classList.add('hidden');
+                    });
+                return;
+            }
+
+            // 3. ยังไม่เคยลงทะเบียน -> แสดงหน้าต่างขอสิทธิ์
             document.getElementById('licenseModal').classList.remove('hidden');
             document.getElementById('mainAppContainer').classList.add('hidden');
         }
@@ -497,33 +528,64 @@
             const nameInput = document.getElementById('licenseName');
             const emailInput = document.getElementById('licenseEmail');
             const msgBox = document.getElementById('licenseMessage');
+            const submitBtn = document.getElementById('submitLicenseBtn');
 
             const name = nameInput ? nameInput.value.trim() : '';
-            const email = emailInput ? emailInput.value.trim() : '';
+            const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
 
             if (!name || !email) {
-                if (msgBox) msgBox.innerText = "⚠️ กรุณากรอกชื่อและอีเมลให้ครบถ้วน";
+                if (msgBox) msgBox.innerHTML = '<span style="color:#dc2626;">⚠️ กรุณากรอกชื่อและอีเมลให้ครบถ้วน</span>';
                 return;
             }
 
-            // บันทึกสิทธิ์ลงเครื่องทันที เพื่อไม่ให้ติดค้าง
-            localStorage.setItem('barcut_user_email', email);
-            localStorage.setItem('barcut_user_name', name);
-            localStorage.setItem('barcut_user_key', 'APPROVED_USER');
+            // 👑 ถ้าผู้ใช้คือเจ้าของระบบ (Admin) -> ปลดล็อกทันทีถาวร
+            if (email === ADMIN_EMAIL.toLowerCase()) {
+                localStorage.setItem('barcut_user_email', email);
+                localStorage.setItem('barcut_user_name', name);
+                localStorage.setItem('barcut_user_key', 'ADMIN_PERMANENT_KEY');
+                
+                document.getElementById('licenseModal').classList.add('hidden');
+                document.getElementById('mainAppContainer').classList.remove('hidden');
+                clearToInitialEmptyState();
+                renderShapes();
 
-            // ปลดล็อกหน้าจอทันที
-            document.getElementById('licenseModal').classList.add('hidden');
-            document.getElementById('mainAppContainer').classList.remove('hidden');
-            clearToInitialEmptyState();
-            renderShapes();
+                // บันทึกหลังบ้านแบบเงียบ
+                try {
+                    fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`, { method: 'GET', mode: 'no-cors' }).catch(()=>{});
+                } catch(e) {}
+                return;
+            }
 
-            // ส่งข้อมูลแจ้งเตือนไปยัง Google Apps Script เบื้องหลังแบบเงียบ (ไม่ทำให้ระบบค้าง)
-            try {
-                fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`, { 
-                    method: 'GET',
-                    mode: 'no-cors' 
-                }).catch(() => {});
-            } catch(e) {}
+            // 👤 ถ้าเป็นบุคคลอื่น -> ส่งคำขอไปยัง Google Sheet และรอผลสถานะ
+            if (msgBox) msgBox.innerHTML = '<span style="color:#2563eb;">🔄 กำลังส่งข้อมูลและตรวจสอบสถานะการอนุมัติ...</span>';
+            if (submitBtn) submitBtn.disabled = true;
+
+            fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`, { redirect: "follow" })
+                .then(res => res.json())
+                .then(data => {
+                    if (submitBtn) submitBtn.disabled = false;
+                    localStorage.setItem('barcut_user_email', email);
+                    localStorage.setItem('barcut_user_name', name);
+                    if (data.key) localStorage.setItem('barcut_user_key', data.key);
+
+                    if (data.status === "APPROVED") {
+                        if (msgBox) msgBox.innerHTML = '<span style="color:#10b981;">✅ สิทธิ์ได้รับการอนุมัติแล้ว กำลังเข้าสู่ระบบ...</span>';
+                        setTimeout(() => {
+                            document.getElementById('licenseModal').classList.add('hidden');
+                            document.getElementById('mainAppContainer').classList.remove('hidden');
+                            clearToInitialEmptyState();
+                            renderShapes();
+                        }, 700);
+                    } else {
+                        // สถานะ PENDING -> ต้องรอเจ้าของอนุมัติใน Google Sheet
+                        if (msgBox) msgBox.innerHTML = '<span style="color:#ea580c; line-height:1.5; display:block;">⏳ ส่งคำขอเรียบร้อยแล้ว!<br>สิทธิ์ของคุณอยู่ระหว่าง <b>รอเจ้าของโครงการอนุมัติ</b> ใน Google Sheet<br>กรุณาติดต่อคุณแอมเพื่อขอเปิดสิทธิ์การใช้งาน</span>';
+                    }
+                })
+                .catch(err => {
+                    if (submitBtn) submitBtn.disabled = false;
+                    console.error(err);
+                    if (msgBox) msgBox.innerHTML = '<span style="color:#dc2626;">❌ เชื่อมต่อระบบตรวจสอบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</span>';
+                });
         }
 
         function evaluateFormula(expr) {
@@ -567,7 +629,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v10.1 LONGEST-FIRST PHYSICAL ENGINE
+        // 🧠 v10.2 LONGEST-FIRST PHYSICAL ENGINE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim().toUpperCase();
@@ -791,9 +853,6 @@
         function optimizeFullProject() { setAllStockLength('auto'); }
         function resetCalculationsAndScraps() { setAllStockLength('auto'); }
 
-        // ==========================================
-        // 📋 RENDER TABLE
-        // ==========================================
         function renderTable() {
             resequenceNumbers();
             const tbody = document.getElementById('tableBody');
@@ -1014,9 +1073,6 @@
             renderTable();
         }
 
-        // ==========================================
-        // 📊 BOQ SHEET SUMMARY
-        // ==========================================
         function renderSummaryBOQ() {
             const boqMap = {};
             const calcResults = calculateAllItems();
@@ -1580,7 +1636,7 @@
                             const pMatch = rowStrAll.match(/โครงการ:\s*([^|]+)/);
                             const cMatch = rowStrAll.match(/หมวดหมู่งาน:\s*([^|\n]+)/);
                             if (pMatch && pMatch[1]) document.getElementById('projectName').value = pMatch[1].trim();
-                            if (catMatch && catMatch[1]) document.getElementById('workCategory').value = catMatch[1].trim();
+                            if (cMatch && cMatch[1]) document.getElementById('workCategory').value = cMatch[1].trim();
                         }
 
                         if (!headerColMap) {
