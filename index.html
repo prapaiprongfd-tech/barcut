@@ -90,14 +90,29 @@
         .shape-card-img { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin: 8px 0; height: 85px; display: flex; align-items: center; justify-content: center; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-card { background: white; border-radius: 12px; max-width: 650px; width: 92%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
+        .modal-card { background: white; border-radius: 12px; max-width: 680px; width: 92%; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); text-align: center; }
         
         .lib-btn { background: none; border: none; cursor: pointer; font-size: 13px; font-weight: bold; padding: 2px 6px; border-radius: 4px; transition: 0.2s; }
         .lib-btn-edit { color: #d97706; } .lib-btn-edit:hover { background: #fef3c7; }
         .lib-btn-del { color: #dc2626; } .lib-btn-del:hover { background: #fee2e2; }
 
+        /* แถบคั่นระบุช่วงงาน */
+        .workgroup-divider-row td {
+            background: #1e293b !important;
+            color: #fde047 !important;
+            font-weight: 700 !important;
+            font-size: 13px !important;
+            padding: 8px 12px !important;
+            text-align: left !important;
+            border-top: 2px solid #0f172a !important;
+            border-bottom: 2px solid #0f172a !important;
+        }
+
         .print-only-title { display: none; }
         
+        /* ======================================================== */
+        /* 🖨️ ADVANCED PRINT LAYOUT - FITS ALL COLUMNS HORIZONTALLY  */
+        /* ======================================================== */
         @media print { 
             @page { size: A4 landscape; margin: 3mm 4mm; }
             .no-print, .tabs, .toolbar, .header { display: none !important; } 
@@ -121,6 +136,14 @@
                 padding: 2px 1px !important; 
                 min-width: 0 !important; 
                 text-align: center; 
+            }
+
+            .workgroup-divider-row td {
+                background: #334155 !important;
+                color: #ffffff !important;
+                font-size: 7.5pt !important;
+                padding: 3px 6px !important;
+                border: 1.5px solid #000 !important;
             }
 
             thead th:not(.col-reuse):not(.col-offcut):not(.col-comp) {
@@ -210,7 +233,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v9.5 Standard Rebar Sorting</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.0 Project Work Combiner Engine</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -225,6 +248,7 @@
             <div class="btn-group no-print">
                 <button type="button" class="btn btn-teal" onclick="saveProjectToLibrary()">💾 บันทึกงานลงคลัง</button>
                 <button type="button" class="btn btn-slate" onclick="openLibraryModal()">📂 คลังโครงการส่วนตัว</button>
+                <button type="button" class="btn btn-indigo" onclick="openMergeWorksModal()">🔗 รวมงานในโครงการ</button>
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณความยาวสต็อก Auto ขั้นสูง</button>
                 <button type="button" class="btn btn-red" onclick="resetCalculationsAndScraps()">🔄 ล้างข้อมูลคำนวณ & วิเคราะห์ใหม่</button>
                 <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้าไฟล์ Excel</button>
@@ -252,6 +276,7 @@
                         <button type="button" class="btn btn-teal" style="padding:5px 11px; font-size:12px;" onclick="setAllStockLength('12')" title="ล็อกความยาวสต็อก 12.0 เมตรทุกรายการ">🔒 ล็อก 12.0 ม. ทั้งหมด</button>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
+                        <button type="button" class="btn btn-indigo" onclick="openMergeWorksModal()">🔗 รวมงานในโครงการ</button>
                         <button type="button" class="btn btn-blue" onclick="addRow()">➕ เพิ่มรายการ</button>
                     </div>
                 </div>
@@ -302,6 +327,7 @@
                         <span>🛒 ตารางสรุปการสั่งซื้อเหล็กและวิเคราะห์เศษเหลือ (Order & Waste BOQ Summary)</span>
                         <button type="button" class="btn btn-slate no-print" onclick="switchTab('barcut')">⬅️ กลับไปแก้ไขตาราง Barcut</button>
                     </div>
+                    <div id="boqCombinedInfo" style="font-size:12px; font-weight:600; color:#1e40af; margin-bottom:10px; display:none; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"></div>
                     <div class="table-responsive">
                         <table>
                             <thead>
@@ -342,7 +368,7 @@
         </div>
     </div>
 
-    <!-- MODAL PROJECT LIBRARY -->
+    <!-- MODAL 1: PROJECT LIBRARY -->
     <div id="libraryModal" class="modal-overlay hidden">
         <div class="modal-card">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
@@ -364,6 +390,46 @@
         </div>
     </div>
 
+    <!-- MODAL 2: MERGE PROJECT WORKS (NEW FEATURE) -->
+    <div id="mergeWorksModal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 620px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #cbd5e1; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="font-size:16px; font-weight:bold; color:#1e40af;">🔗 รวมข้อมูลหลายงานในโครงการเพื่อวิเคราะห์สั่งเหล็ก</h3>
+                <button type="button" onclick="closeMergeWorksModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">❌</button>
+            </div>
+
+            <div style="text-align:left; display:flex; flex-direction:column; gap:12px;">
+                <div>
+                    <label style="font-size:12px; font-weight:bold; color:#334155;">1. เลือกโครงการหลักที่ต้องการรวมงาน:</label>
+                    <select id="mergeProjectSelect" onchange="onMergeProjectChange()" style="height:36px; border:1px solid #cbd5e1; border-radius:6px; font-weight:600; text-align:left; padding-left:10px; margin-top:4px;">
+                    </select>
+                </div>
+
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="font-size:12px; font-weight:bold; color:#334155;">2. ติ๊กเลือกหมวดหมู่งานที่ต้องการนำมารวมกัน:</label>
+                        <div style="display:flex; gap:8px;">
+                            <a href="javascript:void(0)" onclick="toggleAllMergeCheckboxes(true)" style="font-size:11px; color:#2563eb; font-weight:bold;">เลือกทั้งหมด</a>
+                            <a href="javascript:void(0)" onclick="toggleAllMergeCheckboxes(false)" style="font-size:11px; color:#64748b; font-weight:bold;">ล้างการเลือก</a>
+                        </div>
+                    </div>
+                    <div id="mergeCategoriesList" style="max-height:190px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; padding:8px; background:#f8fafc; display:flex; flex-direction:column; gap:6px;">
+                    </div>
+                </div>
+
+                <div style="border-top:1px dashed #cbd5e1; padding-top:10px;">
+                    <label style="font-size:12px; font-weight:bold; color:#0f766e;">หรือ นำเข้าไฟล์ Excel หลายไฟล์พร้อมกัน (เช่น คานชั้น 1.xlsx + คานชั้น 2.xlsx):</label>
+                    <input type="file" id="multiExcelFilesInput" multiple accept=".xlsx, .xls, .csv" onchange="importMultipleExcelFiles(event)" style="font-size:12px; margin-top:4px; height:auto; padding:4px;">
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+                    <button type="button" class="btn btn-slate" onclick="closeMergeWorksModal()">ยกเลิก</button>
+                    <button type="button" class="btn btn-indigo" style="font-size:13px; padding:9px 18px;" onclick="executeMergeWorks()">🚀 รวมรายการและคำนวณตัดเหล็ก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_Sv88tt3blqnXzJs-_HimgWQMlQN7vgqwtxjXafByua4A-5qn3uffWFzrGhYicmmH/exec";
 
@@ -381,7 +447,6 @@
 
         const INPUT_FIELDS_ORDER = ['comp', 'setQty', 'perSet', 'a', 'b', 'c', 'd', 'e', 'f'];
 
-        // 🎯 ฟังก์ชันจัดเรียงชนิดเหล็กตามมาตรฐานไทย: RB06 -> RB09 -> DB12 -> DB16 -> DB20 -> DB25 -> DB28 -> DB32
         function compareRebarOrder(keyA, keyB) {
             const [typeA, lenA] = keyA.split('_');
             const [typeB, lenB] = keyB.split('_');
@@ -408,8 +473,6 @@
             if (rankA !== rankB) {
                 return rankA - rankB;
             }
-
-            // ถ้าเป็นเหล็กขนาดเดียวกัน ให้เรียงความยาว 10ม. ก่อน 12ม.
             return parseFloat(lenA || 0) - parseFloat(lenB || 0);
         }
 
@@ -507,7 +570,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v9.5 LONGEST-FIRST PHYSICAL ENGINE WITH STRICT REUSE
+        // 🧠 v10.0 LONGEST-FIRST PHYSICAL ENGINE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim().toUpperCase();
@@ -533,7 +596,6 @@
             Object.keys(typeGroups).forEach(type => {
                 const group = typeGroups[type];
 
-                // ตัดท่อนที่ยาวที่สุดก่อนเสมอ
                 group.sort((a, b) => {
                     if (Math.abs(b.cutLenM - a.cutLenM) > 0.0001) return b.cutLenM - a.cutLenM;
                     return a.index - b.index;
@@ -566,7 +628,6 @@
                     let bestK = 0;
                     let bestAllocation = null;
 
-                    // ตรวจสอบว่าในกองเศษ มีเศษพอที่จะลดเหล็กเส้นใหม่ได้ 1 เส้นเต็มๆ หรือไม่
                     for (let k = baseBars; k >= 1; k--) {
                         const barsToBuy = baseBars - k;
                         const pcsFromBars = barsToBuy * pcsPerBar;
@@ -719,30 +780,23 @@
             return finalResults;
         }
 
-        // ==========================================
-        // 🔒 GLOBAL STOCK LENGTH LOCKING SYSTEM
-        // ==========================================
         function setAllStockLength(val) {
             if (!itemsData || itemsData.length === 0) {
                 alert('⚠️ ยังไม่มีรายการในตาราง');
                 return;
             }
-            itemsData.forEach(item => {
-                item.stockLen = val;
-            });
+            itemsData.forEach(item => { item.stockLen = val; });
             renderTable();
             const label = val === 'auto' ? 'Auto (คำนวณอัตโนมัติ)' : `${val}.0 เมตร (ล็อกตายตัว)`;
             alert(`🔒 ปรับเปลี่ยนและล็อกความยาวสต็อกเป็น: ${label} ทุกรายการเรียบร้อยแล้ว`);
         }
 
-        function optimizeFullProject() {
-            setAllStockLength('auto');
-        }
+        function optimizeFullProject() { setAllStockLength('auto'); }
+        function resetCalculationsAndScraps() { setAllStockLength('auto'); }
 
-        function resetCalculationsAndScraps() {
-            setAllStockLength('auto');
-        }
-
+        // ==========================================
+        // 📋 RENDER TABLE (WITH WORK GROUP DIVIDERS)
+        // ==========================================
         function renderTable() {
             resequenceNumbers();
             const tbody = document.getElementById('tableBody');
@@ -754,8 +808,36 @@
             const printTitleElem = document.getElementById('printProjectHeaderTitle');
             if (printTitleElem) printTitleElem.innerHTML = `📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`;
 
+            // คำนวณช่วงลำดับของแต่ละหมวดหมู่งาน (Work Group Range)
+            const groupRanges = {};
+            itemsData.forEach(item => {
+                const grp = item.workGroup || '';
+                if (grp) {
+                    if (!groupRanges[grp]) groupRanges[grp] = { start: item.no, end: item.no, count: 0 };
+                    groupRanges[grp].end = item.no;
+                    groupRanges[grp].count++;
+                }
+            });
+
+            let currentGroup = null;
+
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
+
+                // ถ้าเปลี่ยนหมวดหมู่งาน ให้แทรกแถบคั่นบอกช่วงลำดับชัดเจน
+                if (item.workGroup && item.workGroup !== currentGroup) {
+                    currentGroup = item.workGroup;
+                    const r = groupRanges[currentGroup];
+                    const dividerTr = document.createElement('tr');
+                    dividerTr.className = 'workgroup-divider-row';
+                    dividerTr.innerHTML = `
+                        <td colspan="20">
+                            📂 หมวดหมู่งาน: ${currentGroup} &nbsp;|&nbsp; ลำดับ No. ${r.start} - ${r.end} (รวม ${r.count} รายการ)
+                        </td>
+                    `;
+                    tbody.appendChild(dividerTr);
+                }
+
                 const tr = document.createElement('tr');
                 tr.id = `row_${item.id}`;
 
@@ -913,7 +995,7 @@
 
         function addRow() {
             const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" });
+            itemsData.push({ id: newId, comp: 'ชิ้นงานใหม่', no: itemsData.length + 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "", workGroup: itemsData.length ? itemsData[itemsData.length-1].workGroup : '' });
             renderTable();
         }
 
@@ -921,7 +1003,7 @@
             const item = itemsData.find(i => i.id === id);
             if (item) {
                 const newId = itemsData.length ? Math.max(...itemsData.map(i => i.id)) + 1 : 1;
-                const newItem = { id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f };
+                const newItem = { id: newId, comp: item.comp, no: itemsData.length + 1, type: item.type, stockLen: item.stockLen, setQty: item.setQty, perSet: item.perSet, shape: item.shape, a: item.a, b: item.b, c: item.c, d: item.d, e: item.e, f: item.f, workGroup: item.workGroup || '' };
                 itemsData.push(newItem);
                 renderTable();
             }
@@ -933,12 +1015,12 @@
         }
 
         function clearToInitialEmptyState() {
-            itemsData = [{ id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "" }];
+            itemsData = [{ id: 1, comp: 'ชิ้นงานใหม่', no: 1, type: 'DB16', stockLen: 'auto', setQty: "", perSet: "", shape: 1, a: "", b: "", c: "", d: "", e: "", f: "", workGroup: '' }];
             renderTable();
         }
 
         // ==========================================
-        // 📊 BOQ SHEET SUMMARY (WITH REBAR RE-ORDERING)
+        // 📊 BOQ SHEET SUMMARY
         // ==========================================
         function renderSummaryBOQ() {
             const boqMap = {};
@@ -953,12 +1035,23 @@
                 boqMap[key].scrapWeight += (calc.totalScrapWeight || 0);
             });
 
+            // ตรวจสอบและแสดงข้อความงานที่นำมารวมกัน (ถ้ามี)
+            const combinedInfoDiv = document.getElementById('boqCombinedInfo');
+            const uniqueGroups = [...new Set(itemsData.map(i => i.workGroup).filter(Boolean))];
+            if (combinedInfoDiv) {
+                if (uniqueGroups.length > 1) {
+                    combinedInfoDiv.style.display = 'block';
+                    combinedInfoDiv.innerHTML = `🔗 <strong>ยอดสั่งซื้อรวมทุกหมวดหมู่งาน (${uniqueGroups.length} งาน):</strong> ${uniqueGroups.join(', ')}`;
+                } else {
+                    combinedInfoDiv.style.display = 'none';
+                }
+            }
+
             const tbody = document.getElementById('boqTableBody');
             if (!tbody) return;
             tbody.innerHTML = '';
             let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
 
-            // 🎯 ใช้ฟังก์ชันจัดเรียงตามมาตรฐานไทย (RB06 -> RB09 -> DB12 -> DB16 ...)
             const sortedKeys = Object.keys(boqMap).sort(compareRebarOrder);
 
             sortedKeys.forEach(key => {
@@ -997,16 +1090,9 @@
             if (!container) return;
             container.innerHTML = '';
             const shapeNames = [
-                "แบบที่ 1: งอขอ 2 ด้าน",
-                "แบบที่ 2: เส้นตรง",
-                "แบบที่ 3: ฉาก L-Shape",
-                "แบบที่ 4: U-Shape (ด้าน 3 ช่วง)",
-                "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม",
-                "แบบที่ 6: เหล็กคอม้า",
-                "แบบที่ 7: เหล็กปลอกกลม",
-                "แบบที่ 8: Z-Shape",
-                "แบบที่ 9: เหล็กขาโต๊ะ",
-                "แบบที่ 10: รูปทรงพิเศษ"
+                "แบบที่ 1: งอขอ 2 ด้าน", "แบบที่ 2: เส้นตรง", "แบบที่ 3: ฉาก L-Shape",
+                "แบบที่ 4: U-Shape (ด้าน 3 ช่วง)", "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม", "แบบที่ 6: เหล็กคอม้า",
+                "แบบที่ 7: เหล็กปลอกกลม", "แบบที่ 8: Z-Shape", "แบบที่ 9: เหล็กขาโต๊ะ", "แบบที่ 10: รูปทรงพิเศษ"
             ];
 
             for (let i = 1; i <= 10; i++) {
@@ -1099,7 +1185,7 @@
                         });
 
                         projBox.innerHTML = `
-                            <div style="display:flex; justify-space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
                                 <div style="font-weight:bold; color:#0f172a; font-size:14px; display:flex; align-items:center; gap:6px;">
                                     🏢 ${pName}
                                     <button onclick="renameProject('${safeP}')" class="lib-btn lib-btn-edit" title="เปลี่ยนชื่อโครงการ">✏️</button>
@@ -1188,11 +1274,239 @@
             if (lib[pName] && lib[pName][catName]) {
                 const target = lib[pName][catName];
                 itemsData = JSON.parse(JSON.stringify(target.itemsData || []));
+                itemsData.forEach(item => { if (!item.workGroup) item.workGroup = catName; });
                 document.getElementById('projectName').value = target.projectName || pName;
                 document.getElementById('workCategory').value = target.categoryName || catName;
                 renderTable();
                 closeLibraryModal();
             }
+        }
+
+        // ========================================================
+        // 🔗 NEW FEATURE: MERGE PROJECT WORKS SYSTEM
+        // ========================================================
+        function openMergeWorksModal() {
+            const modal = document.getElementById('mergeWorksModal');
+            const projSelect = document.getElementById('mergeProjectSelect');
+            const library = getAllSavedProjects();
+            const projNames = Object.keys(library);
+
+            projSelect.innerHTML = '';
+            if (projNames.length === 0) {
+                projSelect.innerHTML = '<option value="">(ยังไม่มีโครงการในคลัง)</option>';
+                document.getElementById('mergeCategoriesList').innerHTML = '<span style="color:#64748b; font-size:12px;">กรุณาบันทึกงานลงคลังก่อน หรือใช้วิธีนำเข้าไฟล์ด้านล่าง</span>';
+            } else {
+                const currentProj = document.getElementById('projectName').value.trim();
+                projNames.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    if (name === currentProj) opt.selected = true;
+                    projSelect.appendChild(opt);
+                });
+                onMergeProjectChange();
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeMergeWorksModal() {
+            document.getElementById('mergeWorksModal').classList.add('hidden');
+        }
+
+        function onMergeProjectChange() {
+            const projSelect = document.getElementById('mergeProjectSelect');
+            const catContainer = document.getElementById('mergeCategoriesList');
+            const library = getAllSavedProjects();
+            const selectedProj = projSelect.value;
+
+            catContainer.innerHTML = '';
+            if (!selectedProj || !library[selectedProj]) return;
+
+            const categories = library[selectedProj];
+            Object.keys(categories).forEach(catName => {
+                const work = categories[catName];
+                const listCount = (work && Array.isArray(work.itemsData)) ? work.itemsData.length : 0;
+                const row = document.createElement('label');
+                row.style.cssText = "display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer; padding:4px 6px; background:white; border:1px solid #e2e8f0; border-radius:4px;";
+                row.innerHTML = `
+                    <input type="checkbox" class="merge-cat-checkbox" value="${encodeURIComponent(catName)}" checked style="width:16px; height:16px; cursor:pointer;">
+                    <span style="color:#1e40af;">📌 ${catName}</span>
+                    <span style="font-size:11px; color:#64748b; font-weight:normal;">(${listCount} รายการ)</span>
+                `;
+                catContainer.appendChild(row);
+            });
+        }
+
+        function toggleAllMergeCheckboxes(check) {
+            const checkboxes = document.querySelectorAll('.merge-cat-checkbox');
+            checkboxes.forEach(cb => cb.checked = check);
+        }
+
+        function executeMergeWorks() {
+            const projSelect = document.getElementById('mergeProjectSelect');
+            const selectedProj = projSelect.value;
+            const library = getAllSavedProjects();
+
+            if (!selectedProj || !library[selectedProj]) {
+                alert('⚠️ กรุณาเลือกโครงการที่มีข้อมูล');
+                return;
+            }
+
+            const checkedBoxes = Array.from(document.querySelectorAll('.merge-cat-checkbox:checked'));
+            if (checkedBoxes.length === 0) {
+                alert('⚠️ กรุณาเลือกหมวดหมู่งานอย่างน้อย 1 งาน');
+                return;
+            }
+
+            let mergedItems = [];
+            const mergedCatNames = [];
+            let currentNo = 1;
+
+            checkedBoxes.forEach(cb => {
+                const catName = decodeURIComponent(cb.value);
+                const work = library[selectedProj][catName];
+                if (work && Array.isArray(work.itemsData)) {
+                    mergedCatNames.push(catName);
+                    const copiedItems = JSON.parse(JSON.stringify(work.itemsData));
+                    copiedItems.forEach(item => {
+                        item.no = currentNo++;
+                        item.workGroup = catName; // ผูกชื่องานเข้ากับชิ้นงานเพื่อแยกแถบ
+                        mergedItems.push(item);
+                    });
+                }
+            });
+
+            if (mergedItems.length === 0) {
+                alert('⚠️ ไม่พบรายการในหมวดหมู่ที่เลือก');
+                return;
+            }
+
+            itemsData = mergedItems;
+            document.getElementById('projectName').value = selectedProj;
+            document.getElementById('workCategory').value = `งานรวม: ${mergedCatNames.join(' + ')}`;
+            renderTable();
+            closeMergeWorksModal();
+
+            alert(`🔗 รวมข้อมูลสำเร็จแล้ว!\n- โครงการ: ${selectedProj}\n- หมวดหมู่งาน: ${mergedCatNames.join(', ')}\n- รวมทั้งหมด: ${mergedItems.length} รายการ`);
+        }
+
+        // นำเข้าไฟล์ Excel หลายไฟล์พร้อมกัน (Multi-File Import)
+        function importMultipleExcelFiles(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            let mergedItems = [];
+            let currentNo = 1;
+            let loadedCount = 0;
+            const importedWorks = [];
+
+            Array.from(files).forEach((file, fIdx) => {
+                const workName = file.name.replace(/\.[^/.]+$/, ""); // ตัดนามสกุลไฟล์ออก นำมาเป็นชื่องาน
+                importedWorks.push(workName);
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        let sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        for (let sName of workbook.SheetNames) {
+                            if (sName.toLowerCase().includes('barcut') || sName.includes('ตัดเหล็ก')) {
+                                sheet = workbook.Sheets[sName];
+                                break;
+                            }
+                        }
+
+                        const jsonRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        let headerColMap = null;
+
+                        for (let r = 0; r < jsonRows.length; r++) {
+                            const row = jsonRows[r];
+                            if (!row || row.length === 0) continue;
+
+                            if (!headerColMap) {
+                                const rowLower = row.map(cell => String(cell || '').trim().toLowerCase());
+                                const hasComp = rowLower.some(c => c.includes('component') || c.includes('ชิ้นงาน') || c.includes('ชื่อคาน') || c.includes('เบอร์คาน'));
+                                const hasType = rowLower.some(c => c.includes('type') || c.includes('ขนาด') || c.includes('เหล็ก'));
+                                const hasCut = rowLower.some(c => c.includes('cut') || c.includes('ยาวตัด') || c.includes('a') || c.includes('shape') || c.includes('รูปทรง'));
+
+                                if ((hasComp && hasType) || (hasComp && hasCut) || rowLower.includes('#')) {
+                                    headerColMap = {};
+                                    rowLower.forEach((colText, idx) => {
+                                        if (colText.includes('component') || colText.includes('ชิ้นงาน') || colText.includes('ชื่อคาน')) headerColMap.comp = idx;
+                                        else if (colText === 'no.' || colText === 'no' || colText === 'ลำดับ' || colText === 'ที่') headerColMap.no = idx;
+                                        else if (colText.includes('type') || colText === 'ขนาด' || colText === 'ชนิดเหล็ก') headerColMap.type = idx;
+                                        else if (colText.includes('ความยาว') || colText.includes('stock')) headerColMap.stock = idx;
+                                        else if (colText === 'ชุด' || colText === 'set') headerColMap.setQty = idx;
+                                        else if (colText.includes('ต่อชุด') || colText.includes('per set')) headerColMap.perSet = idx;
+                                        else if (colText.includes('shape') || colText.includes('รูปทรง')) headerColMap.shape = idx;
+                                        else if (colText === 'a') headerColMap.a = idx;
+                                        else if (colText === 'b') headerColMap.b = idx;
+                                        else if (colText === 'c') headerColMap.c = idx;
+                                        else if (colText === 'd') headerColMap.d = idx;
+                                        else if (colText === 'e') headerColMap.e = idx;
+                                        else if (colText === 'f') headerColMap.f = idx;
+                                    });
+                                    continue;
+                                }
+                            }
+
+                            if (headerColMap) {
+                                const rawComp = headerColMap.comp !== undefined ? row[headerColMap.comp] : row[1];
+                                const rawType = headerColMap.type !== undefined ? row[headerColMap.type] : row[3];
+                                if (rawComp || rawType) {
+                                    const comp = String(rawComp || `ชิ้นงาน ${mergedItems.length + 1}`).trim();
+                                    if (comp.toLowerCase().includes('component') || comp === 'รวม' || comp.includes('รวมทั้งโครงการ')) continue;
+
+                                    let cleanType = String(rawType || 'DB16').trim().toUpperCase();
+                                    if (!cleanType.startsWith('DB') && !cleanType.startsWith('RB')) {
+                                        const m = cleanType.match(/(DB|RB)\d+/);
+                                        cleanType = m ? m[0] : 'DB16';
+                                    }
+
+                                    const setQty = headerColMap.setQty !== undefined ? String(row[headerColMap.setQty] ?? "") : String(row[5] ?? "");
+                                    const perSet = headerColMap.perSet !== undefined ? String(row[headerColMap.perSet] ?? "") : String(row[6] ?? "");
+                                    
+                                    let shape = 2;
+                                    const rawShape = headerColMap.shape !== undefined ? String(row[headerColMap.shape] || "") : String(row[8] || "");
+                                    const shapeMatch = rawShape.match(/\d+/);
+                                    if (shapeMatch) shape = parseInt(shapeMatch[0]);
+
+                                    const a = headerColMap.a !== undefined ? String(row[headerColMap.a] ?? "") : String(row[9] ?? "");
+                                    const b = headerColMap.b !== undefined ? String(row[headerColMap.b] ?? "") : String(row[10] ?? "");
+                                    const c = headerColMap.c !== undefined ? String(row[headerColMap.c] ?? "") : String(row[11] ?? "");
+                                    const d = headerColMap.d !== undefined ? String(row[headerColMap.d] ?? "") : String(row[12] ?? "");
+                                    const e = headerColMap.e !== undefined ? String(row[headerColMap.e] ?? "") : String(row[13] ?? "");
+                                    const f = headerColMap.f !== undefined ? String(row[headerColMap.f] ?? "") : String(row[14] ?? "");
+
+                                    mergedItems.push({
+                                        id: mergedItems.length + 1,
+                                        comp, no: currentNo++, type: cleanType, stockLen: 'auto', setQty, perSet, shape, a, b, c, d, e, f,
+                                        workGroup: workName
+                                    });
+                                }
+                            }
+                        }
+                    } catch(err) {
+                        console.error('File read error', file.name, err);
+                    }
+
+                    loadedCount++;
+                    if (loadedCount === files.length) {
+                        if (mergedItems.length > 0) {
+                            itemsData = mergedItems;
+                            document.getElementById('workCategory').value = `งานรวม: ${importedWorks.join(' + ')}`;
+                            renderTable();
+                            closeMergeWorksModal();
+                            alert(`📥 รวมข้อมูลจากไฟล์ Excel สำเร็จ ${files.length} ไฟล์ (${mergedItems.length} รายการ) เรียบร้อยแล้ว!`);
+                        } else {
+                            alert('⚠️ ไม่พบข้อมูลรายการที่ถูกต้องในไฟล์ Excel ที่เลือก');
+                        }
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
         }
 
         async function exportLibraryBackup() {
@@ -1237,7 +1551,7 @@
         }
 
         // ==========================================
-        // 📥 UNIVERSAL SMART EXCEL IMPORT ENGINE
+        // 📥 UNIVERSAL SMART EXCEL IMPORT ENGINE (SINGLE FILE)
         // ==========================================
         function importFromExcel(event) {
             const file = event.target.files[0];
@@ -1317,8 +1631,7 @@
                                 let cleanType = String(rawType || 'DB16').trim().toUpperCase();
                                 if (!cleanType.startsWith('DB') && !cleanType.startsWith('RB')) {
                                     const m = cleanType.match(/(DB|RB)\d+/);
-                                    if (m) cleanType = m[0];
-                                    else cleanType = 'DB16';
+                                    cleanType = m ? m[0] : 'DB16';
                                 }
 
                                 const no = headerColMap.no !== undefined && row[headerColMap.no] ? parseInt(row[headerColMap.no]) : (parsedItems.length + 1);
@@ -1339,29 +1652,8 @@
 
                                 parsedItems.push({
                                     id: parsedItems.length + 1,
-                                    comp, no, type: cleanType, stockLen: 'auto', setQty, perSet, shape, a, b, c, d, e, f
-                                });
-                            }
-                        } else {
-                            const typeCellIdx = row.findIndex(c => /^(DB|RB)\d+/i.test(String(c || '').trim()));
-                            if (typeCellIdx !== -1) {
-                                const cleanType = String(row[typeCellIdx]).trim().toUpperCase();
-                                const comp = String(row[typeCellIdx - 1] || row[0] || `ชิ้นงาน ${parsedItems.length + 1}`).trim();
-                                parsedItems.push({
-                                    id: parsedItems.length + 1,
-                                    comp,
-                                    no: parsedItems.length + 1,
-                                    type: cleanType,
-                                    stockLen: 'auto',
-                                    setQty: String(row[typeCellIdx + 2] ?? "1"),
-                                    perSet: String(row[typeCellIdx + 3] ?? "1"),
-                                    shape: 2,
-                                    a: String(row[typeCellIdx + 5] ?? ""),
-                                    b: String(row[typeCellIdx + 6] ?? ""),
-                                    c: String(row[typeCellIdx + 7] ?? ""),
-                                    d: String(row[typeCellIdx + 8] ?? ""),
-                                    e: String(row[typeCellIdx + 9] ?? ""),
-                                    f: String(row[typeCellIdx + 10] ?? "")
+                                    comp, no, type: cleanType, stockLen: 'auto', setQty, perSet, shape, a, b, c, d, e, f,
+                                    workGroup: ''
                                 });
                             }
                         }
@@ -1383,7 +1675,7 @@
         }
 
         // ==========================================
-        // 💾 ADVANCED EXCEL EXPORT (ORDER PRESERVED)
+        // 💾 ADVANCED EXCEL EXPORT (WITH WORK DIVIDERS)
         // ==========================================
         async function exportToExcel() {
             if (typeof XLSX === 'undefined') { alert('กำลังโหลดไลบรารี Excel...'); return; }
@@ -1396,11 +1688,29 @@
             const barcutHeader = ["#", "Component", "No.", "Type", "Stock Length (m)", "Set", "Per Set", "Total Pcs", "Shape", "A (m)", "B (m)", "C (m)", "D (m)", "E (m)", "F (m)", "Cut Length (m)", "Total Bars", "Reuse Summary", "Offcut Summary", "Scrap Weight (kg)"];
             const barcutRows = [[`📌 รายงานรายการสั่งตัดเหล็กเสริม | โครงการ: ${projName} | หมวดหมู่งาน: ${categoryName}`], [], barcutHeader];
 
+            let currentGroup = null;
+            const groupRanges = {};
+            itemsData.forEach(item => {
+                const grp = item.workGroup || '';
+                if (grp) {
+                    if (!groupRanges[grp]) groupRanges[grp] = { start: item.no, end: item.no, count: 0 };
+                    groupRanges[grp].end = item.no;
+                    groupRanges[grp].count++;
+                }
+            });
+
             itemsData.forEach((item, index) => {
                 const calc = calcResults[index];
                 const cleanType = String(item.type || 'DB16').trim().toUpperCase();
                 const cleanReuse = String(calc.reuseDetails).replace(/<br>|\|/g, ' ');
                 const cleanScrap = String(calc.scrapDetails).replace(/<br>|\|/g, ' ');
+
+                if (item.workGroup && item.workGroup !== currentGroup) {
+                    currentGroup = item.workGroup;
+                    const r = groupRanges[currentGroup];
+                    barcutRows.push([`>> 📂 หมวดหมู่งาน: ${currentGroup} (ลำดับที่ ${r.start} - ${r.end} รวม ${r.count} รายการ)`]);
+                }
+
                 barcutRows.push([
                     index + 1, item.comp, item.no, cleanType, calc.chosenStock, evaluateFormula(item.setQty), evaluateFormula(item.perSet), calc.totalPieces,
                     `แบบที่ ${item.shape}`, evaluateFormula(item.a), evaluateFormula(item.b), evaluateFormula(item.c), evaluateFormula(item.d), evaluateFormula(item.e), evaluateFormula(item.f),
@@ -1424,8 +1734,6 @@
             });
 
             let grandBars = 0, grandWt = 0, grandScrapWt = 0;
-            
-            // 🎯 เรียงลำดับตามมาตรฐานไทยในไฟล์ Excel เช่นกัน
             const sortedBoqKeys = Object.keys(boqMap).sort(compareRebarOrder);
 
             sortedBoqKeys.forEach(key => {
@@ -1433,51 +1741,4 @@
                 if (data.bars > 0 || data.weight > 0) {
                     grandBars += data.bars; grandWt += data.weight; grandScrapWt += data.scrapWeight;
                     const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
-                    boqRows.push([data.type, `${data.length}.0`, data.bars, data.weight.toFixed(2), data.scrapWeight.toFixed(2), `${percent}%`]);
-                }
-            });
-
-            const grandPct = grandWt > 0 ? ((grandScrapWt / grandWt) * 100).toFixed(2) : '0.00';
-            boqRows.push(["รวมทั้งโครงการ", "-", grandBars, grandWt.toFixed(2), grandScrapWt.toFixed(2), `${grandPct}%`]);
-
-            const wsBOQ = XLSX.utils.aoa_to_sheet(boqRows);
-            XLSX.utils.book_append_sheet(wb, wsBOQ, "สรุปสั่งซื้อ BOQ");
-
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
-            const defaultName = `Barcut_${projName.replace(/\s+/g, '_')}_${categoryName.replace(/\s+/g, '_')}.xlsx`;
-
-            if (window.showSaveFilePicker) {
-                try {
-                    const handle = await window.showSaveFilePicker({ suggestedName: defaultName, types: [{ description: 'Excel File', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }] });
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    alert('✅ บันทึกไฟล์ Excel สำเร็จ');
-                    return;
-                } catch (err) { if (err.name === 'AbortError') return; }
-            }
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = defaultName; a.click(); URL.revokeObjectURL(url);
-        }
-
-        function printCompleteReport() {
-            const summaryDiv = document.getElementById('content-summary');
-            const wasHidden = summaryDiv.classList.contains('hidden');
-            summaryDiv.classList.remove('hidden');
-
-            renderSummaryBOQ();
-            window.print();
-
-            if (wasHidden && !document.getElementById('tab-summary').classList.contains('active')) {
-                summaryDiv.classList.add('hidden');
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            renderShapes();
-            checkLicenseOnLoad();
-        });
-    </script>
-</body>
-</html>
+                    boqRows.push(
