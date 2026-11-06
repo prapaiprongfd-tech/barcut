@@ -215,14 +215,14 @@
             <div style="display:flex; flex-direction:column; gap:12px; text-align:left;">
                 <div>
                     <label style="font-size:12px; font-weight:bold; color:#334155;">ชื่อ-นามสกุล / ชื่อผู้ใช้งาน:</label>
-                    <input type="text" id="licenseName" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น สมชาย ใจดี">
+                    <input type="text" id="licenseName" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น แอม">
                 </div>
                 <div>
                     <label style="font-size:12px; font-weight:bold; color:#334155;">อีเมลผู้ใช้งาน (Email):</label>
-                    <input type="email" id="licenseEmail" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น user@gmail.com">
+                    <input type="email" id="licenseEmail" style="width:100%; height:38px; border:1px solid #cbd5e1; border-radius:6px; padding:0 10px; text-align:left;" placeholder="เช่น prapaipron.gfd@gmail.com">
                 </div>
                 <div id="licenseMessage" style="font-size:12px; font-weight:bold; color:#ea580c; text-align:center; min-height:20px;"></div>
-                <button type="button" id="submitLicenseBtn" class="btn btn-indigo" style="width:100%; justify-content:center; padding:10px; font-size:14px; margin-top:4px;" onclick="submitLicenseRequest()">🚀 ส่งขอสิทธิ์ / ตรวจสอบสิทธิ์</button>
+                <button type="button" id="submitLicenseBtn" class="btn btn-indigo" style="width:100%; justify-content:center; padding:10px; font-size:14px; margin-top:4px;" onclick="submitLicenseRequest()">🚀 เข้าใช้งานโปรแกรม</button>
             </div>
         </div>
     </div>
@@ -230,7 +230,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.2 Admin Bypass & Strict Approval</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.3 Auto-Recover Library</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -430,7 +430,7 @@
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_Sv88tt3blqnXzJs-_HimgWQMlQN7vgqwtxjXafByua4A-5qn3uffWFzrGhYicmmH/exec";
         
-        // 👑 อีเมลเจ้าของระบบ (Admin Bypass ปลดล็อกผ่านตลอดกาล 100%)
+        // 👑 บัญชี Admin ของคุณแอม (Bypass ทันที 100%)
         const ADMIN_EMAIL = "prapaipron.gfd@gmail.com";
 
         const REBAR_WEIGHTS = {
@@ -470,20 +470,18 @@
             const rankA = getRank(typeA);
             const rankB = getRank(typeB);
 
-            if (rankA !== rankB) {
-                return rankA - rankB;
-            }
+            if (rankA !== rankB) return rankA - rankB;
             return parseFloat(lenA || 0) - parseFloat(lenB || 0);
         }
 
         // ==========================================
-        // 🔒 STRICT LICENSE & APPROVAL SYSTEM
+        // 🔒 STRICT AUTHENTICATION SYSTEM
         // ==========================================
         function checkLicenseOnLoad() {
             const savedEmail = (localStorage.getItem('barcut_user_email') || '').trim().toLowerCase();
             const savedKey = localStorage.getItem('barcut_user_key');
 
-            // 1. ถ้าเป็นอีเมลเจ้าของระบบ -> ปลดล็อกเข้าใช้งานทันที 100%
+            // 1. ถ้าเป็นอีเมลของคุณแอม -> ปลดล็อกเข้าใช้งานทันที 100%
             if (savedEmail === ADMIN_EMAIL.toLowerCase()) {
                 document.getElementById('licenseModal').classList.add('hidden');
                 document.getElementById('mainAppContainer').classList.remove('hidden');
@@ -498,13 +496,11 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === "APPROVED") {
-                            // ได้รับการอนุมัติแล้ว -> ปลดล็อกเข้าใช้งาน
                             document.getElementById('licenseModal').classList.add('hidden');
                             document.getElementById('mainAppContainer').classList.remove('hidden');
                             clearToInitialEmptyState();
                             renderShapes();
                         } else {
-                            // ยังไม่ได้รับการอนุมัติ (PENDING)
                             document.getElementById('licenseModal').classList.remove('hidden');
                             document.getElementById('mainAppContainer').classList.add('hidden');
                             document.getElementById('licenseEmail').value = savedEmail;
@@ -512,7 +508,7 @@
                             document.getElementById('licenseMessage').innerHTML = '<span style="color:#ea580c; line-height:1.4; display:block;">⏳ สิทธิ์ของคุณอยู่ระหว่าง <b>รอเจ้าของโครงการอนุมัติ</b><br>กรุณาติดต่อคุณแอม (ผู้ดูแลระบบ) เพื่อเปิดสิทธิ์การใช้งาน</span>';
                         }
                     })
-                    .catch(err => {
+                    .catch(() => {
                         document.getElementById('licenseModal').classList.remove('hidden');
                         document.getElementById('mainAppContainer').classList.add('hidden');
                     });
@@ -538,7 +534,7 @@
                 return;
             }
 
-            // 👑 ถ้าผู้ใช้คือเจ้าของระบบ (Admin) -> ปลดล็อกทันทีถาวร
+            // 👑 ถ้าคือคุณแอม (Admin) -> ปลดล็อกทันทีถาวร
             if (email === ADMIN_EMAIL.toLowerCase()) {
                 localStorage.setItem('barcut_user_email', email);
                 localStorage.setItem('barcut_user_name', name);
@@ -549,14 +545,13 @@
                 clearToInitialEmptyState();
                 renderShapes();
 
-                // บันทึกหลังบ้านแบบเงียบ
                 try {
                     fetch(`${GOOGLE_SCRIPT_URL}?action=register&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`, { method: 'GET', mode: 'no-cors' }).catch(()=>{});
                 } catch(e) {}
                 return;
             }
 
-            // 👤 ถ้าเป็นบุคคลอื่น -> ส่งคำขอไปยัง Google Sheet และรอผลสถานะ
+            // 👤 ถ้าเป็นบุคคลอื่น -> ส่งคำขอไปยัง Google Sheet
             if (msgBox) msgBox.innerHTML = '<span style="color:#2563eb;">🔄 กำลังส่งข้อมูลและตรวจสอบสถานะการอนุมัติ...</span>';
             if (submitBtn) submitBtn.disabled = true;
 
@@ -577,7 +572,6 @@
                             renderShapes();
                         }, 700);
                     } else {
-                        // สถานะ PENDING -> ต้องรอเจ้าของอนุมัติใน Google Sheet
                         if (msgBox) msgBox.innerHTML = '<span style="color:#ea580c; line-height:1.5; display:block;">⏳ ส่งคำขอเรียบร้อยแล้ว!<br>สิทธิ์ของคุณอยู่ระหว่าง <b>รอเจ้าของโครงการอนุมัติ</b> ใน Google Sheet<br>กรุณาติดต่อคุณแอมเพื่อขอเปิดสิทธิ์การใช้งาน</span>';
                     }
                 })
@@ -629,7 +623,7 @@
             itemsData.forEach((item, idx) => { item.no = idx + 1; });
         }
 
-        // 🧠 v10.2 LONGEST-FIRST PHYSICAL ENGINE
+        // 🧠 v10.3 LONGEST-FIRST PHYSICAL ENGINE
         function calculateAllItems() {
             const demands = itemsData.map((item, index) => {
                 const cleanType = String(item.type || 'DB16').trim().toUpperCase();
@@ -1073,114 +1067,38 @@
             renderTable();
         }
 
-        function renderSummaryBOQ() {
-            const boqMap = {};
-            const calcResults = calculateAllItems();
-            itemsData.forEach((item, index) => {
-                const calc = calcResults[index];
-                const cleanType = String(item.type || 'DB16').trim().toUpperCase();
-                const key = `${cleanType}_${calc.chosenStock}`;
-                if (!boqMap[key]) boqMap[key] = { type: cleanType, length: calc.chosenStock, bars: 0, weight: 0, scrapWeight: 0 };
-                boqMap[key].bars += (calc.totalBars || 0);
-                boqMap[key].weight += (calc.totalBars || 0) * calc.chosenStock * calc.unitWeight;
-                boqMap[key].scrapWeight += (calc.totalScrapWeight || 0);
-            });
-
-            const combinedInfoDiv = document.getElementById('boqCombinedInfo');
-            const uniqueGroups = [...new Set(itemsData.map(i => i.workGroup).filter(Boolean))];
-            if (combinedInfoDiv) {
-                if (uniqueGroups.length > 1) {
-                    combinedInfoDiv.style.display = 'block';
-                    combinedInfoDiv.innerHTML = `🔗 <strong>ยอดสั่งซื้อรวมทุกหมวดหมู่งาน (${uniqueGroups.length} งาน):</strong> ${uniqueGroups.join(', ')}`;
-                } else {
-                    combinedInfoDiv.style.display = 'none';
-                }
-            }
-
-            const tbody = document.getElementById('boqTableBody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            let grandTotalBars = 0, grandTotalWeight = 0, grandTotalScrapWeight = 0;
-
-            const sortedKeys = Object.keys(boqMap).sort(compareRebarOrder);
-
-            sortedKeys.forEach(key => {
-                const data = boqMap[key];
-                if (data.bars > 0 || data.weight > 0 || data.scrapWeight > 0) {
-                    grandTotalBars += data.bars;
-                    grandTotalWeight += data.weight;
-                    grandTotalScrapWeight += data.scrapWeight;
-                    const percent = data.weight > 0 ? ((data.scrapWeight / data.weight) * 100).toFixed(2) : '0.00';
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="type-bg-${data.type}">${data.type}</td>
-                        <td style="text-align:center; font-weight:600; color:#b45309;">${data.length}.0 เมตร</td>
-                        <td style="text-align:center; font-weight:bold; color:#047857;">${data.bars}</td>
-                        <td style="text-align:right; font-weight:600;">${data.weight.toFixed(2)}</td>
-                        <td style="text-align:right; font-weight:600; color:#9d174d; background:#fcf2f6;">${data.scrapWeight.toFixed(2)}</td>
-                        <td style="text-align:center; font-weight:700; color:#92400e; background:#fffbeb;">${percent}%</td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-            });
-
-            if (tbody.children.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:15px;">ยังไม่มีข้อมูลสั่งซื้อเหล็ก กรุณาระบุจำนวนในตาราง Barcut</td></tr>`;
-            }
-
-            const grandPercent = grandTotalWeight > 0 ? ((grandTotalScrapWeight / grandTotalWeight) * 100).toFixed(2) : '0.00';
-            document.getElementById('totalBarCount').innerText = grandTotalBars;
-            document.getElementById('totalWeightKg').innerText = grandTotalWeight.toFixed(2);
-            document.getElementById('totalScrapWeightKg').innerText = grandTotalScrapWeight.toFixed(2);
-            document.getElementById('totalScrapPercent').innerText = `${grandPercent}%`;
-        }
-
-        function renderShapes() {
-            const container = document.getElementById('shapesContainer');
-            if (!container) return;
-            container.innerHTML = '';
-            const shapeNames = [
-                "แบบที่ 1: งอขอ 2 ด้าน", "แบบที่ 2: เส้นตรง", "แบบที่ 3: ฉาก L-Shape",
-                "แบบที่ 4: U-Shape (ด้าน 3 ช่วง)", "แบบที่ 5: เหล็กปลอกสี่เหลี่ยม", "แบบที่ 6: เหล็กคอม้า",
-                "แบบที่ 7: เหล็กปลอกกลม", "แบบที่ 8: Z-Shape", "แบบที่ 9: เหล็กขาโต๊ะ", "แบบที่ 10: รูปทรงพิเศษ"
-            ];
-
-            for (let i = 1; i <= 10; i++) {
-                const card = document.createElement('div');
-                card.className = "shape-card";
-                card.innerHTML = `
-                    <div style="font-weight:bold; font-size:13px; color:#1e293b; margin-bottom:4px;">${shapeNames[i-1]}</div>
-                    <div class="shape-card-img">${getShapeSVG(i, 110, 50)}</div>
-                    <div style="font-size:11px; color:#64748b; margin-top:4px;">สูตรคำนวณ: A + B + C + D + E + F</div>
-                `;
-                container.appendChild(card);
-            }
-        }
-
-        function switchTab(tab) {
-            ['barcut', 'summary', 'shapes'].forEach(t => {
-                const c = document.getElementById(`content-${t}`);
-                const b = document.getElementById(`tab-${t}`);
-                if (c) c.classList.add('hidden');
-                if (b) b.classList.remove('active');
-            });
-            const targetContent = document.getElementById(`content-${tab}`);
-            const targetBtn = document.getElementById(`tab-${tab}`);
-            if (targetContent) targetContent.classList.remove('hidden');
-            if (targetBtn) targetBtn.classList.add('active');
-            
-            if (tab === 'summary') renderSummaryBOQ();
-            if (tab === 'shapes') renderShapes();
-        }
-
-        // ==========================================
-        // 📂 ADVANCED LIBRARY SYSTEM
-        // ==========================================
+        // ========================================================
+        // 📂 ROBUST LIBRARY SYSTEM (AUTO SCAN & RECOVER OLD KEYS)
+        // ========================================================
         const MASTER_LIB_KEY = 'barcut_projects_master';
 
         function getAllSavedProjects() {
             let lib = {};
-            try { lib = JSON.parse(localStorage.getItem(MASTER_LIB_KEY) || '{}'); } catch(e) {}
+            try {
+                lib = JSON.parse(localStorage.getItem(MASTER_LIB_KEY) || '{}');
+            } catch(e) { lib = {}; }
+
+            // สแกนดึงข้อมูลจากทุกคีย์ย้อนหลังในเครื่องมารวมอัตโนมัติ
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && (k.startsWith('barcut_library_') || k.includes('library'))) {
+                    try {
+                        const oldData = JSON.parse(localStorage.getItem(k));
+                        if (oldData && typeof oldData === 'object' && !Array.isArray(oldData)) {
+                            Object.keys(oldData).forEach(pName => {
+                                if (!lib[pName]) lib[pName] = {};
+                                Object.assign(lib[pName], oldData[pName]);
+                            });
+                        }
+                    } catch(e) {}
+                }
+            }
+
+            // บันทึกรวมไว้ที่คลังกลางถาวร
+            if (Object.keys(lib).length > 0) {
+                try { localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib)); } catch(e) {}
+            }
+
             return lib;
         }
 
