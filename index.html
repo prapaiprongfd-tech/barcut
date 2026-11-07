@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barcut - ตารางคำนวณสั่งตัดเหล็กเสริม (Rebar Cutting Calculator)</title>
-    <!-- โหลดไลบรารี SheetJS (Excel) และ PDF.js (PDF) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
@@ -100,14 +99,14 @@
         .lib-btn-del { color: #dc2626; } .lib-btn-del:hover { background: #fee2e2; }
 
         .workgroup-divider-row td {
-            background: #1e293b !important;
-            color: #fde047 !important;
+            background: #ffffff !important;
+            color: #64748b !important;
             font-weight: 700 !important;
             font-size: 13px !important;
             padding: 8px 12px !important;
             text-align: left !important;
-            border-top: 2px solid #0f172a !important;
-            border-bottom: 2px solid #0f172a !important;
+            border-top: 1.5px solid #cbd5e1 !important;
+            border-bottom: 1.5px solid #cbd5e1 !important;
         }
 
         .print-only-title { display: none; }
@@ -138,11 +137,11 @@
             }
 
             .workgroup-divider-row td {
-                background: #334155 !important;
-                color: #ffffff !important;
+                background: #f8fafc !important;
+                color: #64748b !important;
                 font-size: 7.5pt !important;
-                padding: 3px 6px !important;
-                border: 1.5px solid #000 !important;
+                padding: 4px 8px !important;
+                border: 1px solid #000 !important;
             }
 
             thead th:not(.col-reuse):not(.col-offcut):not(.col-comp) {
@@ -233,7 +232,7 @@
     <div class="container hidden" id="mainAppContainer">
         <div class="header">
             <div>
-                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.5 Unified Engine</span></h1>
+                <h1>📏 ระบบคำนวณสั่งตัดเหล็กเสริม (Barcut Table System) <span class="version-badge">v10.8 Stable Library</span></h1>
                 <div class="project-input-group">
                     <div class="project-input-box">
                         <label for="projectName">ชื่อโครงการ:</label>
@@ -251,13 +250,10 @@
                 <button type="button" class="btn btn-indigo" onclick="openMergeWorksModal()">🔗 รวมงานในโครงการ</button>
                 <button type="button" class="btn btn-purple" onclick="optimizeFullProject()">⚡ คำนวณ Auto</button>
                 <button type="button" class="btn btn-red" onclick="resetCalculationsAndScraps()">🔄 ล้าง & วิเคราะห์ใหม่</button>
-                
                 <button type="button" class="btn btn-orange" onclick="document.getElementById('excelFileInput').click()">📥 นำเข้า Excel</button>
                 <input type="file" id="excelFileInput" class="hidden" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)">
-                
                 <button type="button" class="btn btn-rose" onclick="document.getElementById('pdfFileInput').click()">📄 นำเข้า PDF</button>
                 <input type="file" id="pdfFileInput" class="hidden" accept=".pdf" onchange="importFromPDF(event)">
-
                 <button type="button" class="btn btn-amber" onclick="clearToInitialEmptyState()">🧹 เริ่มตารางใหม่</button>
                 <button type="button" class="btn btn-green" onclick="exportToExcel()">📊 Export Excel</button>
                 <button type="button" class="btn btn-indigo" onclick="printCompleteReport()">🖨️ พิมพ์รายงานสมบูรณ์</button>
@@ -281,6 +277,7 @@
                         <button type="button" class="btn btn-teal" style="padding:5px 11px; font-size:12px;" onclick="setAllStockLength('12')" title="ล็อกความยาวสต็อก 12.0 เมตรทุกรายการ">🔒 ล็อก 12.0 ม. ทั้งหมด</button>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
+                        <button type="button" class="btn btn-indigo" onclick="openMergeWorksModal()">🔗 รวมงานในโครงการ</button>
                         <button type="button" class="btn btn-blue" onclick="addRow()">➕ เพิ่มรายการ</button>
                     </div>
                 </div>
@@ -439,7 +436,6 @@
         const ADMIN_EMAIL = "prapaipron.gfd@gmail.com";
         const MASTER_LIB_KEY = 'barcut_projects_master';
 
-        // ตั้งค่า PDF.js Worker
         if (typeof window['pdfjs-dist/build/pdf'] !== 'undefined') {
             window.pdfjsLib = window['pdfjs-dist/build/pdf'];
             if (pdfjsLib.GlobalWorkerOptions) {
@@ -988,7 +984,7 @@
                     dividerTr.className = 'workgroup-divider-row';
                     dividerTr.innerHTML = `
                         <td colspan="20">
-                            📂 หมวดหมู่งาน: ${currentGroup} &nbsp;|&nbsp; ลำดับ No. ${r.start} - ${r.end} (รวม ${r.count} รายการ)
+                            📁 หมวดหมู่งาน: ${currentGroup} &nbsp;|&nbsp; ลำดับ No. ${r.start} - ${r.end} (รวม ${r.count} รายการ)
                         </td>
                     `;
                     tbody.appendChild(dividerTr);
@@ -1279,7 +1275,7 @@
         }
 
         // ========================================================
-        // 📂 ROBUST LIBRARY SYSTEM (AUTO SCAN & SAFE PARSING)
+        // 📂 ROBUST LIBRARY SYSTEM (CLEAN SYNC - NO ZOMBIE DATA)
         // ========================================================
         function getAllSavedProjects() {
             let lib = {};
@@ -1287,50 +1283,6 @@
                 lib = JSON.parse(localStorage.getItem(MASTER_LIB_KEY) || '{}');
                 if (!lib || typeof lib !== 'object' || Array.isArray(lib)) lib = {};
             } catch(e) { lib = {}; }
-
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && (k.startsWith('barcut_library_') || k.includes('library'))) {
-                    try {
-                        const oldData = JSON.parse(localStorage.getItem(k));
-                        if (oldData && typeof oldData === 'object' && !Array.isArray(oldData)) {
-                            Object.keys(oldData).forEach(pName => {
-                                const projectObj = oldData[pName];
-                                if (projectObj && typeof projectObj === 'object') {
-                                    if (!lib[pName] || typeof lib[pName] !== 'object' || Array.isArray(lib[pName])) {
-                                        lib[pName] = {};
-                                    }
-                                    if (Array.isArray(projectObj)) {
-                                        lib[pName]['รายการหลัก'] = {
-                                            projectName: pName,
-                                            categoryName: 'รายการหลัก',
-                                            savedAt: 'ก่อนหน้านี้',
-                                            itemsData: projectObj
-                                        };
-                                    } else {
-                                        Object.keys(projectObj).forEach(catName => {
-                                            const work = projectObj[catName];
-                                            if (work && (Array.isArray(work.itemsData) || Array.isArray(work))) {
-                                                lib[pName][catName] = Array.isArray(work) ? {
-                                                    projectName: pName,
-                                                    categoryName: catName,
-                                                    savedAt: 'ก่อนหน้านี้',
-                                                    itemsData: work
-                                                } : work;
-                                            }
-                                        });
-                                    }
-                                }
-                            });
-                        }
-                    } catch(e) {}
-                }
-            }
-
-            if (Object.keys(lib).length > 0) {
-                try { localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib)); } catch(e) {}
-            }
-
             return lib;
         }
 
@@ -1448,6 +1400,20 @@
                 let lib = getAllSavedProjects();
                 delete lib[pName];
                 localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
+                
+                // ล้างจากแคชเก่าทุกจุดพร้อมกัน
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith('barcut_library_')) {
+                        try {
+                            let oldData = JSON.parse(localStorage.getItem(k));
+                            if (oldData && oldData[pName]) {
+                                delete oldData[pName];
+                                localStorage.setItem(k, JSON.stringify(oldData));
+                            }
+                        } catch(e) {}
+                    }
+                }
                 openLibraryModal();
             }
         }
@@ -1461,6 +1427,21 @@
                     delete lib[pName][catName];
                     if (Object.keys(lib[pName]).length === 0) delete lib[pName];
                     localStorage.setItem(MASTER_LIB_KEY, JSON.stringify(lib));
+
+                    // ล้างออกจากแคชเก่าทุกจุดถาวร (ป้องกันการฟื้นคืนชีพ)
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k && k.startsWith('barcut_library_')) {
+                            try {
+                                let oldData = JSON.parse(localStorage.getItem(k));
+                                if (oldData && oldData[pName] && oldData[pName][catName]) {
+                                    delete oldData[pName][catName];
+                                    localStorage.setItem(k, JSON.stringify(oldData));
+                                }
+                            } catch(e) {}
+                        }
+                    }
+
                     openLibraryModal();
                 }
             }
@@ -1492,9 +1473,6 @@
             }
         }
 
-        // ========================================================
-        // 🔗 MERGE PROJECT WORKS SYSTEM
-        // ========================================================
         function openMergeWorksModal() {
             const modal = document.getElementById('mergeWorksModal');
             const projSelect = document.getElementById('mergeProjectSelect');
@@ -1516,7 +1494,6 @@
                 });
                 onMergeProjectChange();
             }
-
             modal.classList.remove('hidden');
         }
 
@@ -1933,7 +1910,7 @@
                 if (item.workGroup && item.workGroup !== currentGroup) {
                     currentGroup = item.workGroup;
                     const r = groupRanges[currentGroup];
-                    barcutRows.push([`>> 📂 หมวดหมู่งาน: ${currentGroup} (ลำดับที่ ${r.start} - ${r.end} รวม ${r.count} รายการ)`]);
+                    barcutRows.push([`>> 📁 หมวดหมู่งาน: ${currentGroup} (ลำดับที่ ${r.start} - ${r.end} รวม ${r.count} รายการ)`]);
                 }
 
                 barcutRows.push([
